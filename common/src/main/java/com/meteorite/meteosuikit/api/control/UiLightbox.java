@@ -1,0 +1,737 @@
+package com.meteorite.meteosuikit.api.control;
+
+import com.meteorite.meteosuikit.api.input.UiPointerHit;
+import com.meteorite.meteosuikit.api.input.UiPointer;
+import com.meteorite.meteosuikit.api.geometry.UiRect;
+import com.meteorite.meteosuikit.api.input.UiFocusManager;
+import com.meteorite.meteosuikit.api.input.UiInputContext;
+import com.meteorite.meteosuikit.api.input.UiInputScope;
+import com.meteorite.meteosuikit.api.input.UiInputTarget;
+import com.meteorite.meteosuikit.api.input.UiInteractionSession;
+import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
+import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
+import com.meteorite.meteosuikit.api.render.UiIcon;
+import com.meteorite.meteosuikit.api.render.UiLayer;
+import com.meteorite.meteosuikit.api.render.UiNineSlice;
+import com.meteorite.meteosuikit.api.render.UiRenderLayers;
+import com.meteorite.meteosuikit.api.style.UiControlStyle;
+import com.meteorite.meteosuikit.api.style.UiStyleSource;
+import com.meteorite.meteosuikit.api.style.UiMinecraftTheme;
+import com.meteorite.meteosuikit.api.style.UiControlRole;
+import com.meteorite.meteosuikit.api.input.UiFocusTarget;
+import com.meteorite.meteosuikit.api.text.TextScroll;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+
+import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.function.Consumer;
+import java.util.Objects;
+
+import org.jetbrains.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
+
+/**
+ * 灯箱外壳：可复用的模态查看器——遮罩、内容视口、标题与描述、控制按钮组、键盘焦点与关闭语义。
+ *
+ * <p>本类**只做外壳与输入分派**，内容的尺寸、缩放、平移与裁剪由 {@link Content} 实现：
+ * 图片用 {@code UiImageView}，场景条件树这类自绘内容由宿主适配器实现（它只要把视口、
+ * 绘制、缩放、平移与命中按契约暴露出来）。因此同一个外壳既能看图片，也能放大整棵树。</p>
+ *
+ * <p>覆盖职责由内部 {@link UiOverlay} 统一持有；宿主在输入前调用 {@link #prepare(Font, int, int)}，
+ * 再将稳定的 {@link #layer()} 放入呈现清单。坐标一律为宿主 GUI 逻辑坐标。</p>
+ *
+ * <p>控制栏与文字默认跟随原版主题；
+ * 宿主可用 {@link #setStyle(UiControlStyle)} / {@link #setTextColor(int)} 覆盖。</p>
+ *
+ * <p>焦点由 {@link UiFocusManager} 按视觉顺序登记（关闭 → 上一张/下一张 → 缩小/放大/适应窗口），
+ * Enter 与 Space 都用于激活焦点控件；ESC 与关闭按钮请求关闭，具体关闭动作由宿主传入的 {@code onClose} 执行。</p>
+ */
+public final class UiLightbox implements UiInputTarget, UiLayoutSource {
+    private static final int MARGIN = 12;
+    /**
+     * 底部控制栏高度：内容视口在它上方，控制栏不会被内容覆盖。
+     */
+    private static final int BAR_HEIGHT = 22;
+    private static final int TEXT_GAP = 2;
+    private static final int BUTTON = 16;
+    private static final int BUTTON_GAP = 2;
+    /**
+     * 默认遮罩色：与既有浮层一致的半透明黑。
+     */
+    private static final int DEFAULT_MASK = 0xC0101010;
+
+    /**
+     * 原版默认结构样式。
+     */
+    private static final UiControlStyle DEFAULT_STYLE = UiMinecraftTheme.INSTANCE.controlStyle(UiControlRole.SECONDARY);
+    /**
+     * 反推文本色的两个候选：实际取与结构底色对比度更高的一档。
+     */
+    private static final int TEXT_ON_DARK = 0xFFF0F0F0;
+    private static final int TEXT_ON_LIGHT = 0xFF1A1A1A;
+
+    /**
+     * 宿主提供的本地化文案；kit 自身不持有任何文案 key。
+     */
+    public interface Labels {
+        Component close();
+
+        Component zoomIn();
+
+        Component zoomOut();
+
+        Component fit();
+
+        /**
+         * 图集导航按钮；无图集时不会调用。
+         */
+        Component previous();
+
+        Component next();
+
+        /**
+         * 「当前 / 总数」；无图集时不会调用。
+         */
+        Component position(int index, int total);
+
+        // 缩放读数格式；默认沿用既有画面（"100%"），宿主可覆盖以本地化读数。
+        // 以 default 方法新增：既有 Labels 实现无需改动即可编译。
+        default Component zoomReadout(int percent) {
+            return Component.literal(percent + "%");
+        }
+    }
+
+    /**
+     * 图集：宿主持有图片列表与当前下标，灯箱只负责显示与请求切换。
+     */
+    public interface Gallery {
+        int index();
+
+        int total();
+
+        /**
+         * 宿主据此换掉内容（{@link #setContent(Content)}）并更新自己的下标。
+         */
+        void navigate(int delta);
+    }
+
+    /**
+     * 内容契约：视口由灯箱写入，绘制/命中/缩放/平移由实现方负责。
+     * 所有坐标都是宿主 GUI 逻辑坐标；实现方必须把绘制严格裁剪在视口内。
+     */
+    public interface Content extends UiInteractionSession.Target {
+        /** 内容默认报告自身和提示；复合内容可返回更深的归属链。 */
+        @Override
+        default UiPointerHit hitTest(double x, double y) {
+            return UiPointerHit.leaf(this, x, y);
+        }
+
+        /**
+         * 内容原始尺寸，用于 fit 与调试读数；**未知时返回 0，外壳会据此把 fit 延后到尺寸就绪那一帧**。
+         */
+        int contentWidth();
+
+        int contentHeight();
+
+        /**
+         * 视口变化（首次布局、resize）时写入。实现方据此**重新钳制平移并保持已有缩放**；
+         * 首次布局与换内容时灯箱会紧接着调用一次 {@link #fit()}，因此不需要在 setViewport 里主动复位。
+         */
+        void setViewport(UiRect viewport);
+
+        /**
+         * 在视口内绘制内容。
+         */
+        void render(GuiGraphics graphics, Font font, UiPointer pointer);
+
+        /**
+         * 滚轮缩放，锚点为宿主 GUI 坐标；返回是否消费。
+         */
+        boolean zoom(double amount, double anchorX, double anchorY);
+
+        /**
+         * 以视口中心缩放：direction &lt; 0 缩小、&gt; 0 放大。
+         */
+        boolean zoomBy(int direction);
+
+        /**
+         * 适应窗口（复位）。
+         */
+        void fit();
+
+        /**
+         * 拖动平移，参数为屏幕像素增量。
+         */
+        boolean panBy(double screenDx, double screenDy);
+
+        /**
+         * 主键按下（内容区域）：开始拖动。
+         */
+        boolean mousePressed(UiInputContext context);
+
+        /**
+         * 主键释放：结束拖动。
+         */
+        boolean mouseReleased(UiInputContext context);
+
+        /**
+         * 当前缩放百分比，用于读数；不适用时返回 100。
+         */
+        int zoomPercent();
+
+        /**
+         * 缺图/资源不可用时的占位文案；{@code null} 表示内容正常。
+         */
+        @Nullable Component placeholder();
+
+        /**
+         * 资源重载通知：丢弃尺寸与纹理派生缓存。
+         */
+        default void invalidateResources() {
+        }
+    }
+
+    private final Labels labels;
+    private final Runnable onClose;
+    private final UiControlGroup controls = new UiControlGroup();
+    private final UiOverlay overlay = new UiOverlay(this);
+    private final UiInputScope inputScope = overlay.inputScope();
+    private final UiFocusManager focus = inputScope.focus();
+    private final UiLayer layer = new UiLayer(inputScope, this::renderLayer, this);
+    private Content content;
+    @Nullable
+    private UiNineSlice surface;
+    @Nullable
+    private Component barHint;
+    private Map<String, UiIcon> icons = Map.of();
+    @Nullable
+    private Gallery gallery;
+    @Nullable
+    private Font font;
+    @Nullable
+    private Component title;
+    @Nullable
+    private Component description;
+    /**
+     * 文本色：默认按默认结构底色的相对亮度反推；调用方 setTextColor 后固定，不再跟随样式。
+     */
+    private int textColor = readableTextOn(DEFAULT_STYLE.background());
+    private boolean textColorPinned;
+    private boolean stylePinned;
+    private int styleTextColor;
+    private int maskColor = DEFAULT_MASK;
+    private boolean maskColorPinned;
+    private UiStyleSource theme = UiMinecraftTheme.INSTANCE;
+    private long themeRevision = -1;
+    private boolean maskClickCloses;
+    private boolean dirty = true;
+    /**
+     * 需要一次 fit：首次布局与换内容后为真，resize 不做 fit（保留用户缩放）。
+     */
+    private boolean needFit = true;
+    private int width = 1;
+    private int height = 1;
+    private int panelX;
+    private int panelY;
+    private int panelWidth = 1;
+    private int panelHeight = 1;
+    private UiRect viewport = new UiRect(0, 0, 0, 0);
+    private int displayedZoom = Integer.MIN_VALUE;
+    /**
+     * 缩放读数：只在变化时重建字符串与宽度，避免逐帧拼接与测量。
+     */
+    private String zoomText = "100%";
+    private int zoomTextWidth;
+    /**
+     * 图集页码读数：同样只在 index/total 变化时重建。
+     */
+    private int displayedIndex = Integer.MIN_VALUE;
+    private int displayedTotal = Integer.MIN_VALUE;
+    private Component positionText = Component.empty();
+    private String titleText = "";
+    private String descriptionText = "";
+    private UiRect titleRect = new UiRect(0, 0, 0, 0);
+    private UiRect descriptionRect = new UiRect(0, 0, 0, 0);
+    private UiRect zoomRect = new UiRect(0, 0, 0, 0);
+    private UiRect positionRect = new UiRect(0, 0, 0, 0);
+    private UiRect hintRect = new UiRect(0, 0, 0, 0);
+
+    public UiLightbox(Labels labels, Content content, Runnable onClose) {
+        this.labels = Objects.requireNonNull(labels);
+        this.content = Objects.requireNonNull(content);
+        this.onClose = Objects.requireNonNull(onClose);
+        this.controls.setTheme(theme);
+        // 灯箱里 Enter 没有其它语义，因此与 Space 一起用于激活焦点控件。
+        focus.setEnterActivates(true);
+        focus.setSpaceActivates(true);
+    }
+
+    /**
+     * 供宿主选择的稳定输入作用域。
+     */
+    public UiInputScope inputScope() {
+        return inputScope;
+    }
+
+    /** 呈现清单直接复用此描述，遮罩、作用域与布局均来自同一灯箱。 */
+    public UiLayer layer() { return layer; }
+
+    /** 输入选域前完成几何、主题与读数准备；resize 保留内容缩放。 */
+    public void prepare(Font font, int width, int height) {
+        setBounds(width, height);
+        if (this.font != font || themeRevision != theme.revision()) {
+            if (!textColorPinned) textColor = stylePinned ? styleTextColor : theme.surfaces().text();
+            if (!maskColorPinned) maskColor = theme.surfaces().modalDim();
+            controls.controls().forEach(control -> control.setTextColor(textColor));
+            themeRevision = theme.revision();
+            dirty = true;
+        }
+        this.font = font;
+        layout(font);
+    }
+
+    // ---------- 宿主配置 ----------
+
+    /**
+     * 换内容（切换图集或换内容类型）；视口尺寸不变，但会重新求 fit。
+     */
+    public void setContent(Content content) {
+        inputScope.interaction().end(UiInteractionSession.EndReason.UNMOUNTED);
+        this.content = Objects.requireNonNull(content);
+        this.displayedZoom = Integer.MIN_VALUE;
+        this.needFit = true;
+        this.dirty = true;
+    }
+
+    public void setGallery(@Nullable Gallery gallery) {
+        this.gallery = gallery;
+        this.displayedIndex = Integer.MIN_VALUE;
+        this.displayedTotal = Integer.MIN_VALUE;
+        this.dirty = true;
+    }
+
+    /**
+     * 标题与描述由内容决定时可不设置；设置后显示在内容视口上方。
+     */
+    public void setText(@Nullable Component title, @Nullable Component description) {
+        this.title = title == null ? null : title.copy();
+        this.description = description == null ? null : description.copy();
+        this.dirty = true;
+    }
+
+    /** 共享根主题；明确设置的文本色与遮罩色继续优先。 */
+    public void setTheme(UiStyleSource theme) {
+        this.theme = Objects.requireNonNull(theme, "theme");
+        controls.setTheme(theme);
+        themeRevision = -1;
+    }
+
+    /**
+     * 显式控件结构色；设置后对已有与后续控件一并生效；
+     * 文本色未被 {@link #setTextColor(int)} 固定时，会按新底色的相对亮度重新反推。
+     */
+    public void setStyle(UiControlStyle style) {
+        UiControlStyle next = Objects.requireNonNull(style);
+        this.controls.setStyle(next);
+        stylePinned = true;
+        styleTextColor = readableTextOn(next.background());
+        if (!textColorPinned) applyTextColor(readableTextOn(next.background()));
+    }
+
+    /**
+     * 固定文本色；此后 {@link #setStyle(UiControlStyle)} 不再改写它。
+     */
+    public void setTextColor(int textColor) {
+        this.textColorPinned = true;
+        applyTextColor(textColor);
+    }
+
+    // 标签改色不重配动作与内容。
+    private void applyTextColor(int color) {
+        if (this.textColor == color) return;
+        this.textColor = color;
+        controls.controls().forEach(control -> control.setTextColor(color));
+    }
+
+    public void setMaskColor(int maskColor) {
+        this.maskColor = maskColor;
+        maskColorPinned = true;
+    }
+
+    public void setSurface(@Nullable UiNineSlice surface) {
+        this.surface = surface;
+        this.dirty = true;
+    }
+
+    public void setIcons(Map<String, UiIcon> icons) {
+        this.icons = Map.copyOf(icons);
+        this.dirty = true;
+    }
+
+    public void setBarHint(@Nullable Component hint) {
+        this.barHint = hint;
+        dirty = true;
+    }
+
+    /**
+     * 点遮罩是否关闭；默认 false，避免拖动图片时误触退出。
+     */
+    public void setMaskClickCloses(boolean maskClickCloses) {
+        this.maskClickCloses = maskClickCloses;
+    }
+
+    public UiRect viewport() {
+        return viewport;
+    }
+
+    /**
+     * 宿主可用区域（逻辑 GUI 坐标，左上角为原点）；由模态适配层在每次渲染前写入。
+     * 负宽高按 1 钳制：外壳至少要有一像素才排得出面板与内容视口。
+     */
+    public void setBounds(int width, int height) {
+        int w = Math.max(1, width);
+        int h = Math.max(1, height);
+        if (this.width == w && this.height == h) return;
+        this.width = w;
+        this.height = h;
+        this.dirty = true;
+    }
+
+    /**
+     * 资源重载：内容自行处理派生缓存，外壳重新测量当前语言下的文案与读数。
+     */
+    public void invalidateResources() {
+        content.invalidateResources();
+        displayedZoom = Integer.MIN_VALUE;
+        displayedIndex = Integer.MIN_VALUE;
+        displayedTotal = Integer.MIN_VALUE;
+        dirty = true;
+    }
+
+    /**
+     * 浮层关闭回调：释放按压捕获、结束内容拖动并清焦点；宿主复用视图时不会残留拖动状态。
+     */
+    public void onClosed() {
+        inputScope.interaction().end(UiInteractionSession.EndReason.HOST_CLOSED);
+        focus.clearFocus();
+    }
+
+    // ---------- 绘制 ----------
+
+    /** 在宿主选定的作用域内绘制遮罩、内容、前景与唯一提示。 */
+    public void render(GuiGraphics graphics, Font font, UiPointer incomingPointer, float partialTick) {
+        renderLayer(graphics, font, incomingPointer, 0);
+    }
+
+    private void renderLayer(GuiGraphics graphics, Font font, UiPointer incomingPointer, int depth) {
+        prepare(font, width, height);
+        UiPointer pointer = incomingPointer.resolve(this).forTarget(this);
+        overlay.render(graphics, new UiRect(0, 0, width, height), depth, maskColor, () -> {
+            if (surface != null) surface.render(graphics,
+                    new UiRect(panelX - 6, panelY - 6, panelWidth + 12, panelHeight + 12));
+            UiRenderLayers.draw(graphics, UiRenderLayers.CONTENT, () -> content.render(graphics, font, pointer));
+            UiRenderLayers.draw(graphics, UiRenderLayers.FOREGROUND, () -> renderForeground(graphics, font, pointer));
+            renderTooltip(graphics, font, pointer);
+        });
+    }
+
+    private void renderForeground(GuiGraphics graphics, Font font, UiPointer pointer) {
+        if (title != null) {
+            graphics.drawString(font, titleText, titleRect.x(), titleRect.y(), textColor, false);
+        }
+        if (description != null) {
+            graphics.drawString(font, descriptionText, descriptionRect.x(), descriptionRect.y(), textColor, false);
+        }
+        Component placeholder = content.placeholder();
+        if (placeholder != null) {
+            int textWidth = font.width(placeholder);
+            graphics.drawString(font, placeholder,
+                    viewport.x() + (viewport.width() - textWidth) / 2,
+                    viewport.y() + (viewport.height() - font.lineHeight) / 2, textColor, false);
+        }
+        renderBar(graphics, font);
+        controls.render(graphics, font, pointer);
+    }
+
+    private void renderTooltip(GuiGraphics graphics, Font font, UiPointer pointer) {
+        controls.renderTooltip(graphics, font, pointer);
+    }
+
+    // 底部控制栏：左侧图集导航与页码、右侧缩放读数与缩放/适应窗口按钮；内容视口在它上方，因此不会被覆盖。
+    private void renderBar(GuiGraphics graphics, Font font) {
+        if (positionRect.width() > 0) graphics.drawString(font, positionText, positionRect.x(), positionRect.y(), textColor, false);
+        if (zoomRect.width() > 0) graphics.drawString(font, zoomText, zoomRect.x(), zoomRect.y(), textColor, false);
+        if (barHint != null && hintRect.width() > 0) graphics.drawString(font, barHint, hintRect.x(), hintRect.y(), textColor, false);
+    }
+
+    private void layoutBar(Font font) {
+        int y = panelY + panelHeight - BAR_HEIGHT + 3;
+        int right = panelX + panelWidth;
+        int positionX = panelX + (BUTTON + BUTTON_GAP) * 2 + 4;
+        int zoomX = right - (BUTTON * 3 + BUTTON_GAP * 2) - 6 - zoomTextWidth;
+        if (surface != null) zoomX = right - 84 + (42 - zoomTextWidth) / 2;
+        boolean withGallery = gallery != null && gallery.total() > 1;
+        int positionWidth = withGallery ? font.width(positionText) : 0;
+        boolean showReadouts = zoomX >= (withGallery ? positionX + positionWidth + BUTTON_GAP : panelX);
+        positionRect = new UiRect(positionX, y, showReadouts ? positionWidth : 0, font.lineHeight);
+        zoomRect = new UiRect(zoomX, y, showReadouts ? zoomTextWidth : 0, font.lineHeight);
+        int hintWidth = barHint == null ? 0 : font.width(barHint);
+        hintRect = new UiRect(panelX, y,
+                showReadouts && !withGallery && hintWidth + BUTTON_GAP < zoomX - panelX ? hintWidth : 0, font.lineHeight);
+    }
+
+    // ---------- 布局 ----------
+
+    private void layout(Font font) {
+        if (!dirty) {
+            applyDeferredFit();
+            refreshPositionText();
+            refreshZoomText();
+            layoutBar(font);
+            return;
+        }
+        dirty = false;
+        panelX = MARGIN;
+        panelY = MARGIN;
+        panelWidth = Math.max(1, width - MARGIN * 2);
+        panelHeight = Math.max(1, height - MARGIN * 2);
+        int textHeight = 0;
+        titleRect = new UiRect(panelX, panelY, Math.max(0, panelWidth - BUTTON - BUTTON_GAP), font.lineHeight);
+        titleText = title == null ? "" : TextScroll.trimToWidth(font, title.getString(), titleRect.width());
+        if (title != null) textHeight += font.lineHeight + TEXT_GAP;
+        descriptionRect = new UiRect(panelX, panelY + textHeight, panelWidth, font.lineHeight);
+        descriptionText = description == null ? "" : TextScroll.trimToWidth(font, description.getString(), descriptionRect.width());
+        if (description != null) textHeight += font.lineHeight + TEXT_GAP;
+        if (surface != null) textHeight = Math.max(BUTTON + 4, textHeight);
+        viewport = new UiRect(panelX, panelY + textHeight, panelWidth,
+                Math.max(1, panelHeight - textHeight - BAR_HEIGHT));
+        content.setViewport(viewport);
+        applyDeferredFit();
+
+        int barY = panelY + panelHeight - BAR_HEIGHT + 3;
+        int right = panelX + panelWidth;
+        boolean withGallery = gallery != null && gallery.total() > 1;
+        controls.beginUpdate();
+        {
+            UiControl close = place(font, "close", Component.literal("×"), labels.close(),
+                    right - BUTTON, panelY - 2);
+            UiControl previous = withGallery
+                    ? place(font, "previous", Component.literal("◀"), labels.previous(), panelX, barY) : null;
+            UiControl next = withGallery
+                    ? place(font, "next", Component.literal("▶"), labels.next(),
+                    panelX + BUTTON + BUTTON_GAP, barY) : null;
+            UiControl fit = place(font, "fit", Component.literal("↺"), labels.fit(),
+                    right - BUTTON, barY);
+            UiControl zoomIn = place(font, "zoom_in", Component.literal("+"), labels.zoomIn(),
+                    surface == null ? right - BUTTON * 2 - BUTTON_GAP : right - 38, barY);
+            UiControl zoomOut = place(font, "zoom_out", Component.literal("−"), labels.zoomOut(),
+                    surface == null ? right - BUTTON * 3 - BUTTON_GAP * 2 : right - 104, barY);
+            // Tab 顺序 = 视觉顺序：关闭在右上角，其余按控制栏从左到右。
+            focusOrder.clear();
+            focusOrder.add(close);
+            if (previous != null) focusOrder.add(previous);
+            if (next != null) focusOrder.add(next);
+            focusOrder.add(zoomOut);
+            focusOrder.add(zoomIn);
+            focusOrder.add(fit);
+            controls.endUpdate();
+            inputScope.invalidateFocus();
+        }
+        displayedZoom = Integer.MIN_VALUE;
+        displayedIndex = Integer.MIN_VALUE;
+        displayedTotal = Integer.MIN_VALUE;
+        refreshPositionText();
+        // 宽度由 refreshZoomText 在读数变化时测一次；此处不再重复测量同一字符串。
+        refreshZoomText();
+        layoutBar(font);
+    }
+
+    /** 导出与绘制共用的面板、视口、文字读数和实际控件几何。 */
+    @Override public List<UiLayoutNode> layoutNodes() {
+        if (font == null) return List.of();
+        layout(font);
+        List<UiLayoutNode> children = new ArrayList<>();
+        children.add(new UiLayoutNode(UiLayoutNode.Kind.FRAME, viewport, Component.empty(), 0, 0, true, true, List.of()));
+        if (title != null) children.add(textNode(font, titleRect, Component.literal(titleText)));
+        if (description != null) children.add(textNode(font, descriptionRect, Component.literal(descriptionText)));
+        if (positionRect.width() > 0) children.add(textNode(font, positionRect, positionText));
+        if (zoomRect.width() > 0) children.add(textNode(font, zoomRect, Component.literal(zoomText)));
+        if (barHint != null && hintRect.width() > 0) children.add(textNode(font, hintRect, barHint));
+        controls.controls().forEach(control -> children.addAll(control.layoutNodes()));
+        return List.of(new UiLayoutNode(UiLayoutNode.Kind.MODAL, new UiRect(panelX, panelY, panelWidth, panelHeight),
+                title, 0, 0, true, true, children));
+    }
+
+    private static UiLayoutNode textNode(Font font, UiRect rect, Component text) {
+        return new UiLayoutNode(UiLayoutNode.Kind.ROW, rect, text, font.width(text), rect.width(), true, true, List.of());
+    }
+
+    private UiControl place(Font font, String key, Component symbol, Component name, int x, int y) {
+        UiControl control = controls.obtain(key);
+        control.setBounds(x, y, BUTTON, BUTTON);
+        UiIcon icon = icons.get(key);
+        control.configure(font, icon == null ? symbol : Component.empty(), textColor, icon, List.of(name), () -> {
+            switch (key) {
+                case "close" -> onClose.run();
+                case "previous" -> navigate(-1);
+                case "next" -> navigate(1);
+                case "zoom_in" -> content.zoomBy(1);
+                case "zoom_out" -> content.zoomBy(-1);
+                case "fit" -> content.fit();
+                default -> {
+                }
+            }
+        });
+        // 符号本身不具名：把本地化名称显式给焦点调试与旁白。
+        control.setAccessibleName(name);
+        return control;
+    }
+
+    private void navigate(int delta) {
+        if (gallery == null || gallery.total() <= 1) return;
+        gallery.navigate(delta);
+        dirty = true;
+    }
+
+    /*
+     * 内容尺寸未知时不能 fit：条件树这类内容要到 render 阶段才把自己装进文档，
+     * 此刻空文档的 contentWidth/contentHeight 为 0，任何档位都「放得下」，会误选最大档位。
+     * 因此把 fit 留到内容就位后的某一帧（每帧检查一次，成本只是两次 int 读取）。
+     */
+    private void applyDeferredFit() {
+        if (!needFit) return;
+        if (viewport.width() <= 0 || viewport.height() <= 0
+                || content.contentWidth() <= 0 || content.contentHeight() <= 0) return;
+        needFit = false;
+        content.fit();
+    }
+
+    // 图集页码读数只在 index/total 变化时重建。
+    private void refreshPositionText() {
+        if (gallery == null || gallery.total() <= 1) return;
+        if (gallery.index() == displayedIndex && gallery.total() == displayedTotal) return;
+        displayedIndex = gallery.index();
+        displayedTotal = gallery.total();
+        positionText = labels.position(displayedIndex + 1, displayedTotal);
+    }
+
+    // 缩放读数只在变化时重建字符串与宽度；格式由 Labels.zoomReadout 提供，kit 不再硬编码 "%" 拼接。
+    private void refreshZoomText() {
+        int percent = content.zoomPercent();
+        if (percent == displayedZoom) return;
+        displayedZoom = percent;
+        zoomText = labels.zoomReadout(percent).getString();
+        zoomTextWidth = font == null ? 0 : font.width(zoomText);
+    }
+
+    private final List<UiFocusTarget> focusOrder = new ArrayList<>();
+    /** 灯箱控制栏使用明确的语义导航顺序。 */
+    @Override public void addFocusTargets(Consumer<UiFocusTarget> out) {
+        focusOrder.forEach(out);
+        content.addFocusTargets(out);
+    }
+    @Override public long focusRevision() { return controls.focusRevision() * 31 + content.focusRevision(); }
+    @Override public void scopeExited(UiInteractionSession.EndReason reason) { content.scopeExited(reason); }
+    @Override public boolean keyReleased(int key, int scan, int modifiers) { return content.keyReleased(key, scan, modifiers); }
+    @Override public boolean charTyped(char value, int modifiers) { return content.hasFocus() && content.charTyped(value, modifiers); }
+
+    // ---------- 输入 ----------
+
+    public boolean mousePressed(UiInputContext context) {
+        double x = context.pointerX();
+        double y = context.pointerY();
+        layoutIfPossible();
+        if (context.hits(controls)) return controls.mousePressed(context);
+        if (viewport.contains(x, y)) return content.mousePressed(context);
+        if (maskClickCloses) onClose.run();
+        return true;
+    }
+
+    public boolean mouseDragged(UiInputContext context, double dragX, double dragY) {
+        layoutIfPossible();
+        return content.panBy(dragX, dragY);
+    }
+
+    public boolean mouseReleased(UiInputContext context) {
+        layoutIfPossible();
+        return content.mouseReleased(context);
+    }
+
+    @Override
+    public boolean mouseScrolled(UiInputContext context, double scrollX, double scrollY) {
+        double x = context.pointerX();
+        double y = context.pointerY();
+        layoutIfPossible();
+        // 指针不在内容视口内不做缩放；输入仍由模态层吞掉，不会漏到下层。
+        return viewport.contains(x, y) && content.zoom(scrollY, x, y);
+    }
+
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        layoutIfPossible();
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            onClose.run();
+            return true;
+        }
+        if (content.hasFocus() && content.keyPressed(keyCode, scanCode, modifiers)) return true;
+        if (gallery != null && gallery.total() > 1) {
+            if (keyCode == GLFW.GLFW_KEY_LEFT) {
+                navigate(-1);
+                return true;
+            }
+            if (keyCode == GLFW.GLFW_KEY_RIGHT) {
+                navigate(1);
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    // 文本默认色从结构底色反推：在近白/近黑两个候选里取 WCAG 对比度更高的一档，
+    // 按当前背景亮度选择可读的文字色，适配深浅主题。
+    private static int readableTextOn(int background) {
+        double backgroundLuminance = relativeLuminance(background);
+        double onDark = contrast(TEXT_ON_DARK, backgroundLuminance);
+        double onLight = contrast(TEXT_ON_LIGHT, backgroundLuminance);
+        return onDark >= onLight ? TEXT_ON_DARK : TEXT_ON_LIGHT;
+    }
+
+    // WCAG 相对亮度：sRGB 分量线性化后按 0.2126 / 0.7152 / 0.0722 加权。
+    private static double relativeLuminance(int argb) {
+        double r = linearize((argb >> 16 & 0xFF) / 255.0);
+        double g = linearize((argb >> 8 & 0xFF) / 255.0);
+        double b = linearize((argb & 0xFF) / 255.0);
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    }
+
+    private static double linearize(double channel) {
+        return channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+    }
+
+    private static double contrast(int textColor, double backgroundLuminance) {
+        double textLuminance = relativeLuminance(textColor);
+        double lighter = Math.max(textLuminance, backgroundLuminance);
+        double darker = Math.min(textLuminance, backgroundLuminance);
+        return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    // 输入可能先于首帧渲染到达：没有字体就无法配置控件，此时保持未布局状态。
+    private void layoutIfPossible() {
+        if (font != null) layout(font);
+    }
+
+    /** 使用当前布局解析实际命中，保留容器归属与叶子身份。 */
+    @Override
+    public @Nullable UiPointerHit hitTest(double x, double y) {
+        UiPointerHit hit = controls.hitTest(x, y);
+        if (hit == null && viewport.contains(x, y)) {
+            hit = content.hitTest(x, y);
+        }
+        return hit == null ? UiPointerHit.leaf(this, x, y).preservingFocus() : hit.within(this);
+    }
+
+}

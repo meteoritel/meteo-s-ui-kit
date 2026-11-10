@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${description}",
+  "authors": ["${mod_author}"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {"client": ["com.meteorite.meteosuikit.fabric.client.FabricUiKitClient"]},
+  "mixins": ["meteos_ui_kit.mixins.json"],
+  "depends": {"fabricloader": ">=0.16.9", "fabric-api": "*", "minecraft": "1.21.1", "java": ">=21"}
+}

@@ -1,0 +1,645 @@
+package com.meteorite.meteosuikit.api.control;
+
+import org.jetbrains.annotations.Nullable;
+import com.meteorite.meteosuikit.api.input.UiPointerHit;
+import com.meteorite.meteosuikit.api.input.UiInputContainer;
+import com.meteorite.meteosuikit.api.input.UiInputTarget;
+import com.meteorite.meteosuikit.api.input.UiChildren;
+import com.meteorite.meteosuikit.api.input.UiPointer;
+import com.meteorite.meteosuikit.api.input.UiInputScope;
+import com.meteorite.meteosuikit.api.input.UiInputContext;
+import com.meteorite.meteosuikit.api.input.UiHistoryShortcut;
+import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
+import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
+import com.meteorite.meteosuikit.api.geometry.UiRect;
+import com.meteorite.meteosuikit.api.style.UiStyleSource;
+import com.meteorite.meteosuikit.api.style.UiMinecraftTheme;
+import java.util.Objects;
+import com.meteorite.meteosuikit.api.style.UiControlRole;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.BooleanSupplier;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
+import org.lwjgl.glfw.GLFW;
+
+/**
+ * 模态弹窗。
+ * <p>结构固定为「标题栏 + 内容区 + 按钮栏」。内容可以是纯文本消息、自定义渲染回调，
+ * 也可以是任意 {@link UiWidget}（例如列表、树、输入框），由弹窗负责把鼠标、滚轮与键盘事件转发给它。
+ * <p>遮罩与淡入淡出由 {@link UiModalStack} 处理，输入独占与焦点归本模态的作用域，
+ * 弹窗本身只关心自身矩形内的绘制与命中。
+ */
+public final class UiModal implements UiWidget, UiInputContainer {
+    private final UiOverlay overlay = new UiOverlay(this);
+    private final UiInputScope inputScope = overlay.inputScope();
+    private BooleanSupplier closeAllowed = () -> true;
+
+    /**
+     * 模态实例的稳定输入作用域。
+     */
+    public UiInputScope inputScope() {
+        return inputScope;
+    }
+
+
+    /**
+     * 自定义内容渲染回调：只负责绘制内容，内容区矩形与鼠标坐标由弹窗给出；{@code content} 为绝对屏幕坐标。
+     */
+    @FunctionalInterface
+    public interface ContentRenderer {
+        void renderContent(GuiGraphics graphics, Font font, UiRect content, UiPointer pointer);
+    }
+
+    // 弹窗宽度
+    public static final int DEFAULT_WIDTH = 220;
+    public static final int MIN_WIDTH = 120;
+    // 按钮行
+    public static final int BUTTON_HEIGHT = 16;
+    private static final int BUTTON_MIN_WIDTH = 40;
+    private static final int BUTTON_SPACING = 4;
+    // 按钮行与同排内容之间的间距
+    private static final int INLINE_FOOTER_GAP = 6;
+
+    private final UiStyleSource theme;
+    private final Font font;
+    private Component title = Component.empty();
+    private Component message = Component.empty();
+    private int contentHeight;
+    private ContentRenderer contentRenderer;
+    private UiWidget contentWidget;
+    private final UiChildren<UiButtonWidget> buttons = new UiChildren<>();
+    private final ContentInput contentInput = new ContentInput();
+    private final UiChildren<UiInputTarget> members = new UiChildren<>();
+
+    private final class ContentInput implements UiInputContainer {
+        private final UiChildren<UiWidget> widgets = new UiChildren<>();
+        /** 正文的实际控件结构。 */
+        @Override public UiChildren<UiWidget> inputChildren() { return widgets; }
+        /** 裁剪内才查询正文控件。 */
+        @Override public @Nullable UiPointerHit hitTest(double x, double y) {
+            return contentRect.contains(x, y) ? UiInputContainer.super.hitTest(x, y) : null;
+        }
+    }
+
+    /** 正文与 footer 共享同一成员结构，正文裁剪由局部 adapter 表达。 */
+    @Override public UiChildren<UiInputTarget> inputChildren() { return members; }
+    private UiRect bounds = new UiRect(0, 0, 0, 0);
+    // 绝对屏幕坐标
+    private UiRect contentRect = new UiRect(0, 0, 0, 0);
+    // 上次布局的按钮行高度与按钮宽度签名：内容控件布局较重，两者都未变时才允许早退
+    private long appliedThemeRevision = -1;
+    private int appliedFooterHeight = -1;
+    private int appliedButtonWidthSignature = -1;
+    private int preferredWidth = DEFAULT_WIDTH;
+    // 消息区滚动偏移，单位为像素
+    private int messageScrollOffset;
+    private boolean closeOnBackdrop;
+    private boolean inlineFooter;
+    // 由弹窗栈注入
+    private Consumer<UiModal> closeHandler;
+    private boolean visible = true;
+    private Consumer<UiHistoryShortcut> onHistoryChanged = shortcut -> {
+    };
+    private Runnable onPrepare = () -> { };
+    private Runnable onClosed = () -> {
+    };
+
+    /**
+     * 设置关闭回调。各关闭入口统一通知宿主保存输入缓冲并释放交互。
+     *
+     * @param callback 关闭时执行的回调
+     */
+    public UiModal onClosed(Runnable callback) {
+        onClosed = callback;
+        return this;
+    }
+
+    /** 注册输入与呈现前的准备动作，由模态栈统一调用。 */
+    public void onPrepare(Runnable callback) {
+        onPrepare = Objects.requireNonNull(callback);
+    }
+
+    void prepareUi() { onPrepare.run(); }
+
+    void closed() {
+        onClosed.run();
+    }
+
+    /**
+     * 设置撤销 / 重做的历史变化回调。控件只转交快捷键，不派发底层键盘事件。
+     *
+     * @param callback 历史变化回调，参数为触发的快捷键
+     */
+    public void onHistoryChanged(Consumer<UiHistoryShortcut> callback) {
+        onHistoryChanged = callback;
+    }
+
+    void historyChanged(UiHistoryShortcut shortcut) {
+        onHistoryChanged.accept(shortcut);
+    }
+
+    private UiModal(UiStyleSource theme, Font font) {
+        this.theme = Objects.requireNonNull(theme, "theme");
+        this.font = font;
+        members.add(contentInput);
+        members.add(buttons);
+    }
+
+    /**
+     * 创建模态弹窗。
+     *
+     * @param theme 宿主主题，不可为 null
+     * @param font  渲染字体
+     */
+    public static UiModal create(UiStyleSource theme, Font font) {
+        return new UiModal(theme, font);
+    }
+
+    // ---- 配置 ----
+
+    public UiModal title(Component title) {
+        this.title = title;
+        return this;
+    }
+
+    public UiModal message(Component message) {
+        this.message = message;
+        this.contentHeight = 0;
+        return this;
+    }
+
+    /**
+     * 使用渲染回调填充内容区，替换此前的控件或消息。
+     *
+     * @param renderer 内容渲染回调
+     * @param height   内容区高度，负值按 0 处理
+     */
+    public UiModal content(ContentRenderer renderer, int height) {
+        this.contentRenderer = renderer;
+        this.contentWidget = null;
+        contentInput.widgets.clear();
+        this.contentHeight = Math.max(0, height);
+        return this;
+    }
+
+    /**
+     * 使用控件填充内容区，替换此前的渲染回调或消息。
+     *
+     * @param widget 内容控件
+     * @param height 内容区高度，负值按 0 处理
+     */
+    public UiModal contentWidget(UiWidget widget, int height) {
+        this.contentWidget = widget;
+        contentInput.widgets.clear();
+        contentInput.widgets.add(widget);
+        inputScope.invalidateFocus();
+        this.contentRenderer = null;
+        this.contentHeight = Math.max(0, height);
+        return this;
+    }
+
+    /**
+     * 设置期望宽度。低于 {@link #MIN_WIDTH} 的值按 {@link #MIN_WIDTH} 处理。
+     *
+     * @param width 期望宽度
+     */
+    public UiModal preferredWidth(int width) {
+        this.preferredWidth = Math.max(MIN_WIDTH, width);
+        return this;
+    }
+
+    public UiModal addButton(UiButtonWidget button) {
+        buttons.add(button);
+        inputScope.invalidateFocus();
+        return this;
+    }
+
+    private UiControl newButton(Component label, UiControlRole role, UiAction action) {
+        UiControl button = new UiControl();
+        button.setTheme(theme, role);
+        button.setFocusable(true);
+        button.configure(font, label, null, List.of(), action);
+        return button;
+    }
+
+    /** 使用原版默认主题创建模态。 */
+    public static UiModal create(Font font) { return create(UiMinecraftTheme.INSTANCE, font); }
+
+    /**
+     * 追加确认按钮：点击后关闭弹窗，再执行回调。
+     *
+     * @param label  按钮文案
+     * @param action 点击回调；null 表示只关闭
+     */
+    public UiModal confirm(Component label, UiAction action) {
+        UiButtonWidget button = newButton(label, UiControlRole.PRIMARY, () -> {
+            if (requestClose() && action != null) {
+                action.run();
+            }
+        });
+        return addButton(button);
+    }
+
+    /**
+     * 追加取消按钮：点击后关闭弹窗。
+     *
+     * @param label 按钮文案
+     */
+    public UiModal cancel(Component label) {
+        return addButton(newButton(label, UiControlRole.SECONDARY, this::doCancel));
+    }
+
+    /**
+     * 让按钮行与内容同排：内容区向下延伸一行，{@link UiFooterHost} 内容控件把翻页排到按钮左边。
+     */
+    public UiModal inlineFooter() {
+        this.inlineFooter = true;
+        return this;
+    }
+
+    /**
+     * 设置点击遮罩是否关闭弹窗。
+     *
+     * @param closeOnBackdrop true 表示点击弹窗外部时关闭
+     */
+    @SuppressWarnings("unused") // 公共配置入口，当前界面尚未启用
+    public UiModal closeOnBackdrop(boolean closeOnBackdrop) {
+        this.closeOnBackdrop = closeOnBackdrop;
+        return this;
+    }
+
+    // ---- 查询 ----
+
+    public Component title() {
+        return title;
+    }
+
+    /**
+     * 按钮列表。
+     *
+     * @return 只读按钮列表
+     */
+    public List<UiButtonWidget> buttons() {
+        return Collections.unmodifiableList(buttons);
+    }
+
+    /**
+     * 导出弹窗的排版快照：MODAL 节点覆盖整窗外框，子节点为内容控件与页脚按钮。
+     *
+     * <p>内容控件实现 {@link UiLayoutSource} 时才递归展开；文本内容与自绘内容渲染器不在控件树里，
+     * 此时只报一个覆盖内容区的 FRAME 节点，让探针仍能读到内容区几何。文案取标题，带宽按标题栏
+     * 可用宽度算，标题过长时探针可据此发现。</p>
+     */
+    List<UiLayoutNode> layoutNodes() {
+        if (!visible) {
+            return List.of();
+        }
+        List<UiLayoutNode> children = new ArrayList<>();
+        if (contentWidget instanceof UiLayoutSource source) {
+            children.addAll(source.layoutNodes());
+        } else if (contentWidget != null) {
+            children.add(new UiLayoutNode(UiLayoutNode.Kind.FRAME, contentRect, Component.empty(), 0, 0,
+                    true, true, List.of()));
+        }
+        for (UiButtonWidget button : buttons) {
+            children.addAll(button.layoutNodes());
+        }
+        int headerBudget = Math.max(0, bounds.width() - theme.padding() * 2);
+        return List.of(new UiLayoutNode(UiLayoutNode.Kind.MODAL, bounds, title, font.width(title),
+                headerBudget, true, true, List.copyOf(children)));
+    }
+
+    public boolean closeOnBackdrop() {
+        return closeOnBackdrop;
+    }
+
+    public int preferredWidth() {
+        return preferredWidth;
+    }
+
+    void setCloseHandler(Consumer<UiModal> closeHandler) {
+        this.closeHandler = closeHandler;
+    }
+
+    public UiModal setVisible(boolean visible) {
+        this.visible = visible;
+        return this;
+    }
+
+    // ---- 布局 ----
+
+    public int preferredHeight() {
+        return theme.headerHeight() + theme.padding() + bodyHeight() + theme.padding()
+                + footerHeight(preferredWidth) + theme.padding();
+    }
+
+    private int bodyHeight() {
+        if (contentWidget != null || contentRenderer != null) {
+            return contentHeight;
+        }
+        return messageLines(Math.max(1, preferredWidth - theme.padding() * 4)).size() * (font.lineHeight + 2) + theme.padding() * 2;
+    }
+
+    private List<FormattedCharSequence> messageLines(int width) {
+        if (message.getString().isEmpty()) {
+            return List.of();
+        }
+        return font.split(message, Math.max(1, width));
+    }
+
+    /**
+     * 在屏幕内居中布局。宽高按屏幕尺寸收缩，并同步更新期望宽度。
+     *
+     * @param screenWidth  屏幕宽度
+     * @param screenHeight 屏幕高度
+     */
+    public UiModal layoutCentered(int screenWidth, int screenHeight) {
+        int maxWidth = Math.max(1, screenWidth - 8);
+        int width = maxWidth < MIN_WIDTH ? maxWidth : Math.clamp(preferredWidth, MIN_WIDTH, maxWidth);
+        preferredWidth = width;
+        int height = Math.clamp(preferredHeight(), 1, Math.max(1, screenHeight - 8));
+        return setBoundsInternal((screenWidth - width) / 2, (screenHeight - height) / 2, width, height);
+    }
+
+    /**
+     * 按给定矩形布局。
+     *
+     * @param x      左上角横坐标，负值按 0 处理
+     * @param y      左上角纵坐标，负值按 0 处理
+     * @param width  宽度，小于 1 时按 1 处理
+     * @param height 高度，小于 {@link #BUTTON_HEIGHT} 时按 {@link #BUTTON_HEIGHT} 处理
+     */
+    public void layoutAt(int x, int y, int width, int height) {
+        setBoundsInternal(x, y, width, height);
+    }
+
+    @Override
+    public void setBounds(int x, int y, int width, int height) {
+        setBoundsInternal(x, y, width, height);
+    }
+
+    // 目标矩形与按钮行几何都没变时直接返回：弹窗静止帧不重建 bounds/contentRect，也不重排按钮与内容控件。
+    // 按钮可见性或标签宽度会改变按钮行几何，因此把 footerHeight 与按钮宽度签名一起纳入比较，
+    // 避免公开的 buttons() 在运行期变动后仍沿用旧矩形。
+    private UiModal setBoundsInternal(int x, int y, int width, int height) {
+        int nextX = Math.max(0, x);
+        int nextY = Math.max(0, y);
+        int nextWidth = Math.max(1, width);
+        int nextHeight = Math.max(BUTTON_HEIGHT, height);
+        int nextFooterHeight = footerHeight(nextWidth);
+        int nextButtonWidthSignature = buttonWidthSignature(theme.padding());
+        if (bounds.x() == nextX && bounds.y() == nextY && bounds.width() == nextWidth
+                && bounds.height() == nextHeight && appliedFooterHeight == nextFooterHeight
+                && appliedButtonWidthSignature == nextButtonWidthSignature && appliedThemeRevision == theme.revision()) {
+            return this;
+        }
+        this.bounds = new UiRect(nextX, nextY, nextWidth, nextHeight);
+        appliedThemeRevision = theme.revision();
+        appliedFooterHeight = nextFooterHeight;
+        appliedButtonWidthSignature = nextButtonWidthSignature;
+        // 与按钮同排时把按钮行也算进内容区高度，由内容控件自己让出右侧
+        int inlineExtra = inlineFooter && contentWidget != null ? nextFooterHeight + theme.padding() : 0;
+        this.contentRect = new UiRect(bounds.x() + theme.padding(), bounds.y() + theme.headerHeight() + theme.padding(),
+                Math.max(0, bounds.width() - theme.padding() * 2),
+                Math.max(0, bounds.height() - theme.headerHeight() - theme.padding() * 3 - nextFooterHeight) + inlineExtra);
+        if (contentWidget != null) {
+            contentWidget.setBounds(contentRect.x(), contentRect.y(), contentRect.width(), contentRect.height());
+        }
+        layoutButtons();
+        if (inlineFooter && contentWidget instanceof UiFooterHost host) {
+            host.setFooterReserved(inlineFooterReserved(), nextFooterHeight);
+        }
+        return this;
+    }
+
+    // 按钮行占用的右侧宽度：最左按钮到弹窗内边距再加间距；没有可见按钮时为 0
+    private int inlineFooterReserved() {
+        int leftmost = bounds.right() - theme.padding();
+        boolean any = false;
+        for (UiButtonWidget button : buttons) {
+            if (!button.isVisible()) {
+                continue;
+            }
+            any = true;
+            leftmost = Math.min(leftmost, button.bounds().x());
+        }
+        return any ? Math.max(0, bounds.right() - leftmost + INLINE_FOOTER_GAP) : 0;
+    }
+
+    // 可用宽度不足时缩到可用宽度，避免按钮越出弹窗
+    private int buttonWidth(UiButtonWidget button, int available) {
+        return available < BUTTON_MIN_WIDTH
+                ? available
+                : Math.clamp(button.preferredWidth(theme.padding()), BUTTON_MIN_WIDTH, available);
+    }
+
+    // 长标签按实际宽度换行，正文为按钮预留全部行高。
+    private int footerHeight(int width) {
+        int available = Math.max(1, width - theme.padding() * 2);
+        int used = 0;
+        int rows = 0;
+        for (UiButtonWidget button : buttons) {
+            if (!button.isVisible()) continue;
+            int next = buttonWidth(button, available);
+            if (rows == 0) rows = 1;
+            if (used > 0 && used + BUTTON_SPACING + next > available) {
+                rows++;
+                used = 0;
+            }
+            used += (used == 0 ? 0 : BUTTON_SPACING) + next;
+        }
+        return rows == 0 ? 0 : rows * BUTTON_HEIGHT + (rows - 1) * BUTTON_SPACING;
+    }
+
+    // 可见按钮的宽度签名：按钮可见性与标签宽度共同决定按钮行换行与宽度，任一变化都必须重排。
+    // preferredWidth 的标签宽度内部已按语言缓存，这里只做整数乘加，不产生分配。
+    private int buttonWidthSignature(int padding) {
+        int signature = 1;
+        for (UiButtonWidget button : buttons) {
+            if (!button.isVisible()) {
+                continue;
+            }
+            signature = signature * 31 + button.preferredWidth(padding);
+        }
+        return signature;
+    }
+
+    // 每行右对齐，按钮不越过弹窗边缘。
+    private void layoutButtons() {
+        int available = Math.max(1, bounds.width() - theme.padding() * 2);
+        List<List<UiButtonWidget>> rows = new ArrayList<>();
+        List<UiButtonWidget> row = new ArrayList<>();
+        int used = 0;
+        for (UiButtonWidget button : buttons) {
+            if (!button.isVisible()) continue;
+            int next = buttonWidth(button, available);
+            if (!row.isEmpty() && used + BUTTON_SPACING + next > available) {
+                rows.add(row);
+                row = new ArrayList<>();
+                used = 0;
+            }
+            used += (row.isEmpty() ? 0 : BUTTON_SPACING) + next;
+            row.add(button);
+        }
+        if (!row.isEmpty()) rows.add(row);
+        int y = bounds.bottom() - theme.padding() - footerHeight(bounds.width());
+        for (List<UiButtonWidget> line : rows) {
+            int total = (line.size() - 1) * BUTTON_SPACING;
+            for (UiButtonWidget button : line) total += buttonWidth(button, available);
+            int x = bounds.right() - theme.padding() - total;
+            for (UiButtonWidget button : line) {
+                int width = buttonWidth(button, available);
+                button.setBounds(x, y, width, BUTTON_HEIGHT);
+                x += width + BUTTON_SPACING;
+            }
+            y += BUTTON_HEIGHT + BUTTON_SPACING;
+        }
+    }
+
+    // ---- 渲染 ----
+
+    @Override
+    public UiRect bounds() {
+        return bounds;
+    }
+
+    @Override
+    public boolean isVisible() {
+        return visible;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void render(GuiGraphics graphics, Font font, UiPointer incomingPointer) {
+        UiPointer pointer = incomingPointer.resolve(this).forTarget(this);
+        if (!visible) {
+            return;
+        }
+        theme.drawWindow(graphics, bounds);
+        if (!title.getString().isEmpty()) {
+            UiRect header = new UiRect(bounds.x() + theme.border(), bounds.y() + theme.border(),
+                    Math.max(0, bounds.width() - theme.border() * 2), theme.headerHeight());
+            theme.drawHeader(graphics, header);
+            graphics.drawString(font, title, header.x() + theme.padding(),
+                    header.y() + Math.max(0, (header.height() - font.lineHeight) / 2), theme.surfaces().headerText(), false);
+            theme.drawDivider(graphics, header.x(), header.bottom(), header.width());
+        }
+        if (contentWidget != null) {
+            // 内容控件自带边框，这里不再重复画内凹底
+            contentWidget.render(graphics, font, pointer);
+        } else if (contentRenderer != null) {
+            contentRenderer.renderContent(graphics, font, contentRect, pointer);
+        } else {
+            theme.drawInset(graphics, contentRect);
+            List<FormattedCharSequence> lines = messageLines(contentRect.width() - theme.padding() * 2);
+            int textY = contentRect.y() + theme.padding() - messageScrollOffset;
+            graphics.enableScissor(contentRect.x(), contentRect.y(), contentRect.right(), contentRect.bottom());
+            for (FormattedCharSequence line : lines) {
+                graphics.drawString(font, line, contentRect.x() + theme.padding(), textY, theme.surfaces().text(), false);
+                textY += font.lineHeight + 2;
+            }
+            graphics.disableScissor();
+        }
+        for (UiButtonWidget button : buttons) {
+            if (button.isVisible()) {
+                button.render(graphics, font, pointer);
+            }
+        }
+        if (pointer.allowsTooltip() && pointer.hit() != null) {
+            pointer.hit().renderTooltip(graphics, font, theme.tooltipSkin(), (int) pointer.x(), (int) pointer.y());
+        }
+    }
+
+    // ---- 输入 ----
+
+    @Override
+    public boolean mousePressed(UiInputContext context) {
+        double mouseX = context.pointerX();
+        double mouseY = context.pointerY();
+        if (!visible) {
+            return false;
+        }
+        if (!bounds.contains(mouseX, mouseY)) {
+
+            if (closeOnBackdrop()) requestClose();
+            return true;
+        }
+        return members.mousePressed(context) || contentWidget == null;
+    }
+
+    /** 无会话配对释放仅进入原命中分支。 */
+    @Override public boolean mouseReleased(UiInputContext context) {
+        return visible && members.mouseReleased(context);
+    }
+
+    @Override
+    public boolean mouseScrolled(UiInputContext context, double scrollX, double scrollY) {
+        double mouseX = context.pointerX();
+        double mouseY = context.pointerY();
+        if (contentWidget != null) {
+            members.mouseScrolled(context, scrollX, scrollY);
+        } else if (contentRect.contains(mouseX, mouseY)) {
+            int maximum = Math.max(0, messageLines(contentRect.width() - theme.padding() * 2).size()
+                    * (font.lineHeight + 2) + theme.padding() * 2 - contentRect.height());
+            messageScrollOffset = Math.clamp(messageScrollOffset - (int) (scrollY * 20), 0, maximum);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (!visible) {
+            return false;
+        }
+        // 逐级取消：先给内容控件（聚焦控件/活跃捕获）机会，未消费才关闭模态
+        if (contentWidget != null && contentWidget.keyPressed(keyCode, scanCode, modifiers)) {
+            return true;
+        }
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            doCancel();
+            return true;
+        }
+        return false;
+    }
+
+    /** 内容与 footer 变化共同使焦点索引失效。 */
+    @Override public long focusRevision() {
+        return members.focusRevision() + UiWidget.super.focusRevision();
+    }
+
+    // ---- 关闭 ----
+
+    private void doCancel() {
+        requestClose();
+    }
+
+    // 请求关闭自身
+    /** 设置用户关闭政策；宿主销毁使用栈的强制移除。 */
+    public UiModal closeWhen(BooleanSupplier allowed) { closeAllowed = Objects.requireNonNull(allowed); return this; }
+
+    /** 用户关闭的唯一入口，拒绝时保持内容与焦点。 */
+    public boolean requestClose() {
+        if (closeHandler == null || !closeAllowed.getAsBoolean()) return false;
+        closeHandler.accept(this);
+        return true;
+    }
+
+    void renderOverlay(GuiGraphics graphics, UiRect screen, int depth, int mask, Runnable painter) {
+        overlay.render(graphics, screen, depth, mask, painter);
+    }
+    /** 使用当前布局解析实际命中，保留容器归属与叶子身份。 */
+    @Override
+    public @Nullable UiPointerHit hitTest(double x, double y) {
+        if (!visible) return null;
+        UiPointerHit hit = members.hitTest(x, y);
+        return hit == null ? UiPointerHit.leaf(this, x, y).preservingFocus() : hit.within(this);
+    }
+
+}

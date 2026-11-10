@@ -1,0 +1,10 @@
+.gradle/
+.idea/
+**/build/
+**/runs/
+**/run/
+**/logs/
+.scratch/
+__pycache__/
+*.actual
+*.log

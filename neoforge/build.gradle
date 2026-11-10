@@ -1,0 +1,26 @@
+plugins {
+    id 'multiloader-loader'
+    id 'net.neoforged.moddev'
+}
+sourceSets {
+    dev {
+        java.srcDir rootProject.file('common/src/dev/java')
+        resources.srcDir rootProject.file('common/src/dev/resources')
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+configurations.devImplementation.extendsFrom(configurations.implementation)
+configurations.devCompileOnly.extendsFrom(configurations.compileOnly)
+neoForge {
+    version = neoforge_version
+    addModdingDependenciesTo(sourceSets.dev)
+    parchment { minecraftVersion = parchment_minecraft; mappingsVersion = parchment_version }
+    runs {
+        client { client() }
+        samplesClient { client(); sourceSet = sourceSets.dev; gameDirectory = file('runs/samples') }
+        server { server(); programArgument '--nogui' }
+    }
+    mods { "${mod_id}" { sourceSet sourceSets.main; sourceSet sourceSets.dev } }
+}
+tasks.named('check') { dependsOn tasks.named('devClasses') }

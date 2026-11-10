@@ -1,0 +1,34 @@
+plugins {
+    id 'fabric-loom' version '1.8.13' apply false
+    id 'net.neoforged.moddev' version '2.0.49-beta' apply false
+}
+def libraryProperties = new Properties()
+file('../../gradle.properties').withInputStream { libraryProperties.load(it) }
+subprojects {
+    apply plugin: 'java'
+    version = libraryProperties.getProperty('version')
+    libraryProperties.each { name, value -> ext.set(name.toString(), value) }
+    java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+    repositories {
+        exclusiveContent {
+            forRepository { maven {
+                name = 'MeteosLocal'
+                url = uri(providers.gradleProperty('meteos_ui_kit_maven_dir').get())
+            } }
+            filter { includeGroup('com.meteorite.meteosuikit') }
+        }
+        mavenCentral()
+        maven { url = 'https://maven.parchmentmc.org' }
+    }
+    sourceSets.main.java.srcDir rootProject.file('../../common/src/dev/java')
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        doFirst {
+            def libraryRoot = rootProject.file('../..').canonicalFile.toPath()
+            if (classpath.files.any { entry -> ['common', 'fabric', 'neoforge'].any { module -> entry.canonicalFile.toPath().startsWith(libraryRoot.resolve(module + '/build')) } }) {
+                throw new GradleException('产物消费 classpath 混入库工程输出')
+            }
+            logger.lifecycle("${project.path} 编译坐标 com.meteorite.meteosuikit:meteos-ui-kit-${project.name}-1.21.1:${project.version}")
+        }
+    }
+}

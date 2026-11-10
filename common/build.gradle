@@ -1,0 +1,69 @@
+plugins {
+    id 'multiloader-common'
+    id 'net.neoforged.moddev'
+}
+
+neoForge {
+    neoFormVersion = neo_form_version
+    // Automatically enable AccessTransformers if the file exists
+    def at = file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers.from(at.absolutePath)
+    }
+    parchment {
+        minecraftVersion = parchment_minecraft
+        mappingsVersion = parchment_version
+    }
+}
+
+configurations {
+    commonJava {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+    commonResources {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+}
+
+artifacts {
+    commonJava sourceSets.main.java.sourceDirectories.singleFile
+    commonResources sourceSets.main.resources.sourceDirectories.singleFile
+}
+
+// 同一份开发样板只与 kit 源码、MC 及许可依赖编译，产品 main 产物不进入 classpath。
+tasks.register('compileUiKitSamples', JavaCompile) {
+    group = 'verification'
+    description = '独立编译 UI kit 与纯样板，拦截对产品实现的隐式依赖。'
+    source fileTree('src/main/java/com/meteorite/meteosuikit') { include '**/*.java' }
+    source fileTree('src/dev/java/com/meteorite/meteosuikit/samples') { include '**/*.java' }
+    classpath = sourceSets.main.compileClasspath.minus(sourceSets.main.output)
+    destinationDirectory = layout.buildDirectory.dir('ui-kit-samples/classes')
+    javaCompiler = javaToolchains.compilerFor { languageVersion = JavaLanguageVersion.of(21) }
+    options.encoding = 'UTF-8'
+}
+tasks.named('check') { dependsOn tasks.named('compileUiKitSamples') }
+
+def interfaceToolClasses = layout.buildDirectory.dir('ui-kit-interface/classes')
+tasks.register('compileUiKitInterfaceTool', JavaCompile) {
+    source rootProject.fileTree('tools/ui-kit-interface') { include '*.java' }
+    classpath = files()
+    destinationDirectory = interfaceToolClasses
+    javaCompiler = javaToolchains.compilerFor { languageVersion = JavaLanguageVersion.of(21) }
+    options.encoding = 'UTF-8'
+}
+tasks.register('exportUiKitInterface', JavaExec) {
+    group = 'verification'
+    description = '使用 JDK 语言模型核对 kit 嵌套、继承与 protected 有效公开面。'
+    dependsOn tasks.named('compileUiKitInterfaceTool')
+    classpath = files(interfaceToolClasses) + sourceSets.main.compileClasspath.minus(sourceSets.main.output)
+    mainClass = 'ExportInterface'
+    javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    args file('src/main/java/com/meteorite/meteosuikit').absolutePath,
+            rootProject.file(providers.gradleProperty('kitInterfaceOutput').getOrElse('tools/ui-kit-interface/api.txt')).absolutePath,
+            providers.gradleProperty('kitInterfaceMode').getOrElse('check'),
+            rootProject.file('tools/ui-kit-interface/dependencies.txt').absolutePath,
+            "itemdespawntowhat"
+}
+tasks.named('check') { dependsOn tasks.named('exportUiKitInterface') }

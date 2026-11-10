@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "com.meteorite.meteosuikit.neoforge.client.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "DisplayPreviewAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

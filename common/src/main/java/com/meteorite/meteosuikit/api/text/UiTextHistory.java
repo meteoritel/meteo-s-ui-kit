@@ -1,0 +1,70 @@
+package com.meteorite.meteosuikit.api.text;
+
+import com.meteorite.meteosuikit.api.text.UiTextEditSession.Snapshot;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Objects;
+import org.jetbrains.annotations.Nullable;
+
+/** 控件局部文本历史；宿主负责快照采集、回填和变化通知。 */
+final class UiTextHistory {
+    public static final int DEFAULT_CAPACITY = 100;
+
+    private record Edit(Snapshot before, Snapshot after) {}
+
+    private final int capacity;
+    private final Deque<Edit> undo = new ArrayDeque<>();
+    private final Deque<Edit> redo = new ArrayDeque<>();
+
+    public UiTextHistory() {
+        this(DEFAULT_CAPACITY);
+    }
+
+    public UiTextHistory(int capacity) {
+        if (capacity < 1) {
+            throw new IllegalArgumentException("文本历史容量必须大于零");
+        }
+        this.capacity = capacity;
+    }
+
+    /** 一次被接受的输入记录一次；光标、选择和拒绝输入不产生记录。 */
+    public boolean record(Snapshot before, Snapshot after) {
+        Objects.requireNonNull(before);
+        Objects.requireNonNull(after);
+        if (before.text().equals(after.text())) {
+            return false;
+        }
+        undo.addLast(new Edit(before, after));
+        if (undo.size() > capacity) {
+            undo.removeFirst();
+        }
+        redo.clear();
+        return true;
+    }
+
+    public @Nullable Snapshot undo() {
+        Edit edit = undo.pollLast();
+        if (edit == null) {
+            return null;
+        }
+        redo.addLast(edit);
+        return edit.before();
+    }
+
+    public @Nullable Snapshot redo() {
+        Edit edit = redo.pollLast();
+        if (edit == null) {
+            return null;
+        }
+        undo.addLast(edit);
+        return edit.after();
+    }
+
+
+    /** 装载不同文本时清空，避免历史跨字段或跨装载基线串联。 */
+    public void clear() {
+        undo.clear();
+        redo.clear();
+    }
+}

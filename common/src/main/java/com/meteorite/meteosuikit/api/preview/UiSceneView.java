@@ -1,0 +1,72 @@
+package com.meteorite.meteosuikit.api.preview;
+
+import com.mojang.blaze3d.platform.Lighting;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.VertexSorting;
+import com.meteorite.meteosuikit.api.geometry.UiRect;
+import com.meteorite.meteosuikit.api.render.UiModelBounds;
+import com.meteorite.meteosuikit.api.render.UiRenderLayers;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderType;
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL30;
+
+/** 唯一三维取景入口：整圈适框、裁剪、光照与 GUI 状态成对恢复。 */
+public final class UiSceneView {
+    private UiSceneView() { }
+
+    /** 使用模型空间包围绘制已准备场景，转台只改变外部矩阵。 */
+    public static void render(GuiGraphics graphics, UiRect box, PreviewScene scene, UiSceneCamera camera, UiSceneStyle style) {
+        UiModelBounds bounds = scene.bounds;
+        if (scene.state != PreviewState.READY || bounds == null || box.width() <= 2 || box.height() <= 2) return;
+        UiRenderLayers.model(graphics, box, local -> renderModel(local, box, scene, bounds, camera, style));
+    }
+
+    private static void renderModel(GuiGraphics graphics, UiRect box, PreviewScene scene, UiModelBounds bounds, UiSceneCamera camera, UiSceneStyle style) {
+        int target = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
+        var dispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
+        Quaternionf previousCamera = new Quaternionf(dispatcher.cameraOrientation());
+        boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+        float fogStart = RenderSystem.getShaderFogStart(), fogEnd = RenderSystem.getShaderFogEnd();
+        var projection = new Matrix4f(RenderSystem.getProjectionMatrix());
+        VertexSorting previousSorting = RenderSystem.getVertexSorting();
+        graphics.flush();
+        graphics.pose().pushPose();
+        try {
+            float scale = bounds.scale(box, camera.pitch());
+            graphics.pose().translate(box.x() + box.width() / 2.0F, box.y() + box.height() / 2.0F, UiRenderLayers.CONTENT);
+            graphics.pose().last().pose().scale(1, 1, style.depthScale());
+            graphics.pose().scale(scale, -scale, scale);
+            Quaternionf orientation = new Quaternionf().rotationX(camera.pitch()).rotateY(camera.yaw());
+            graphics.pose().mulPose(orientation);
+            graphics.pose().translate(-bounds.centerX(), -bounds.centerY(), -bounds.centerZ());
+            Lighting.setupForEntityInInventory();
+            dispatcher.overrideCameraOrientation(new Quaternionf(orientation).conjugate());
+            RenderSystem.enableDepthTest();
+            RenderSystem.setShaderFogStart(Float.MAX_VALUE);
+            RenderSystem.setShaderFogEnd(Float.MAX_VALUE);
+            Matrix4f matrix = new Matrix4f(RenderSystem.getModelViewMatrix()).mul(graphics.pose().last().pose());
+            for (SceneMeshes.Layer layer : scene.layers) if (layer.type != RenderType.translucent())
+                layer.draw(matrix, camera, target);
+            RenderSystem.setProjectionMatrix(projection, VertexSorting.ORTHOGRAPHIC_Z);
+            scene.instances.draw(graphics.pose(), graphics.bufferSource());
+            graphics.bufferSource().endBatch();
+            RenderSystem.enableDepthTest();
+            for (SceneMeshes.Layer layer : scene.layers) if (layer.type == RenderType.translucent())
+                layer.draw(matrix, camera, target);
+        } finally {
+            try { graphics.flush(); }
+            finally {
+                graphics.pose().popPose();
+                dispatcher.overrideCameraOrientation(previousCamera);
+                RenderSystem.setProjectionMatrix(projection, previousSorting);
+                RenderSystem.setShaderFogStart(fogStart); RenderSystem.setShaderFogEnd(fogEnd);
+                Lighting.setupFor3DItems();
+                if (depth) RenderSystem.enableDepthTest(); else RenderSystem.disableDepthTest();
+            }
+        }
+    }
+}
