@@ -1,7 +1,7 @@
 package com.meteorite.meteosuikit.api.layout;
 
 import com.meteorite.meteosuikit.api.geometry.UiRect;
-import com.meteorite.meteosuikit.api.control.UiAction;
+import com.meteorite.meteosuikit.api.input.UiAction;
 
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;

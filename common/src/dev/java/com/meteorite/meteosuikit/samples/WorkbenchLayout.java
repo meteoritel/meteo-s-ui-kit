@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.samples;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.control.UiWidget;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.style.UiStyleSource;
@@ -66,25 +68,25 @@ public final class WorkbenchLayout {
     }
 
     /** 绘制窗口底板、标题与标题分隔线。 */
-    public static void drawPage(GuiGraphics graphics, Font font, UiStyleSource theme, int width, int height, Component title) {
-        theme.drawWindow(graphics, new UiRect(0, 0, width, height));
+    public static void drawPage(GuiGraphics graphics, Font font, Supplier<? extends UiStyleSource> theme, int width, int height, Component title) {
+        theme.get().drawWindow(graphics, new UiRect(0, 0, width, height));
         drawPageHeading(graphics, font, theme, width, title);
     }
 
     /** 已由带皮肤屏幕绘制底板时，只绘制标题和分隔线。 */
-    public static void drawPageHeading(GuiGraphics graphics, Font font, UiStyleSource theme, int width, Component title) {
-        graphics.drawString(font, title, INSET, TITLE_Y, theme.surfaces().text(), false);
-        theme.drawDivider(graphics, INSET, RULE_Y, contentWidth(width));
+    public static void drawPageHeading(GuiGraphics graphics, Font font, Supplier<? extends UiStyleSource> theme, int width, Component title) {
+        graphics.drawString(font, title, INSET, TITLE_Y, theme.get().surfaces().text(), false);
+        theme.get().drawDivider(graphics, INSET, RULE_Y, contentWidth(width));
     }
 
     /** 绘制标题下方的说明行，超宽时截断。 */
-    public static void drawSubtitle(GuiGraphics graphics, Font font, UiStyleSource theme, int width, Component subtitle) {
-        graphics.drawString(font, ellipsize(font, subtitle, contentWidth(width)), INSET, SUBTITLE_Y, theme.surfaces().secondaryText(), false);
+    public static void drawSubtitle(GuiGraphics graphics, Font font, Supplier<? extends UiStyleSource> theme, int width, Component subtitle) {
+        graphics.drawString(font, ellipsize(font, subtitle, contentWidth(width)), INSET, SUBTITLE_Y, theme.get().surfaces().secondaryText(), false);
     }
 
     /** 绘制页脚分隔线；页脚按钮由页面自己排版，保证按钮绘制在分隔线之上。 */
-    public static void drawFooterRule(GuiGraphics graphics, UiStyleSource theme, int width, int height) {
-        theme.drawDivider(graphics, INSET, footerRuleY(height), contentWidth(width));
+    public static void drawFooterRule(GuiGraphics graphics, Supplier<? extends UiStyleSource> theme, int width, int height) {
+        theme.get().drawDivider(graphics, INSET, footerRuleY(height), contentWidth(width));
     }
 
     /**
@@ -92,8 +94,8 @@ public final class WorkbenchLayout {
      *
      * <p>分组标题用次要文字色，与控件正文区分层级；调用方按返回值继续排版。</p>
      */
-    public static int drawSection(GuiGraphics graphics, Font font, UiStyleSource theme, int x, int y, Component label, int maxWidth) {
-        graphics.drawString(font, ellipsize(font, label, maxWidth), x, y, theme.surfaces().secondaryText(), false);
+    public static int drawSection(GuiGraphics graphics, Font font, Supplier<? extends UiStyleSource> theme, int x, int y, Component label, int maxWidth) {
+        graphics.drawString(font, ellipsize(font, label, maxWidth), x, y, theme.get().surfaces().secondaryText(), false);
         return y + font.lineHeight + 4;
     }
 

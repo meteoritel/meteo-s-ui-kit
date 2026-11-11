@@ -1,7 +1,7 @@
 package com.meteorite.meteosuikit.samples;
 
 import com.meteorite.meteosuikit.api.control.UiControl;
-import com.meteorite.meteosuikit.api.number.UiSliderRole;
+import com.meteorite.meteosuikit.api.style.UiSliderRole;
 import com.meteorite.meteosuikit.api.render.UiNineSlice;
 import com.meteorite.meteosuikit.api.style.UiControlPainter;
 import com.meteorite.meteosuikit.api.style.UiControlRole;

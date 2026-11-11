@@ -1,6 +1,6 @@
 package com.meteorite.meteosuikit.api.layout;
 
-import com.meteorite.meteosuikit.api.control.UiAction;
+import com.meteorite.meteosuikit.api.input.UiAction;
 import com.meteorite.meteosuikit.api.geometry.UiTransform;
 import com.meteorite.meteosuikit.api.render.UiIcon;
 

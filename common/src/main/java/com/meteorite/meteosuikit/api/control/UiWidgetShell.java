@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.api.control;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.input.UiFocusState;
 import com.meteorite.meteosuikit.api.input.UiFocusTarget;
@@ -138,8 +140,8 @@ public final class UiWidgetShell {
     /**
      * 按键盘焦点视图与当前主题绘制实际焦点矩形。
      */
-    public void renderFocusOutline(GuiGraphics graphics, UiRect rect, UiStyleSource theme) {
-        if (focusState.isVisible()) theme.drawFocusOutline(graphics, rect);
+    public void renderFocusOutline(GuiGraphics graphics, UiRect rect, Supplier<? extends UiStyleSource> theme) {
+        if (focusState.isVisible()) theme.get().drawFocusOutline(graphics, rect);
     }
 
     private void invalidate(UiInteractionSession.EndReason reason) {

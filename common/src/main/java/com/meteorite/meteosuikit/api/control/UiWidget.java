@@ -1,6 +1,8 @@
 package com.meteorite.meteosuikit.api.control;
 
 import com.meteorite.meteosuikit.api.input.UiInputTarget;
+import com.meteorite.meteosuikit.api.input.UiFocusTarget;
+import java.util.function.Consumer;
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.meteorite.meteosuikit.api.input.UiPointer;
 import org.jetbrains.annotations.Nullable;
@@ -15,6 +17,12 @@ import net.minecraft.client.gui.GuiGraphics;
  * <p>所有坐标均为 GUI 逻辑坐标，不使用缩放矩阵。
  */
 public interface UiWidget extends UiInputTarget {
+
+    /** 隐藏控件不贡献焦点子树；禁用目标仍保留登记，由目标资格控制导航。 */
+    @Override
+    default void addFocusTargets(Consumer<UiFocusTarget> out) {
+        if (isVisible()) UiInputTarget.super.addFocusTargets(out);
+    }
 
     /** 当前控件的 GUI 逻辑矩形。 */
     UiRect bounds();

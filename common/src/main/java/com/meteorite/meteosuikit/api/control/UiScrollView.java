@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.api.control;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.render.UiRenderLayers;
 import org.jetbrains.annotations.Nullable;
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
@@ -17,7 +19,7 @@ import net.minecraft.client.gui.GuiGraphics;
  *
  * <p>坐标口径：视口矩形使用宿主 GUI 逻辑坐标，与 {@link UiControl} 的矩形同坐标系。绘制内容前调用
  * {@link #push(GuiGraphics)} 进入内容坐标——原点在内容顶部左对齐（x 与视口左边界对齐）；绘制后调用
- * {@link #pop(GuiGraphics)} 返回宿主坐标，再由宿主调用 {@link #renderScrollbar(GuiGraphics, UiStyleSource)}。
+ * {@link #pop(GuiGraphics)} 返回宿主坐标，再由宿主调用 {@link #renderScrollbar(GuiGraphics, Supplier)}。
  * 命中走同一套换算：{@link #toContentX(double)} / {@link #toContentY(double)} 把屏幕坐标换成内容坐标，
  * 交给 {@link UiControlGroup} 使用。</p>
  *
@@ -317,10 +319,10 @@ public final class UiScrollView implements UiInteractionSession.Target {
     }
 
     /** 在宿主坐标绘制轨道与滑块，几何与主题 painter 均由共同入口管理。 */
-    public void renderScrollbar(GuiGraphics graphics, UiStyleSource theme) {
+    public void renderScrollbar(GuiGraphics graphics, Supplier<? extends UiStyleSource> theme) {
         if (!isScrollbarVisible()) return;
-        theme.drawScrollTrack(graphics, scrollbarTrack());
-        theme.drawScrollThumb(graphics, scrollbarThumb());
+        theme.get().drawScrollTrack(graphics, scrollbarTrack());
+        theme.get().drawScrollThumb(graphics, scrollbarThumb());
     }
 
     // ---------- 内部几何 ----------

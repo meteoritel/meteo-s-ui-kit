@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.samples;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.control.UiControlGroup;
 import com.meteorite.meteosuikit.api.control.UiWidget;
 import com.meteorite.meteosuikit.api.input.UiPointer;
@@ -43,7 +45,7 @@ final class KitLayersExample implements UiWidget, UiLayoutSource, AutoCloseable 
     private static final int ITEM_STEP = 84;
     private static final int OVERLAP_STEP = 40;
     private final UiControlGroup controls = new UiControlGroup();
-    private final UiStyleSource theme;
+    private final Supplier<? extends UiStyleSource> theme;
     private final Font font;
     private final @Nullable Function<PreviewBudget, PreviewScenes> previewFactory;
     private PreviewScenes scenes;
@@ -58,7 +60,7 @@ final class KitLayersExample implements UiWidget, UiLayoutSource, AutoCloseable 
     private boolean foreground = true;
     private boolean overlap;
 
-    KitLayersExample(UiStyleSource theme, Font font, @Nullable Function<PreviewBudget, PreviewScenes> previewFactory) {
+    KitLayersExample(Supplier<? extends UiStyleSource> theme, Font font, @Nullable Function<PreviewBudget, PreviewScenes> previewFactory) {
         this.theme = theme;
         this.font = font;
         this.previewFactory = previewFactory;
@@ -97,7 +99,7 @@ final class KitLayersExample implements UiWidget, UiLayoutSource, AutoCloseable 
 
     @Override
     public void render(GuiGraphics graphics, Font font, UiPointer pointer) {
-        graphics.drawString(font, text("actions"), actionsRect.x(), actionsRect.y(), theme.surfaces().secondaryText(), false);
+        graphics.drawString(font, text("actions"), actionsRect.x(), actionsRect.y(), theme.get().surfaces().secondaryText(), false);
         controls.render(graphics, font, pointer);
         int x = bounds.x();
         int y = contentRect.y();
@@ -111,9 +113,9 @@ final class KitLayersExample implements UiWidget, UiLayoutSource, AutoCloseable 
             for (int row = 0; row < rowCount; row++) {
                 boolean reverse = row % 2 == 1;
                 int rowY = y + row * (ROW_HEIGHT + ROW_GAP);
-                graphics.fill(x, rowY, bounds.right(), rowY + ROW_HEIGHT, theme.surfaces().panelFill());
+                graphics.fill(x, rowY, bounds.right(), rowY + ROW_HEIGHT, theme.get().surfaces().panelFill());
                 if (row < 2) {
-                    graphics.drawString(font, text(reverse ? "reverse" : "forward"), x + 4, rowY + 4, theme.textColor(true), false);
+                    graphics.drawString(font, text(reverse ? "reverse" : "forward"), x + 4, rowY + 4, theme.get().textColor(true), false);
                 }
                 int step = overlap ? OVERLAP_STEP : ITEM_STEP;
                 int itemY = rowY + 18;
@@ -124,17 +126,17 @@ final class KitLayersExample implements UiWidget, UiLayoutSource, AutoCloseable 
         };
         if (scenes == null) painter.run();
         else scenes.renderFrame(painter);
-        graphics.drawString(font, state(), stateRect.x(), stateRect.y(), theme.textColor(true), false);
+        graphics.drawString(font, state(), stateRect.x(), stateRect.y(), theme.get().textColor(true), false);
         if (foreground) UiRenderLayers.draw(graphics, UiRenderLayers.FOREGROUND, () -> {
             UiRect panel = new UiRect(x + 8, y + 8, Math.clamp(bounds.width() - 16, 0, 180), 56);
-            graphics.fill(panel.x(), panel.y(), panel.right(), panel.bottom(), theme.surfaces().panelFill());
-            graphics.drawString(font, text("foreground"), panel.x() + 4, panel.y() + 6, theme.textColor(true), false);
+            graphics.fill(panel.x(), panel.y(), panel.right(), panel.bottom(), theme.get().surfaces().panelFill());
+            graphics.drawString(font, text("foreground"), panel.x() + 4, panel.y() + 6, theme.get().textColor(true), false);
         });
         controls.renderTooltip(graphics, font, pointer);
     }
 
     private void renderMixed(GuiGraphics graphics, Font font, UiIcon icon, int x, int y, boolean reverse) {
-        Runnable label = () -> graphics.drawString(font, text("sample"), x + (overlap ? 8 : 40), y + 4, theme.textColor(true), false);
+        Runnable label = () -> graphics.drawString(font, text("sample"), x + (overlap ? 8 : 40), y + 4, theme.get().textColor(true), false);
         if (reverse) label.run();
         else sprite.render(graphics, x, y);
         icon.render(graphics, x + (overlap ? 4 : 20), y);

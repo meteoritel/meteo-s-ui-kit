@@ -1,4 +1,4 @@
-package com.meteorite.meteosuikit.api.number;
+package com.meteorite.meteosuikit.api.style;
 
 /**
  * 滑块外观档位：同一主题按行高给出多套几何，样式与画法成对注入，见 {@link UiSliderSkin}。

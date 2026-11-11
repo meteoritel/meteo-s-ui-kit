@@ -13,7 +13,6 @@ import com.sun.source.tree.ParenthesizedTree;
 import com.sun.source.tree.Tree;
 
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -67,7 +66,7 @@ public final class ExportInterface {
             if (!violations.isEmpty()) throw new IllegalStateException(String.join("\n", violations));
             var lines = new TreeSet<String>();
             for (TypeElement type : roots) collect(type, task.getElements(), task.getTypes(), lines);
-            String actual = String.join("\n", lines) + "\n";
+            String actual = String.join("\n", lines.stream().map(String::stripTrailing).toList()) + "\n";
             if (args[2].equals("write")) {
                 Files.createDirectories(output.toAbsolutePath().getParent());
                 Files.writeString(output, actual, StandardCharsets.UTF_8);
@@ -97,6 +96,10 @@ public final class ExportInterface {
             if (!(element instanceof TypeElement type)) return;
             String name = type.getQualifiedName().toString();
             if (name.startsWith(KIT)) return;
+            if (unit.getPackageName().toString().equals(KIT + "internal.preview.mixin")
+                    && (name.equals("org.spongepowered.asm.mixin.Mixin")
+                    || name.equals("org.spongepowered.asm.mixin.gen.Accessor")
+                    || name.equals("org.spongepowered.asm.mixin.gen.Invoker"))) return;
             boolean accepted = allowed.stream().anyMatch(rule -> rule.endsWith(".*")
                     ? name.startsWith(rule.substring(0, rule.length() - 1))
                     : name.equals(rule) || name.startsWith(rule + "."));

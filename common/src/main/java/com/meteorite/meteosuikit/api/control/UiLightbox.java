@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.api.control;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.meteorite.meteosuikit.api.input.UiPointer;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
@@ -225,8 +227,9 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
     private int styleTextColor;
     private int maskColor = DEFAULT_MASK;
     private boolean maskColorPinned;
-    private UiStyleSource theme = UiMinecraftTheme.INSTANCE;
+    private Supplier<? extends UiStyleSource> theme = () -> UiMinecraftTheme.INSTANCE;
     private long themeRevision = -1;
+    private UiStyleSource appliedTheme;
     private boolean maskClickCloses;
     private boolean dirty = true;
     /**
@@ -283,11 +286,11 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
     /** 输入选域前完成几何、主题与读数准备；resize 保留内容缩放。 */
     public void prepare(Font font, int width, int height) {
         setBounds(width, height);
-        if (this.font != font || themeRevision != theme.revision()) {
-            if (!textColorPinned) textColor = stylePinned ? styleTextColor : theme.surfaces().text();
-            if (!maskColorPinned) maskColor = theme.surfaces().modalDim();
+        if (this.font != font || appliedTheme != theme.get() || themeRevision != theme.get().revision()) {
+            if (!textColorPinned) textColor = stylePinned ? styleTextColor : theme.get().surfaces().text();
+            if (!maskColorPinned) maskColor = theme.get().surfaces().modalDim();
             controls.controls().forEach(control -> control.setTextColor(textColor));
-            themeRevision = theme.revision();
+            themeRevision = theme.get().revision(); appliedTheme = theme.get();
             dirty = true;
         }
         this.font = font;
@@ -324,7 +327,7 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
     }
 
     /** 共享根主题；明确设置的文本色与遮罩色继续优先。 */
-    public void setTheme(UiStyleSource theme) {
+    public void setTheme(Supplier<? extends UiStyleSource> theme) {
         this.theme = Objects.requireNonNull(theme, "theme");
         controls.setTheme(theme);
         themeRevision = -1;
@@ -689,7 +692,6 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
         }
         return false;
     }
-
 
     // 文本默认色从结构底色反推：在近白/近黑两个候选里取 WCAG 对比度更高的一档，
     // 按当前背景亮度选择可读的文字色，适配深浅主题。

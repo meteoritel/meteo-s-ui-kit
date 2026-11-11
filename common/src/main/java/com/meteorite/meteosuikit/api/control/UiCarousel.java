@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.api.control;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.render.UiIcon;
 
@@ -77,11 +79,11 @@ public final class UiCarousel {
 
     /** 绘制当前项；图标按区域等比缩放并居中。 */
     public void render(GuiGraphics graphics, UiRect box, long milliseconds) {
-        render(graphics, box, milliseconds, UiMinecraftTheme.INSTANCE);
+        render(graphics, box, milliseconds, () -> UiMinecraftTheme.INSTANCE);
     }
 
     /** 轮播复用内容与相位，绘制时消费当前主题。 */
-    public void render(GuiGraphics graphics, UiRect box, long milliseconds, UiStyleSource theme) {
+    public void render(GuiGraphics graphics, UiRect box, long milliseconds, Supplier<? extends UiStyleSource> theme) {
         prepare(milliseconds);
         int index = index(milliseconds);
         if (index < 0) return;

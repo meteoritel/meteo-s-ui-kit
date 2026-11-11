@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.api.control;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.render.UiRenderLayers;
 import com.meteorite.meteosuikit.api.input.UiPointer;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
@@ -20,12 +22,12 @@ import org.lwjgl.glfw.GLFW;
  */
 public final class UiIconLightboxContent implements UiLightbox.Content {
     private final UiIcon icon;
-    private final UiStyleSource theme;
+    private final Supplier<? extends UiStyleSource> theme;
     private final LightboxViewport view;
     private @Nullable UiInteractionSession session;
 
     /** 图标保持原实例；主题在每次绘制时读取，内容不接管图标资源的释放。 */
-    public UiIconLightboxContent(UiIcon icon, UiStyleSource theme) {
+    public UiIconLightboxContent(UiIcon icon, Supplier<? extends UiStyleSource> theme) {
         this.icon = Objects.requireNonNull(icon);
         this.theme = Objects.requireNonNull(theme);
         view = new LightboxViewport(icon.width(), icon.height());

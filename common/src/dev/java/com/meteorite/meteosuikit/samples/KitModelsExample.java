@@ -1,5 +1,10 @@
 package com.meteorite.meteosuikit.samples;
 
+import java.util.function.Supplier;
+
+import java.util.function.Consumer;
+import com.meteorite.meteosuikit.api.input.UiFocusTarget;
+
 import com.meteorite.meteosuikit.api.control.UiControlGroup;
 import com.meteorite.meteosuikit.api.control.UiControl;
 import com.meteorite.meteosuikit.api.control.UiListView;
@@ -47,11 +52,11 @@ final class KitModelsExample implements UiWidget, UiInputContainer, UiLayoutSour
     private UiTreeProjection<Node> projection;
     private UiRect bounds = new UiRect(0, 0, 0, 0);
 
-    KitModelsExample(Font font, UiStyleSource theme) {
+    KitModelsExample(Font font, Supplier<? extends UiStyleSource> theme) {
         text = new KitTextModelExample(font);
         tree = new UiListView<>(theme, (graphics, renderFont, entry, index, row, selected, hovered, focused) ->
                 graphics.drawString(renderFont, label(entry.node().key()), row.x() + entry.depth() * 10,
-                        row.y() + 4, theme.textColor(true), false));
+                        row.y() + 4, theme.get().textColor(true), false));
         editor = new UiTreeEditor<>(new UiTreeEditor.Adapter<>() {
             @Override public List<Node> children(Node node) { return node.children(); }
             @Override public Node withChildren(Node node, List<Node> nodes) { return new Node(node.key(), nodes); }
@@ -124,6 +129,7 @@ final class KitModelsExample implements UiWidget, UiInputContainer, UiLayoutSour
     /** {@inheritDoc} */
     @Override public long focusRevision() { return UiInputContainer.super.focusRevision(); }
     /** {@inheritDoc} */
+    @Override public void addFocusTargets(Consumer<UiFocusTarget> out) { if (isVisible()) children.addFocusTargets(out); }
     @Override public UiChildren<UiInputTarget> inputChildren() { return children; }
     /** {@inheritDoc} */
     @Override public UiRect bounds() { return bounds; }

@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
  * @param <V> 不可变数值快照类型
  * @param <T> 不可变文本快照类型
  */
-public final class UiValueTextBinding<V, T> {
+final class UiValueTextBinding<V, T> {
 
     private final Supplier<V> readValue;
     private final Predicate<@NotNull V> writeValue;

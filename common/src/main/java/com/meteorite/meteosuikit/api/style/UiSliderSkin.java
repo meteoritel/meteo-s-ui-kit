@@ -1,4 +1,4 @@
-package com.meteorite.meteosuikit.api.number;
+package com.meteorite.meteosuikit.api.style;
 
 import java.util.Objects;
 
@@ -6,8 +6,7 @@ import java.util.Objects;
  * 滑块外观：把样式与画法配成一对，由宿主一次注入，避免样式来自一套主题而画法来自另一套。
  *
  * <p>两者本就互相依赖——{@link UiSliderPainter.Frame} 直接携带 {@link UiSliderStyle}——
- * 因此注入面收成一个值对象：宿主拿到 {@link UiSliderSkin} 后分别交给
- * {@link UiScalarSlider#setStyle(UiSliderStyle)} 与 {@link UiScalarSlider#setPainter(UiSliderPainter)}。</p>
+ * 因此注入面收成一个值对象，控件在解析主题时成对取得结构样式与画法。</p>
  *
  * @param style   颜色与尺寸，不可为 null
  * @param painter 绘制策略，不可为 null

@@ -1,4 +1,4 @@
-package com.meteorite.meteosuikit.neoforge.client.mixin;
+package com.meteorite.meteosuikit.internal.preview.mixin;
 
 import net.minecraft.world.entity.Display;
 import org.spongepowered.asm.mixin.Mixin;

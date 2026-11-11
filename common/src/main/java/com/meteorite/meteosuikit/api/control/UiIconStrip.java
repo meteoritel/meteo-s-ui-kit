@@ -1,5 +1,9 @@
 package com.meteorite.meteosuikit.api.control;
 
+import java.util.function.Supplier;
+
+import com.meteorite.meteosuikit.api.input.UiAction;
+
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.meteorite.meteosuikit.api.input.UiPointer;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
@@ -55,8 +59,8 @@ public final class UiIconStrip implements UiInteractionSession.Target, UiFocusTa
     private final Font font;
     private final List<Item> cells = new ArrayList<>();
     private Orientation orientation;
-    private UiStyleSource theme = UiMinecraftTheme.INSTANCE;
-    private UiControlStyle style = theme.controlStyle(UiControlRole.SECONDARY);
+    private Supplier<? extends UiStyleSource> theme = () -> UiMinecraftTheme.INSTANCE;
+    private UiControlStyle style = theme.get().controlStyle(UiControlRole.SECONDARY);
     private boolean styleOverride;
     private final UiWidgetShell shell = new UiWidgetShell(this);
     private int focusedIndex = -1;
@@ -93,7 +97,7 @@ public final class UiIconStrip implements UiInteractionSession.Target, UiFocusTa
     }
 
     /** 绑定稳定主题来源，显式 setStyle 优先于主题默认项。 */
-    public void setTheme(UiStyleSource theme) {
+    public void setTheme(Supplier<? extends UiStyleSource> theme) {
         this.theme = Objects.requireNonNull(theme, "theme");
         styleOverride = false;
         for (Item item : cells) item.control.setTheme(theme, UiControlRole.SECONDARY);

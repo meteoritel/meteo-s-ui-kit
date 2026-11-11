@@ -1,4 +1,4 @@
-package com.meteorite.meteosuikit.api.number;
+package com.meteorite.meteosuikit.api.style;
 
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 

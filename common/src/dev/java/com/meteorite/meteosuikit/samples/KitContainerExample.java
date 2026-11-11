@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.samples;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.control.UiControlGroup;
 import com.meteorite.meteosuikit.api.control.UiModal;
 import com.meteorite.meteosuikit.api.control.UiModalStack;
@@ -26,7 +28,7 @@ import java.util.List;
 /** 保留原版背包 Menu 与槽位的组合接入；kit 只消费工具栏和覆盖层的输入。 */
 public final class KitContainerExample extends AbstractContainerScreen<InventoryMenu> implements UiLayoutSource {
     private final Runnable back;
-    private final UiStyleSource theme;
+    private final Supplier<? extends UiStyleSource> theme;
     private final UiInputRouter input = new UiInputRouter();
     private final UiInputBridge bridge = new UiInputBridge(input);
     private final UiControlGroup controls = new UiControlGroup();
@@ -39,7 +41,8 @@ public final class KitContainerExample extends AbstractContainerScreen<Inventory
     public KitContainerExample(InventoryMenu menu, Inventory inventory, Runnable back) {
         super(menu, inventory, text("title"));
         this.back = back;
-        theme = KitSkinSamples.themes().getFirst();
+        UiStyleSource selectedTheme = KitSkinSamples.themes().getFirst();
+        theme = () -> selectedTheme;
         modals = new UiModalStack(theme);
         base.setEscape(this::onClose);
         modals.setOnScopeChanged(this::select);
@@ -100,8 +103,8 @@ public final class KitContainerExample extends AbstractContainerScreen<Inventory
     }
     /** 默认主题绘制真实原版槽位几何，物品与拖放仍由父类处理。 */
     @Override protected void renderBg(@NotNull GuiGraphics graphics, float delta, int x, int y) {
-        theme.drawInset(graphics, new UiRect(leftPos, topPos, imageWidth, imageHeight));
-        for (var slot : menu.slots) theme.drawInset(graphics, new UiRect(leftPos + slot.x - 1, topPos + slot.y - 1, 18, 18));
+        theme.get().drawInset(graphics, new UiRect(leftPos, topPos, imageWidth, imageHeight));
+        for (var slot : menu.slots) theme.get().drawInset(graphics, new UiRect(leftPos + slot.x - 1, topPos + slot.y - 1, 18, 18));
     }
     /** kit 消费或覆盖层阻断的按下，其迟到释放仍由 kit 接住。 */
     @Override public boolean mouseClicked(double x, double y, int button) {

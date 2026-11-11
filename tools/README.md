@@ -7,6 +7,8 @@
 
 构建与发布串行执行。游戏行为由用户验收，源码与产物检查分别记录。
 
+Interface 门禁核对有效公开声明及源码引用；仅共享 internal preview Mixin 允许使用对应 Sponge 注解，公开依赖白名单保持独立。dev 兼容与迁移约定见 [接入说明](../docs/integration.md#固定版本消费)。
+
 ## 本地发布和消费校验
 
 用户级 `gradle.properties` 设置 `meteos_ui_kit_maven_dir`，指向专用 Maven 仓库。普通库构建无需此属性；发布和消费校验使用该属性。

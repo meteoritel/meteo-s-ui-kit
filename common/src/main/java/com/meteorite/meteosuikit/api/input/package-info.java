@@ -10,7 +10,6 @@
  *   <li>{@code UiInputContainer}: library</li>
  *   <li>{@code UiPointerHit}: library</li>
  *   <li>{@code UiFocusManager}: library</li>
- *   <li>{@code UiFocusFollow}: library</li>
  *   <li>{@code UiFocusState}: library</li>
  *   <li>{@code UiFocusTarget}: library</li>
  *   <li>{@code UiHistoryShortcut}: library</li>
@@ -21,6 +20,7 @@
  *   <li>{@code UiInputTarget}: library</li>
  *   <li>{@code UiInteractionSession}: library</li>
  *   <li>{@code UiNavigationHistory}: library；用途：有界导航历史；宿主提供快照、有效性检查与恢复，输入和模态优先级由宿主决定；公开库用途</li>
+ *   <li>{@code UiAction}: library</li>
  * </ul>
  */
 package com.meteorite.meteosuikit.api.input;

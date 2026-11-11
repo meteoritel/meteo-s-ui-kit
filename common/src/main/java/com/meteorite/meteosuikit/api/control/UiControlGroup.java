@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.api.control;
 
+import java.util.function.Supplier;
+
 import java.util.function.Consumer;
 
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
@@ -44,7 +46,7 @@ public final class UiControlGroup implements UiInputContainer {
     private final UiChildren<UiControl> ordered = new UiChildren<>();
     private final Set<Object> seen = new HashSet<>();
     private @Nullable UiControlStyle style;
-    private UiStyleSource theme = UiMinecraftTheme.INSTANCE;
+    private Supplier<? extends UiStyleSource> theme = () -> UiMinecraftTheme.INSTANCE;
     /**
      * 是否处于 beginUpdate/endUpdate 之间；不在区间内时 endUpdate 不做裁剪，避免误清空。
      */
@@ -136,14 +138,14 @@ public final class UiControlGroup implements UiInputContainer {
     }
 
     /** 已有及后续控件共享根主题；显式 setStyle 覆盖结构画法。 */
-    public void setTheme(UiStyleSource theme) {
+    public void setTheme(Supplier<? extends UiStyleSource> theme) {
         this.theme = Objects.requireNonNull(theme, "theme");
         style = null;
         for (UiControl control : ordered) control.setTheme(theme, UiControlRole.SECONDARY);
     }
 
     public UiControlStyle style() {
-        return style == null ? theme.controlStyle(UiControlRole.SECONDARY) : style;
+        return style == null ? theme.get().controlStyle(UiControlRole.SECONDARY) : style;
     }
 
     // ---------- 绘制 / 命中 ----------
@@ -183,7 +185,7 @@ public final class UiControlGroup implements UiInputContainer {
      */
     public void renderTooltip(GuiGraphics graphics, Font font, UiPointer pointer) {
         if (!pointer.allowsTooltip() || pointer.hit() == null) return;
-        pointer.hit().renderTooltip(graphics, font, theme.tooltipSkin(), (int) pointer.x(), (int) pointer.y());
+        pointer.hit().renderTooltip(graphics, font, theme.get().tooltipSkin(), (int) pointer.x(), (int) pointer.y());
     }
 
 }

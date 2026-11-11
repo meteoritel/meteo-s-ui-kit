@@ -4,13 +4,13 @@ import com.meteorite.meteosuikit.api.number.UiScalarSlider;
 import com.meteorite.meteosuikit.api.number.UiNumberPolicy;
 import com.meteorite.meteosuikit.api.number.UiSliderWindow;
 import com.meteorite.meteosuikit.api.number.UiValueInteraction;
-import com.meteorite.meteosuikit.api.number.UiSliderSkin;
+import com.meteorite.meteosuikit.api.style.UiSliderSkin;
 import com.meteorite.meteosuikit.api.number.UiRangeSlider;
 import com.meteorite.meteosuikit.api.number.UiRangeEnd;
 import com.meteorite.meteosuikit.api.number.UiRangeValue;
 import com.meteorite.meteosuikit.api.number.UiCyclicRange;
 import com.meteorite.meteosuikit.api.number.UiCyclicRangeValue;
-import com.meteorite.meteosuikit.api.number.UiSliderStyle;
+import com.meteorite.meteosuikit.api.style.UiSliderStyle;
 
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.input.UiInputRouter;

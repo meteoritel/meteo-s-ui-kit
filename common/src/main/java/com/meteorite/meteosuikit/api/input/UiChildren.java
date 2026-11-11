@@ -1,6 +1,5 @@
 package com.meteorite.meteosuikit.api.input;
 
-import com.meteorite.meteosuikit.api.control.UiWidget;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,9 +51,9 @@ public final class UiChildren<T extends UiInputTarget> extends AbstractList<T> i
         return value;
     }
     /** 按导航顺序递归贡献，资格由实际焦点目标决定。 */
-    @Override public void addFocusTargets(Consumer<UiFocusTarget> out) { for (T member : navigation()) {
-        if (!(member instanceof UiWidget widget) || widget.isVisible()) member.addFocusTargets(out);
-    } }
+    @Override public void addFocusTargets(Consumer<UiFocusTarget> out) {
+        for (T member : navigation()) member.addFocusTargets(out);
+    }
     /** 会话由作用域结束，本集合只传播成员的本地退出通知。 */
     @Override public void scopeExited(UiInteractionSession.EndReason reason) {
         for (T member : members) member.scopeExited(reason);

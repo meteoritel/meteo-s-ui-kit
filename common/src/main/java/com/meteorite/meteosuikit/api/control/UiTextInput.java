@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.api.control;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.input.UiPointer;
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.meteorite.meteosuikit.api.text.UiSingleLineEditor;
@@ -59,8 +61,9 @@ public final class UiTextInput implements UiSingleLineEditor, UiShellWidget, UiL
     private boolean editable = true;
 
     // 注入的宿主主题
-    private final UiStyleSource theme;
+    private final Supplier<? extends UiStyleSource> theme;
     private long themeRevision = -1;
+    private UiStyleSource appliedTheme;
     private Component hint;
 
     /** {@inheritDoc} */
@@ -70,18 +73,18 @@ public final class UiTextInput implements UiSingleLineEditor, UiShellWidget, UiL
     }
 
     /** 使用原版默认主题创建单行输入。 */
-    public UiTextInput(Font font, Component hint) { this(UiMinecraftTheme.INSTANCE, font, hint); }
+    public UiTextInput(Font font, Component hint) { this(() -> UiMinecraftTheme.INSTANCE, font, hint); }
 
     /** 注入稳定主题来源，文本模型与局部历史由同一实例保留。 */
-    public UiTextInput(UiStyleSource theme, Font font, Component hint) {
+    public UiTextInput(Supplier<? extends UiStyleSource> theme, Font font, Component hint) {
         this.theme = Objects.requireNonNull(theme, "theme");
         this.font = font;
         this.hint = hint;
-        this.editBox = new TrackedEditBox(font, theme.rowHeight());
+        this.editBox = new TrackedEditBox(font, theme.get().rowHeight());
         this.editBox.setBordered(false);
         this.editBox.setHint(placeholder(hint));
-        this.editBox.setTextColor(theme.surfaces().inputText());
-        this.editBox.setTextColorUneditable(theme.surfaces().disabledText());
+        this.editBox.setTextColor(theme.get().surfaces().inputText());
+        this.editBox.setTextColorUneditable(theme.get().surfaces().disabledText());
         // 长度由码点过滤器控制；程序回填不经过原版截断。
         this.editBox.setMaxLength(Integer.MAX_VALUE);
         this.accessibleName = hint;
@@ -225,7 +228,7 @@ public final class UiTextInput implements UiSingleLineEditor, UiShellWidget, UiL
         if (hint == null || hint.getString().isEmpty()) {
             return hint;
         }
-        return hint.copy().withStyle(hint.getStyle().withColor(TextColor.fromRgb(theme.surfaces().disabledText())));
+        return hint.copy().withStyle(hint.getStyle().withColor(TextColor.fromRgb(theme.get().surfaces().disabledText())));
     }
 
     /**
@@ -330,11 +333,11 @@ public final class UiTextInput implements UiSingleLineEditor, UiShellWidget, UiL
     /** {@inheritDoc} */
     @Override
     public void render(GuiGraphics graphics, Font font, UiPointer incomingPointer) {
-        if (themeRevision != theme.revision()) {
-            editBox.setTextColor(theme.surfaces().inputText());
-            editBox.setTextColorUneditable(theme.surfaces().disabledText());
+        if (appliedTheme != theme.get() || themeRevision != theme.get().revision()) {
+            editBox.setTextColor(theme.get().surfaces().inputText());
+            editBox.setTextColorUneditable(theme.get().surfaces().disabledText());
             editBox.setHint(placeholder(hint));
-            themeRevision = theme.revision();
+            themeRevision = theme.get().revision(); appliedTheme = theme.get();
         }
         UiPointer pointer = incomingPointer.resolve(this).forTarget(this);
         int mouseX = (int) pointer.x();

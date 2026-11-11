@@ -1,4 +1,4 @@
-package com.meteorite.meteosuikit.api.number;
+package com.meteorite.meteosuikit.api.style;
 
 /**
  * 不可变滑块样式：表达轨道、已填充段、手柄、焦点、禁用、错误、溢出与文字槽用色。

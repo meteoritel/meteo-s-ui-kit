@@ -13,6 +13,7 @@
  *   <li>{@code UiTextEditSession}: library；用途：自定义原版文本 adapter 的编辑与历史会话；公开库用途；kit 内控件复用</li>
  *   <li>{@code UiSingleLineEditor}: library；用途：自定义单行文本 adapter 与数值组合共用提交、取消和交互结束契约；公开库用途</li>
  *   <li>{@code UiTextValue}: library</li>
+ *   <li>{@code TextWrap}: library</li>
  * </ul>
  */
 package com.meteorite.meteosuikit.api.text;

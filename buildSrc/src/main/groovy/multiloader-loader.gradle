@@ -24,12 +24,7 @@ tasks.named('compileJava', JavaCompile) {
     source(configurations.commonJava.asFileTree.matching { include '**/*.java' })
 }
 
-processResources {
-    dependsOn(configurations.commonResources)
-    from(configurations.commonResources) {
-        exclude '**/.dsh-ops-update-*.lock'
-    }
-}
+sourceSets.main.resources.srcDir(configurations.commonResources)
 
 // 同上：javadoc 读到非源文件时会直接报「无法读取的源文件」并中断构建。
 tasks.named('javadoc', Javadoc).configure {
@@ -41,8 +36,4 @@ tasks.named('sourcesJar', Jar) {
     dependsOn(configurations.commonJava)
     // 源包同理只收 .java，避免把更新锁 sidecar 之类的非源文件带进产物。
     from(configurations.commonJava.asFileTree.matching { include '**/*.java' })
-    dependsOn(configurations.commonResources)
-    from(configurations.commonResources) {
-        exclude '**/.dsh-ops-update-*.lock'
-    }
 }

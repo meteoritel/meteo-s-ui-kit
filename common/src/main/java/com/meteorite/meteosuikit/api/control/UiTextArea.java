@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.api.control;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.input.UiPointer;
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.meteorite.meteosuikit.api.render.UiFlatText;
@@ -76,7 +78,7 @@ public final class UiTextArea implements UiShellWidget, UiTextValue, UiLayoutSou
     private long focusedTime;
 
     // 注入的宿主主题
-    private final UiStyleSource theme;
+    private final Supplier<? extends UiStyleSource> theme;
 
     /** {@inheritDoc} */
     @Override
@@ -85,10 +87,10 @@ public final class UiTextArea implements UiShellWidget, UiTextValue, UiLayoutSou
     }
 
     /** 使用原版默认主题创建多行输入。 */
-    public UiTextArea(Font font, @Nullable Component hint) { this(UiMinecraftTheme.INSTANCE, font, hint); }
+    public UiTextArea(Font font, @Nullable Component hint) { this(() -> UiMinecraftTheme.INSTANCE, font, hint); }
 
     /** 注入主题并复用原版多行文本模型与 kit 编辑会话。 */
-    public UiTextArea(UiStyleSource theme, Font font, @Nullable Component hint) {
+    public UiTextArea(Supplier<? extends UiStyleSource> theme, Font font, @Nullable Component hint) {
         this.theme = Objects.requireNonNull(theme, "theme");
         scroll.setScrollbarWidth(SCROLLBAR_WIDTH);
         this.font = font;
@@ -314,7 +316,7 @@ public final class UiTextArea implements UiShellWidget, UiTextValue, UiLayoutSou
         scroll.push(graphics, new UiRect(innerX, innerY, innerWidth + SCROLLBAR_WIDTH, innerHeight));
         try {
             if (textField.value().isEmpty() && !isFocused() && hint != null) {
-                UiFlatText.drawWrapped(graphics, renderFont, hint, 0, 0, innerWidth, theme.surfaces().disabledText());
+                UiFlatText.drawWrapped(graphics, renderFont, hint, 0, 0, innerWidth, theme.get().surfaces().disabledText());
             } else {
                 renderLines(graphics, font, innerHeight);
             }
@@ -349,13 +351,13 @@ public final class UiTextArea implements UiShellWidget, UiTextValue, UiLayoutSou
                 if (from < to) {
                     int highlightX = renderFont.width(text.substring(begin, from));
                     int highlightWidth = renderFont.width(text.substring(from, to));
-                    theme.drawSelection(graphics, new UiRect(highlightX, lineY - 1, Math.max(1, highlightWidth), lineHeight));
+                    theme.get().drawSelection(graphics, new UiRect(highlightX, lineY - 1, Math.max(1, highlightWidth), lineHeight));
                 }
             }
-            graphics.drawString(renderFont, text.substring(begin, end), 0, lineY, theme.surfaces().inputText(), false);
+            graphics.drawString(renderFont, text.substring(begin, end), 0, lineY, theme.get().surfaces().inputText(), false);
             if (blink && cursor >= begin && cursor <= end) {
                 int cursorX = renderFont.width(text.substring(begin, cursor));
-                graphics.fill(cursorX - 1, lineY - 1, cursorX + 1, lineY + lineHeight - 1, theme.surfaces().inputText());
+                graphics.fill(cursorX - 1, lineY - 1, cursorX + 1, lineY + lineHeight - 1, theme.get().surfaces().inputText());
             }
         }
     }

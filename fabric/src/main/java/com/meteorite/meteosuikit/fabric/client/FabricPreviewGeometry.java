@@ -6,7 +6,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.function.Function;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Display;
-import com.meteorite.meteosuikit.fabric.client.mixin.DisplayPreviewAccessor;
+import com.meteorite.meteosuikit.internal.preview.mixin.DisplayPreviewAccessor;
 import org.jetbrains.annotations.NotNull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;

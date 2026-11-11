@@ -67,7 +67,7 @@ public final class KitShowcaseScreen extends UiThemedScreen implements UiLayoutS
     @Override
     protected void init() {
         if (content == null) {
-            content = new KitShowcaseContent(font, theme, this::onClose, this::nextTheme, previewFactory);
+            content = new KitShowcaseContent(font, theme::current, this::onClose, this::nextTheme, previewFactory);
             UiInputScope scope = new UiInputScope(content);
             scope.setEscape(this::onClose);
             presentation = new UiLayers(new UiLayer(scope,

@@ -6,7 +6,6 @@
  * 公开返回链随用途说明，嵌套公开契约随顶层类型维护。</p>
  * <ul>
  *   <li>{@code LightboxImage}: library；用途：灯箱要展示的一张图：稳定 ID、贴图区域（原始宽高显式给出）与可本地化标题/描述；公开库用途</li>
- *   <li>{@code UiAction}: library</li>
  *   <li>{@code UiCarousel}: library</li>
  *   <li>{@code UiControl}: library</li>
  *   <li>{@code UiControlGroup}: library；用途：复用控件实例、按层序命中并收集焦点目标；公开库用途</li>
@@ -30,6 +29,10 @@
  *   <li>{@code UiScreen}: library；用途：保留自绘屏幕的事件与生命周期桥；公开库用途</li>
  *   <li>{@code UiThemedScreen}: library</li>
  *   <li>{@code UiButtonWidget}: library</li>
+ *   <li>{@code UiFocusFollow}: library</li>
+ *   <li>{@code UiShellTarget}: library</li>
+ *   <li>{@code UiPaginationState}: library</li>
+ *   <li>{@code UiScrollContainer}: library</li>
  * </ul>
  */
 package com.meteorite.meteosuikit.api.control;

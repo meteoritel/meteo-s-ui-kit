@@ -1,8 +1,6 @@
 package com.meteorite.meteosuikit.api.style;
 
 import com.meteorite.meteosuikit.api.geometry.UiRect;
-import com.meteorite.meteosuikit.api.number.UiSliderRole;
-import com.meteorite.meteosuikit.api.number.UiSliderSkin;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
@@ -10,7 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
  * 同一主题返回稳定的不可变样式；运行时替换由根持有的 {@link UiThemeContext} 发布。
  */
 public interface UiStyleSource {
-    /** 当前来源的版本；不可变主题为零，主题上下文在替换时递增。 */
+    /** 当前样式的版本；不可变样式为零，可变实现更新自身内容时递增。 */
     default long revision() { return 0; }
     /** 普通控件的结构色。 */
     UiControlStyle controlStyle(UiControlRole role);

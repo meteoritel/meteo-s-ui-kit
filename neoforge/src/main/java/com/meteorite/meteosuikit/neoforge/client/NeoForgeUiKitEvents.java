@@ -1,6 +1,6 @@
 package com.meteorite.meteosuikit.neoforge.client;
 
-import com.meteorite.meteosuikit.internal.preview.PreviewPlatformBootstrap;
+import com.meteorite.meteosuikit.internal.client.UiKitClientLifecycle;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -15,12 +15,12 @@ public final class NeoForgeUiKitEvents {
     /** 资源和世界身份变化后释放共享绘制工作区。 */
     @SubscribeEvent
     public static void tick(ClientTickEvent.Post event) {
-        PreviewPlatformBootstrap.observe();
+        UiKitClientLifecycle.observe();
     }
 
     /** 释放库持有的 GPU 工作区。 */
     @SubscribeEvent
     public static void stopping(GameShuttingDownEvent event) {
-        PreviewPlatformBootstrap.release();
+        UiKitClientLifecycle.release();
     }
 }

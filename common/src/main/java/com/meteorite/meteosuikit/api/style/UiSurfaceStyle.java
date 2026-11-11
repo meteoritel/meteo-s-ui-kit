@@ -13,6 +13,11 @@ public record UiSurfaceStyle(int text, int secondaryText, int disabledText, int 
             0xB4374150, 0xFFF4F6FA, 0x80506A8A, 0xA8000000,
             0xF0100010, 0x505000FF, 0x5028007F, 0xFFFFFFFF, 0xFFFFFFFF);
 
+    /** 将正文、标签和弱化文字映射到表面的常态、次要与禁用文字，其余语义保持。 */
+    public UiSurfaceStyle withText(UiTextScheme scheme) {
+        return withText(scheme.body(), scheme.label(), scheme.hint());
+    }
+
     /** 替换内容文字组，其余语义色保持。 */
     public UiSurfaceStyle withText(int normal, int secondary, int disabled) {
         return new UiSurfaceStyle(normal, secondary, disabled, inputText, inputFill, inputBorder, panelFill, panelBorder,

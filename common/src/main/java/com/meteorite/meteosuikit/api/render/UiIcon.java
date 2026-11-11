@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.api.render;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,10 +18,10 @@ public sealed interface UiIcon permits UiIcon.Item, UiIcon.Sprite, UiIcon.Render
     int height();
     void render(GuiGraphics graphics, int x, int y);
     /** 按使用位置提供主题；真实物品和贴图保留自身视觉语义。 */
-    default void render(GuiGraphics graphics, int x, int y, UiStyleSource theme) { render(graphics, x, y); }
+    default void render(GuiGraphics graphics, int x, int y, Supplier<? extends UiStyleSource> theme) { render(graphics, x, y); }
 
     /** 在目标框内等比居中绘制；自绘内容按目标尺寸重绘，空框跳过。 */
-    default void renderScaled(GuiGraphics graphics, UiRect box, UiStyleSource theme) {
+    default void renderScaled(GuiGraphics graphics, UiRect box, Supplier<? extends UiStyleSource> theme) {
         if (box.width() == 0 || box.height() == 0) return;
         UiRect target = contained(this, box);
         graphics.pose().pushPose();
@@ -48,12 +50,12 @@ public sealed interface UiIcon permits UiIcon.Item, UiIcon.Sprite, UiIcon.Render
             Objects.requireNonNull(preparation);
         }
         @Override public void prepare() { preparation.run(); }
-        @Override public void render(GuiGraphics graphics, int x, int y) { render(graphics, x, y, UiMinecraftTheme.INSTANCE); }
-        @Override public void render(GuiGraphics graphics, int x, int y, UiStyleSource theme) {
+        @Override public void render(GuiGraphics graphics, int x, int y) { render(graphics, x, y, () -> UiMinecraftTheme.INSTANCE); }
+        @Override public void render(GuiGraphics graphics, int x, int y, Supplier<? extends UiStyleSource> theme) {
             painter.render(graphics, new UiRect(x, y, width, height), theme);
         }
         /** 将实际绘制框交给 painter，保留主题和目标像素尺寸。 */
-        @Override public void renderScaled(GuiGraphics graphics, UiRect box, UiStyleSource theme) {
+        @Override public void renderScaled(GuiGraphics graphics, UiRect box, Supplier<? extends UiStyleSource> theme) {
             if (box.width() == 0 || box.height() == 0) return;
             painter.render(graphics, contained(this, box), theme);
         }
@@ -63,7 +65,7 @@ public sealed interface UiIcon permits UiIcon.Item, UiIcon.Sprite, UiIcon.Render
     @FunctionalInterface
     interface ThemePainter {
         /** 在布局框内绘制图标。 */
-        void render(GuiGraphics graphics, UiRect bounds, UiStyleSource theme);
+        void render(GuiGraphics graphics, UiRect bounds, Supplier<? extends UiStyleSource> theme);
     }
 
     /** 提前登记即将展示的内容；准备工作由图标所有者按共享预算推进。 */
@@ -86,7 +88,7 @@ public sealed interface UiIcon permits UiIcon.Item, UiIcon.Sprite, UiIcon.Render
             painter.render(graphics, new UiRect(x, y, width, height));
         }
         /** 自绘内容直接按目标框重绘，避免先绘制为名义尺寸再拉伸。 */
-        @Override public void renderScaled(GuiGraphics graphics, UiRect box, UiStyleSource theme) {
+        @Override public void renderScaled(GuiGraphics graphics, UiRect box, Supplier<? extends UiStyleSource> theme) {
             if (box.width() == 0 || box.height() == 0) return;
             painter.render(graphics, contained(this, box));
         }

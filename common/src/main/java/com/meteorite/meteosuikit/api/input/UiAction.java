@@ -1,4 +1,4 @@
-package com.meteorite.meteosuikit.api.control;
+package com.meteorite.meteosuikit.api.input;
 
 /** 面板提供的点击行为；排版层只保存行为，调用方负责执行与输入优先级。 */
 @FunctionalInterface

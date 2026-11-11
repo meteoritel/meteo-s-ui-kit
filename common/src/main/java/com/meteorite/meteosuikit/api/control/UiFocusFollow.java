@@ -1,7 +1,8 @@
-package com.meteorite.meteosuikit.api.input;
+package com.meteorite.meteosuikit.api.control;
 
-import com.meteorite.meteosuikit.api.control.UiScrollView;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
+import com.meteorite.meteosuikit.api.input.UiFocusManager;
+import com.meteorite.meteosuikit.api.input.UiFocusTarget;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.jetbrains.annotations.Nullable;

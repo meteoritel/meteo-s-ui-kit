@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.samples;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.control.UiLightbox;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.geometry.UiTransform;
@@ -26,12 +28,13 @@ import java.util.List;
 /** 自定义 Content 展示文档行、图标动作和嵌套 Frame，输入提示仍来自一次 hitTest。 */
 final class KitDocumentLightboxContent implements UiLightbox.Content {
     private final UiDocument document;
-    private final UiStyleSource theme;
+    private final Supplier<? extends UiStyleSource> theme;
     private @Nullable UiInteractionSession session;
     private long themeRevision = -1;
+    private UiStyleSource appliedTheme;
     private int activations;
 
-    KitDocumentLightboxContent(Font font, UiStyleSource theme) {
+    KitDocumentLightboxContent(Font font, Supplier<? extends UiStyleSource> theme) {
         this.theme = theme;
         document = new UiDocument(TextMeasurer.of(font), false);
         rebuild();
@@ -41,9 +44,9 @@ final class KitDocumentLightboxContent implements UiLightbox.Content {
                 List.of(label("icon")), "icon", () -> activations++);
         document.setContent(List.of(new UiNode.Row(0, UiNode.NO_PARENT, icon,
                         Component.translatable(KitShowcaseContent.UI + "showcase.canvas.count", activations),
-                        theme.textColor(true), List.of(), List.of(label("row")), "row", () -> activations++),
-                new UiNode.Gap(8), new UiNode.Frame(new UiNode.FrameSpec(180, 48, theme.surfaces().panelBorder(), new UiTransform()),
-                        List.of(new UiNode.Row(label("child"), theme.textColor(true))))));
+                        theme.get().textColor(true), List.of(), List.of(label("row")), "row", () -> activations++),
+                new UiNode.Gap(8), new UiNode.Frame(new UiNode.FrameSpec(180, 48, theme.get().surfaces().panelBorder(), new UiTransform()),
+                        List.of(new UiNode.Row(label("child"), theme.get().textColor(true))))));
     }
     /** {@inheritDoc} */
     @Override public int contentWidth() { return document.contentWidth(); }
@@ -55,7 +58,7 @@ final class KitDocumentLightboxContent implements UiLightbox.Content {
     }
     /** {@inheritDoc} */
     @Override public void render(GuiGraphics graphics, Font font, UiPointer pointer) {
-        if (themeRevision != theme.revision()) { rebuild(); themeRevision = theme.revision(); }
+        if (appliedTheme != theme.get() || themeRevision != theme.get().revision()) { rebuild(); themeRevision = theme.get().revision(); appliedTheme = theme.get(); }
         document.render(graphics, font, pointer);
     }
     /** 行与图标提示按文档同一缓存解析，空白仍保留 Content 所有权。 */

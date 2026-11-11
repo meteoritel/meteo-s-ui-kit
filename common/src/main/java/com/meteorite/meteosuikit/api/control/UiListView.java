@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.api.control;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.meteorite.meteosuikit.api.input.UiPointer;
 import com.meteorite.meteosuikit.api.layout.UiRowMetrics;
@@ -61,6 +63,7 @@ public final class UiListView<T> implements UiShellWidget {
     private int rowHeight;
     private boolean rowHeightOverride;
     private long themeRevision = -1;
+    private UiStyleSource appliedTheme;
     // 选中行下标，-1 表示无选中
     private int selectedIndex = -1;
     // 一屏可见行数
@@ -81,7 +84,7 @@ public final class UiListView<T> implements UiShellWidget {
     private int lastClickIndex = -1;
 
     // 绘字字体由 render 接收，主题提供结构与行度量。
-    private final UiStyleSource theme;
+    private final Supplier<? extends UiStyleSource> theme;
 
     /** {@inheritDoc} */
     @Override
@@ -94,12 +97,12 @@ public final class UiListView<T> implements UiShellWidget {
     }
 
     /** 使用原版主题装配泛型行列表。 */
-    public UiListView(RowRenderer<T> rowRenderer) { this(UiMinecraftTheme.INSTANCE, rowRenderer); }
+    public UiListView(RowRenderer<T> rowRenderer) { this(() -> UiMinecraftTheme.INSTANCE, rowRenderer); }
 
     /** 行模型与绘制由调用方提供，视口、选择与焦点由列表维护。 */
-    public UiListView(UiStyleSource theme, RowRenderer<T> rowRenderer) {
+    public UiListView(Supplier<? extends UiStyleSource> theme, RowRenderer<T> rowRenderer) {
         this.theme = Objects.requireNonNull(theme, "theme");
-        this.rowHeight = this.theme.rowHeight();
+        this.rowHeight = this.theme.get().rowHeight();
         scrollView.setStep(Math.max(1, rowHeight * 2));
         this.rowRenderer = rowRenderer;
     }
@@ -235,10 +238,10 @@ public final class UiListView<T> implements UiShellWidget {
 
     // 根据数据量与视口更新滚动范围
     private void refreshTheme() {
-        if (themeRevision == theme.revision()) return;
-        if (!rowHeightOverride) rowHeight = theme.rowHeight();
+        if (appliedTheme == theme.get() && themeRevision == theme.get().revision()) return;
+        if (!rowHeightOverride) rowHeight = theme.get().rowHeight();
         updateContentSize();
-        themeRevision = theme.revision();
+        themeRevision = theme.get().revision(); appliedTheme = theme.get();
     }
 
     private void updateContentSize() {
@@ -338,12 +341,12 @@ public final class UiListView<T> implements UiShellWidget {
         if (!isVisible()) {
             return;
         }
-        if (!chipRows) theme.drawInset(graphics, bounds());
+        if (!chipRows) theme.get().drawInset(graphics, bounds());
         UiRect viewport = scrollView.viewport();
         if (items.isEmpty()) {
             // 空文案用主要文本色：在内凹底 SLOT_FILL 上 textSecondary 的对比度不足
             UiFlatText.drawCentered(graphics, font, emptyMessage, viewport.x() + viewport.width() / 2,
-                    viewport.y() + Math.max(0, viewport.height() / 2 - 4), theme.surfaces().text());
+                    viewport.y() + Math.max(0, viewport.height() / 2 - 4), theme.get().surfaces().text());
             return;
         }
         int hoveredIndex = pointer.allowed() && pointer.hit() != null ? pointer.hit().rowIndex(this) : -1;
@@ -356,14 +359,14 @@ public final class UiListView<T> implements UiShellWidget {
             }
             UiRect row = new UiRect(0, rowY, rowWidth, rowContentHeight());
             if (chipRows) {
-                theme.drawChip(graphics, row, i == selectedIndex, i == hoveredIndex);
+                theme.get().drawChip(graphics, row, i == selectedIndex, i == hoveredIndex);
             } else if (i == selectedIndex) {
-                theme.drawSelection(graphics, row);
-                if (selectionMarkerVisible) theme.drawSelectMarker(graphics, row);
+                theme.get().drawSelection(graphics, row);
+                if (selectionMarkerVisible) theme.get().drawSelectMarker(graphics, row);
             } else if (i == hoveredIndex) {
-                graphics.fill(row.x(), row.y(), row.right(), row.bottom(), theme.controlStyle(UiControlRole.SECONDARY).hoverBackground());
+                graphics.fill(row.x(), row.y(), row.right(), row.bottom(), theme.get().controlStyle(UiControlRole.SECONDARY).hoverBackground());
             }
-            int markerWidth = !chipRows && selectionMarkerVisible ? theme.selectMarkerWidth() : 0;
+            int markerWidth = !chipRows && selectionMarkerVisible ? theme.get().selectMarkerWidth() : 0;
             UiRect textRow = new UiRect(row.x() + markerWidth, row.y(),
                     Math.max(0, row.width() - markerWidth), row.height());
             rowRenderer.renderRow(graphics, font, items.get(i), i, textRow, i == selectedIndex, i == hoveredIndex, isFocused());

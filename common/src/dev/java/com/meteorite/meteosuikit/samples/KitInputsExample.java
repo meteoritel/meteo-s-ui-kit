@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.samples;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.control.UiWidget;
 import com.meteorite.meteosuikit.api.control.UiTextInput;
 import com.meteorite.meteosuikit.api.control.UiTextArea;
@@ -15,7 +17,7 @@ import com.meteorite.meteosuikit.api.number.UiNumberField;
 import com.meteorite.meteosuikit.api.number.UiNumberPolicy;
 import com.meteorite.meteosuikit.api.number.UiNumbers;
 import com.meteorite.meteosuikit.api.number.UiScalarSlider;
-import com.meteorite.meteosuikit.api.number.UiSliderRole;
+import com.meteorite.meteosuikit.api.style.UiSliderRole;
 import com.meteorite.meteosuikit.api.style.UiStyleSource;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -32,7 +34,7 @@ final class KitInputsExample implements UiWidget, UiLayoutSource {
     private static final int GUTTER = 12;
     private static final int STATE_LINES = 2;
     private final Font font;
-    private final UiStyleSource theme;
+    private final Supplier<? extends UiStyleSource> theme;
     private final UiTextInput text;
     private final UiTextArea area;
     private final UiTextInput precise;
@@ -50,7 +52,7 @@ final class KitInputsExample implements UiWidget, UiLayoutSource {
 
     private record Caption(Component text, int x, int y) {}
 
-    KitInputsExample(UiStyleSource theme, Font font) {
+    KitInputsExample(Supplier<? extends UiStyleSource> theme, Font font) {
         this.theme = theme;
         this.font = font;
         text = new UiTextInput(theme, font, label("text")).setMaxLength(32).setAccessibleName(label("text"));
@@ -67,7 +69,7 @@ final class KitInputsExample implements UiWidget, UiLayoutSource {
         number.setInputWidth(56);
         number.acceptText();
         list = new UiListView<>(theme, (graphics, rowFont, item, index, row, selected, hovered, focused) ->
-                graphics.drawString(rowFont, item, row.x() + 2, row.y() + 3, theme.textColor(true), false));
+                graphics.drawString(rowFont, item, row.x() + 2, row.y() + 3, theme.get().textColor(true), false));
         list.setItems(IntStream.range(0, 30).mapToObj(index ->
                 (Component) Component.translatable(KitShowcaseContent.UI + "list.item", index)).toList());
         list.setSelectedIndex(0);
@@ -112,7 +114,7 @@ final class KitInputsExample implements UiWidget, UiLayoutSource {
     }
 
     @Override public void render(GuiGraphics graphics, Font font, UiPointer pointer) {
-        int captionColor = theme.surfaces().secondaryText();
+        int captionColor = theme.get().surfaces().secondaryText();
         for (Caption caption : captions) {
             graphics.drawString(font, caption.text(), caption.x(), caption.y(), captionColor, false);
         }
@@ -120,7 +122,7 @@ final class KitInputsExample implements UiWidget, UiLayoutSource {
         graphics.drawString(font, label("inputs.state"), stateBlock.x(), stateBlock.y(), captionColor, false);
         int lineY = stateBlock.y() + font.lineHeight + 2;
         for (String line : stateLines) {
-            graphics.drawString(font, line, stateBlock.x(), lineY, theme.textColor(true), false);
+            graphics.drawString(font, line, stateBlock.x(), lineY, theme.get().textColor(true), false);
             lineY += font.lineHeight + 2;
         }
     }

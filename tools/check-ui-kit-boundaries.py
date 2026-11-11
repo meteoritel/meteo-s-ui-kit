@@ -112,7 +112,7 @@ def contract_closure(roots: set[str], graph: dict[str, set[str]]) -> set[str]:
     return reachable
 
 
-def check_exports(sources: list[Source], index: TypeIndex, kit: Path, result: CheckResult, kit_package: str = KIT_PACKAGE) -> None:
+def check_exports(sources: list[Source], index: TypeIndex, root: Path, kit: Path, result: CheckResult, kit_package: str = KIT_PACKAGE) -> None:
     """宿主只引用 api；api 的父类型和公开/protected 声明保留在导出面内。"""
     api_package = kit_package + ".api"
     internal_package = kit_package + ".internal"
@@ -120,8 +120,9 @@ def check_exports(sources: list[Source], index: TypeIndex, kit: Path, result: Ch
         if not source.path.is_relative_to(kit):
             for line, target in index.references(source):
                 if (target.startswith(internal_package + ".")
-                        and not (source.module in {"fabric", "neoforge"}
-                                 and target == kit_package + ".internal.preview.PreviewPlatformBootstrap")):
+                        and not (kit.is_relative_to(root)
+                                 and source.module in {"fabric", "neoforge"}
+                                 and (source.package + ".").startswith(kit_package + "." + source.module + ".client."))):
                     result.findings.append(Finding(source.relative, "宿主只允许引用 kit.api", target, line))
         elif source.package == api_package or source.package.startswith(api_package + "."):
             for start_line, header in exported_headers(source):
@@ -184,12 +185,19 @@ def check(root: Path, kit_path: str = KIT_PATH, kit_package: str = KIT_PACKAGE,
                     if package == api_package + ".geometry" and target.startswith((api_package + ".input.",
                             api_package + ".control.", api_package + ".render.", internal_package + ".")):
                         result.findings.append(Finding(relative, "geometry 只持有几何，不引用输入或绘制实现", target, line.number))
+                    forbidden = (("input", "control"), ("layout", "control"), ("style", "number"))
+                    for owner, dependency in forbidden:
+                        if package == api_package + "." + owner and target.startswith(api_package + "." + dependency + "."):
+                            result.findings.append(Finding(relative, owner + " 不反向引用 " + dependency, target, line.number))
                     continue
                 if line.imported:
                     reason = next(("禁用依赖 " + prefix for prefix in FORBIDDEN_PREFIXES if target.startswith(prefix)), None)
                     if reason is None and target.startswith(host_prefix + "."):
                         reason = "本模组非 kit 包"
-                    if reason is None and target.casefold() not in ALLOWED_CLASS_KEYS and not target.startswith(ALLOWED_PREFIXES):
+                    mixin_annotation = (package == internal_package + ".preview.mixin" and target in {
+                        "org.spongepowered.asm.mixin.Mixin", "org.spongepowered.asm.mixin.gen.Accessor",
+                        "org.spongepowered.asm.mixin.gen.Invoker"})
+                    if reason is None and not mixin_annotation and target.casefold() not in ALLOWED_CLASS_KEYS and not target.startswith(ALLOWED_PREFIXES):
                         reason = "白名单外 import"
                     detail = line.text.strip()
                 else:
@@ -222,7 +230,7 @@ def check(root: Path, kit_path: str = KIT_PATH, kit_package: str = KIT_PACKAGE,
         if (str(directory).casefold(), name.casefold()) not in roles:
             unregistered += 1
             result.findings.append(Finding(str(directory) + "|" + name, "公开面", "角色缺失"))
-    check_exports(sources, index, kit, result, kit_package)
+    check_exports(sources, index, root, kit, result, kit_package)
     consumers = production_consumers(sources, index, kit)
     graph = exported_type_graph(sources, index, kit, kit_package)
     reachable = contract_closure(set(consumers) & graph.keys(), graph)

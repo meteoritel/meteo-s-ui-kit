@@ -3,7 +3,6 @@ package com.meteorite.meteosuikit.api.input;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 
 import net.minecraft.network.chat.Component;
-import com.meteorite.meteosuikit.api.control.UiWidget;
 
 import java.util.List;
 
@@ -17,8 +16,7 @@ public interface UiFocusTarget extends UiInputTarget {
      * 控件声明的焦点能力与当前可用性共同决定资格。
      */
     default boolean canFocus() {
-        return !(this instanceof UiWidget widget)
-                || widget.isVisible() && widget.isEnabled();
+        return true;
     }
 
     /**

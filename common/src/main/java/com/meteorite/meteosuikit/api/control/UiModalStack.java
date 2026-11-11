@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.api.control;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.input.UiFocusManager;
 import com.meteorite.meteosuikit.api.input.UiHistoryShortcut;
 import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
@@ -52,15 +54,15 @@ public final class UiModalStack implements UiWidget, UiLayoutSource {
     }
 
     // 注入的宿主主题
-    private final UiStyleSource theme;
+    private final Supplier<? extends UiStyleSource> theme;
 
     private UiFocusManager.Listener focusListener = (previous, current) -> { };
 
     /** 创建原版主题模态栈。 */
-    public UiModalStack() { this(UiMinecraftTheme.INSTANCE); }
+    public UiModalStack() { this(() -> UiMinecraftTheme.INSTANCE); }
 
     /** 创建共享根主题的模态栈。 */
-    public UiModalStack(UiStyleSource theme) {
+    public UiModalStack(Supplier<? extends UiStyleSource> theme) {
         this.theme = Objects.requireNonNull(theme, "theme");
     }
 
@@ -250,7 +252,7 @@ public final class UiModalStack implements UiWidget, UiLayoutSource {
     }
 
     private int dimColor() {
-        int color = theme.surfaces().modalDim();
+        int color = theme.get().surfaces().modalDim();
         int alpha = ((color >>> 24) & 0xFF) * (FADE_TICKS - fadeTicks) / FADE_TICKS;
         return (alpha << 24) | (color & 0x00FFFFFF);
     }

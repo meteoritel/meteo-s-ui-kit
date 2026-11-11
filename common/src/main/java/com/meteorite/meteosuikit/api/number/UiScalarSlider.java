@@ -1,12 +1,20 @@
 package com.meteorite.meteosuikit.api.number;
 
+import java.util.function.Supplier;
+
+import com.meteorite.meteosuikit.api.style.UiSliderPainter;
+
+import com.meteorite.meteosuikit.api.style.UiSliderStyle;
+
+import com.meteorite.meteosuikit.api.style.UiSliderSkin;
+
+import com.meteorite.meteosuikit.api.style.UiSliderRole;
+
 import com.meteorite.meteosuikit.api.input.UiPointer;
 import com.meteorite.meteosuikit.api.control.UiWidgetShell;
+import com.meteorite.meteosuikit.api.control.UiShellTarget;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
-import com.meteorite.meteosuikit.api.input.UiFocusState;
-import com.meteorite.meteosuikit.api.input.UiFocusTarget;
 import com.meteorite.meteosuikit.api.input.UiInputContext;
-import com.meteorite.meteosuikit.api.input.UiInputTarget;
 import com.meteorite.meteosuikit.api.input.UiInteractionSession;
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.meteorite.meteosuikit.api.text.TextScroll;
@@ -47,7 +55,7 @@ import org.lwjgl.glfw.GLFW;
  * <p>本类只依赖 kit 与客户端通用类型：默认绘制使用 {@link UiSliderPainter} 与 {@link UiSliderStyle}，
  * 宿主可替换成主题化或贴图实现。</p>
  */
-public final class UiScalarSlider implements UiFocusTarget, UiInputTarget, UiInteractionSession.Target {
+public final class UiScalarSlider implements UiShellTarget, UiInteractionSession.Target {
 
     /**
      * 默认显示小数位数：整数按 {@link UiNumbers} 的整数直出规则显示。
@@ -61,13 +69,16 @@ public final class UiScalarSlider implements UiFocusTarget, UiInputTarget, UiInt
     private static final int TEXT_GAP = 4;
 
     private final UiWidgetShell shell = new UiWidgetShell(this, this::endInteraction);
+
+    /** 真实焦点与资格由同一个状态壳提供。 */
+    @Override public UiWidgetShell shell() { return shell; }
     private final SliderInteraction<Double> interaction = new SliderInteraction<>(this,
             Double::isFinite, (first, second) -> first.doubleValue() == second.doubleValue(),
             this::value, restored -> this.value = restored, this::interactionListener);
 
     private UiNumberPolicy policy;
     private UiSliderWindow window;
-    private UiStyleSource theme = UiMinecraftTheme.INSTANCE;
+    private Supplier<? extends UiStyleSource> theme = () -> UiMinecraftTheme.INSTANCE;
     private UiSliderRole role = UiSliderRole.COMPACT;
     private final ThemeValueCache<UiSliderRole, UiSliderSkin> themeSkin = new ThemeValueCache<>(UiStyleSource::sliderSkin);
     private UiSliderStyle style = UiMinecraftTheme.INSTANCE.sliderSkin(role).style();
@@ -117,7 +128,7 @@ public final class UiScalarSlider implements UiFocusTarget, UiInputTarget, UiInt
     }
 
     /** 绑定根主题与档位；绑定变化清除局部样式与 painter 覆盖，相同绑定保持覆盖。 */
-    public UiScalarSlider setTheme(UiStyleSource theme, UiSliderRole role) {
+    public UiScalarSlider setTheme(Supplier<? extends UiStyleSource> theme, UiSliderRole role) {
         if (this.theme == theme && this.role == role) return this;
         this.theme = Objects.requireNonNull(theme, "theme");
         this.role = Objects.requireNonNull(role, "role");
@@ -229,20 +240,10 @@ public final class UiScalarSlider implements UiFocusTarget, UiInputTarget, UiInt
         return this;
     }
 
-    /** 当前可用性由共享状态壳持有。 */
-    public boolean isEnabled() {
-        return shell.isEnabled();
-    }
-
     /** 禁用时立即结束进行中的交互并回退预览 */
     public UiScalarSlider setEnabled(boolean next) {
         shell.setEnabled(next);
         return this;
-    }
-
-    /** 当前可见性由共享状态壳持有。 */
-    public boolean isVisible() {
-        return shell.isVisible();
     }
 
     /** 隐藏时立即结束进行中的交互并回退预览 */
@@ -278,17 +279,6 @@ public final class UiScalarSlider implements UiFocusTarget, UiInputTarget, UiInt
             }
         }
         return Component.literal(UiNumbers.plain(value, VALUE_DECIMALS));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public UiRect bounds() {
-        return shell.bounds();
-    }
-
-    /** 更新 GUI 逻辑矩形；负宽高按零处理，同步当前布局几何。 */
-    public void setBounds(int x, int y, int width, int height) {
-        shell.setBounds(x, y, width, height);
     }
 
     /** 手柄中心可移动的轨道左端，使用当前皮肤宽度。 */
@@ -541,18 +531,6 @@ public final class UiScalarSlider implements UiFocusTarget, UiInputTarget, UiInt
     @Override
     public void interactionEnded(UiInteractionSession.EndReason reason) {
         interaction.finish(reason);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public UiFocusState focusState() {
-        return shell.focusState();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public boolean canFocus() {
-        return shell.canFocus();
     }
 
     @Override

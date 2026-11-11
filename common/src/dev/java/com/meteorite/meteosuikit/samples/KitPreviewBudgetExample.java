@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.samples;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
 import com.meteorite.meteosuikit.api.preview.PreviewBudget;
@@ -33,7 +35,7 @@ public final class KitPreviewBudgetExample implements AutoCloseable {
             new PreviewBudget(2048, 4096, 4096, 4, 1, 750_000),
             new PreviewBudget(64, 128, 128, 4, 1, 750_000),
             new PreviewBudget(8L * 1024 * 1024, 32L * 1024 * 1024, 32L * 1024 * 1024, 4, 2, 1_500_000));
-    private final UiStyleSource theme;
+    private final Supplier<? extends UiStyleSource> theme;
     private final Function<PreviewBudget, PreviewScenes> factory;
     private final List<PreviewSubject> subjects = List.of(
             new PreviewSubject.Block(Blocks.STONE.defaultBlockState(), null),
@@ -50,7 +52,7 @@ public final class KitPreviewBudgetExample implements AutoCloseable {
     private PreviewScene capacityRejected;
 
     /** 工厂注入平台 Geometry 与 executor；本例只负责自己的场景所有者。 */
-    public KitPreviewBudgetExample(UiStyleSource theme, Function<PreviewBudget, PreviewScenes> factory) {
+    public KitPreviewBudgetExample(Supplier<? extends UiStyleSource> theme, Function<PreviewBudget, PreviewScenes> factory) {
         this.theme = theme;
         this.factory = factory;
     }
@@ -80,8 +82,8 @@ public final class KitPreviewBudgetExample implements AutoCloseable {
             int columnWidth = Math.max(40, (contentWidth - 2 * COLUMN_GAP) / 3);
             int slotsBottom = (mode == CAPACITY_MODE ? capacityY : memoryY) - WorkbenchLayout.GAP;
             int slotHeight = Math.max(8, (slotsBottom - columnsTop - 30 - 8) / 2);
-            int textColor = theme.surfaces().text();
-            int secondary = theme.surfaces().secondaryText();
+            int textColor = theme.get().surfaces().text();
+            int secondary = theme.get().surfaces().secondaryText();
             Component heading = Component.translatable(UI + "mode", mode, page, generation);
             graphics.drawString(font, WorkbenchLayout.ellipsize(font, heading, contentWidth), left, headingY, textColor, false);
             nodes.add(row(new UiRect(left, headingY, contentWidth, font.lineHeight), heading));
@@ -97,10 +99,10 @@ public final class KitPreviewBudgetExample implements AutoCloseable {
                 int x = left + index * (columnWidth + COLUMN_GAP);
                 UiRect slot = new UiRect(x, columnsTop + 30, columnWidth, slotHeight);
                 UiRect second = new UiRect(x, slot.bottom() + 8, columnWidth, slotHeight);
-                theme.drawInset(graphics, slot);
-                theme.drawInset(graphics, second);
+                theme.get().drawInset(graphics, slot);
+                theme.get().drawInset(graphics, second);
                 UiIcon marker = new UiIcon.Rendered(slot.width(), slot.height(), (g, box) ->
-                        g.renderOutline(box.x(), box.y(), box.width(), box.height(), theme.surfaces().panelBorder()));
+                        g.renderOutline(box.x(), box.y(), box.width(), box.height(), theme.get().surfaces().panelBorder()));
                 scenes.icon(id, subject, slot.height(), new PreviewMotion(45, 0), UiSceneStyle.icon(), marker)
                         .render(graphics, slot.x(), slot.y());
                 PreviewScene scene = scenes.request(id, subject);

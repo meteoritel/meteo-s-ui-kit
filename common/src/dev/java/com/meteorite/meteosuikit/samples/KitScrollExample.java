@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.samples;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.control.UiScrollView;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.input.UiInputContext;
@@ -16,12 +18,12 @@ import java.util.List;
 
 /** 嵌套视口共享屏幕坐标，展示滚轮余量传播与纵向轨道捕获。 */
 final class KitScrollExample implements UiInputTarget {
-    private final UiStyleSource theme;
+    private final Supplier<? extends UiStyleSource> theme;
     private final UiScrollView outer = new UiScrollView();
     private final UiScrollView inner = new UiScrollView();
     private int rows = 20;
 
-    KitScrollExample(UiStyleSource theme) {
+    KitScrollExample(Supplier<? extends UiStyleSource> theme) {
         this.theme = theme;
         outer.setContentHeight(400);
         outer.setScrollbarVisible(true);
@@ -56,19 +58,19 @@ final class KitScrollExample implements UiInputTarget {
         UiRect box = outer.viewport();
         graphics.enableScissor(box.x(), box.y(), box.right(), box.bottom());
         try {
-            theme.drawInset(graphics, box);
+            theme.get().drawInset(graphics, box);
             for (int i = 0; i < rows; i++) {
                 graphics.drawString(font, Component.translatable(KitShowcaseContent.UI + "list.item", i),
-                        box.x() + 4, outer.toScreenY(i * 20), theme.surfaces().inputText(), false);
+                        box.x() + 4, outer.toScreenY(i * 20), theme.get().surfaces().inputText(), false);
             }
             UiRect nested = inner.viewport();
-            theme.drawInset(graphics, nested);
-            graphics.renderOutline(nested.x() - 1, nested.y() - 1, nested.width() + 2, nested.height() + 2, theme.surfaces().panelBorder());
+            theme.get().drawInset(graphics, nested);
+            graphics.renderOutline(nested.x() - 1, nested.y() - 1, nested.width() + 2, nested.height() + 2, theme.get().surfaces().panelBorder());
             inner.push(graphics);
             try {
                 for (int i = 0; i < 20; i++) {
                     graphics.drawString(font, Component.translatable(KitShowcaseContent.UI + "list.item", i),
-                            2, i * 12, theme.surfaces().inputText(), false);
+                            2, i * 12, theme.get().surfaces().inputText(), false);
                 }
             } finally {
                 inner.pop(graphics);

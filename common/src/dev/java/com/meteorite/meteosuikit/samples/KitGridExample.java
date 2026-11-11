@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.samples;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.control.UiWidget;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.input.UiInputContext;
@@ -28,14 +30,14 @@ final class KitGridExample implements UiWidget, UiLayoutSource {
     private static final int HEADER_HEIGHT = 20;
     static final int CONTENT_HEIGHT = HEADER_HEIGHT + 3 * CELL_HEIGHT + 2 * GAP;
 
-    private final UiStyleSource theme;
+    private final Supplier<? extends UiStyleSource> theme;
     private final List<Component> labels = new ArrayList<>();
     private UiRect bounds = new UiRect(0, 0, 0, 0);
     private UiGridMetrics grid = new UiGridMetrics(COLUMNS, 1, CELL_HEIGHT, GAP, GAP);
     private List<UiRect> cells = List.of();
     private Component selection = text("hint");
 
-    KitGridExample(UiStyleSource theme) {
+    KitGridExample(Supplier<? extends UiStyleSource> theme) {
         this.theme = theme;
         for (int index = 0; index < ITEM_COUNT; index++) labels.add(text("cell", index));
     }
@@ -82,13 +84,13 @@ final class KitGridExample implements UiWidget, UiLayoutSource {
     @Override public void render(GuiGraphics graphics, Font font, UiPointer pointer) {
         UiRenderLayers.enableScissor(graphics, bounds);
         try {
-            graphics.drawString(font, selection, bounds.x(), bounds.y(), theme.textColor(true), false);
+            graphics.drawString(font, selection, bounds.x(), bounds.y(), theme.get().textColor(true), false);
             int hovered = pointer.allowed() ? indexAt(pointer.x(), pointer.y()) : -1;
             for (int index = 0; index < cells.size(); index++) {
                 UiRect cell = cells.get(index);
-                theme.drawChip(graphics, cell, false, index == hovered);
+                theme.get().drawChip(graphics, cell, false, index == hovered);
                 graphics.drawCenteredString(font, labels.get(index), cell.x() + cell.width() / 2,
-                        cell.y() + (cell.height() - font.lineHeight) / 2, theme.textColor(true));
+                        cell.y() + (cell.height() - font.lineHeight) / 2, theme.get().textColor(true));
             }
         } finally {
             UiRenderLayers.disableScissor(graphics);

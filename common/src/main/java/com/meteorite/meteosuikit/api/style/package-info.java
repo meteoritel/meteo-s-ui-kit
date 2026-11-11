@@ -1,5 +1,5 @@
 /**
- * 宿主样式注入契约、控件角色与不可变结构样式；滑块皮肤由 number 能力提供。
+ * 宿主样式注入契约、控件角色、不可变结构样式与滑块绘制策略。
  *
  * <p>本目录的 public 类型是受支持的公开入口；包内 helper 由 Java 可见性保护。
  * library 表示受支持的公开库契约，具体用途与所有权见对应类型 JavaDoc。
@@ -20,6 +20,12 @@
  *   <li>{@code UiThemes}: library；用途：宿主组合完整主题；公开库用途</li>
  *   <li>{@code UiSkinImages}: library；用途：sprite/九宫格状态皮肤工厂；公开库用途</li>
  *   <li>{@code UiThemePublication}: library</li>
+ *   <li>{@code UiSliderRole}: library</li>
+ *   <li>{@code UiSliderSkin}: library</li>
+ *   <li>{@code UiSliderStyle}: library</li>
+ *   <li>{@code UiSliderPainter}: library；完整绘制与独立手柄绘制均接收真实 Frame，手柄状态按端点提供</li>
+ *   <li>{@code PixelSliderPainter}: library</li>
+ *   <li>{@code UiTextScheme}: library</li>
  * </ul>
  */
 package com.meteorite.meteosuikit.api.style;

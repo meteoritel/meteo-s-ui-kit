@@ -1,10 +1,6 @@
 package com.meteorite.meteosuikit.api.style;
 
 import com.meteorite.meteosuikit.api.geometry.UiRect;
-import com.meteorite.meteosuikit.api.number.UiSliderRole;
-import com.meteorite.meteosuikit.api.number.UiSliderSkin;
-import com.meteorite.meteosuikit.api.number.UiSliderStyle;
-import com.meteorite.meteosuikit.api.number.UiSliderPainter;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 

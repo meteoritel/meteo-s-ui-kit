@@ -2,6 +2,7 @@ package com.meteorite.meteosuikit.internal.style;
 
 import com.meteorite.meteosuikit.api.style.UiStyleSource;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 /** 控件实例私有的单项主题解析缓存；布局与局部覆盖由控件维护。 */
 public final class ThemeValueCache<R, V> {
@@ -15,7 +16,8 @@ public final class ThemeValueCache<R, V> {
     public ThemeValueCache(BiFunction<UiStyleSource, R, V> resolver) { this.resolver = resolver; }
 
     /** 来源使用身份比较；角色由所属控件的稳定角色对象提供。 */
-    public V resolve(UiStyleSource source, R role) {
+    public V resolve(Supplier<? extends UiStyleSource> supplier, R role) {
+        UiStyleSource source = supplier.get();
         long revision = source.revision();
         if (this.source != source || this.role != role || this.revision != revision) {
             value = resolver.apply(source, role);

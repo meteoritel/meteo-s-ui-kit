@@ -5,25 +5,18 @@
  * library 表示受支持的公开库契约，具体用途与所有权见对应类型 JavaDoc。
  * 公开返回链随用途说明，嵌套公开契约随顶层类型维护。</p>
  * <ul>
- *   <li>{@code PixelSliderPainter}: library</li>
  *   <li>{@code UiCyclicRange}: library</li>
  *   <li>{@code UiLinkedValues}: library</li>
  *   <li>{@code UiNumberField}: library</li>
  *   <li>{@code UiNumberPolicy}: library</li>
  *   <li>{@code UiNumbers}: library</li>
  *   <li>{@code UiCyclicRangeValue}: library</li>
- *   <li>{@code UiRangeControl}: library</li>
  *   <li>{@code UiRangeEnd}: library</li>
  *   <li>{@code UiRangeSlider}: library</li>
  *   <li>{@code UiRangeValue}: library</li>
  *   <li>{@code UiScalarSlider}: library</li>
- *   <li>{@code UiSliderPainter}: library；完整绘制与独立手柄绘制均接收真实 Frame，手柄状态按端点提供</li>
- *   <li>{@code UiSliderRole}: library</li>
- *   <li>{@code UiSliderSkin}: library</li>
- *   <li>{@code UiSliderStyle}: library</li>
  *   <li>{@code UiSliderWindow}: library</li>
  *   <li>{@code UiValueInteraction}: library</li>
- *   <li>{@code UiValueTextBinding}: library</li>
  * </ul>
  */
 package com.meteorite.meteosuikit.api.number;

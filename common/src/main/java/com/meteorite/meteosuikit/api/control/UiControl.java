@@ -1,5 +1,9 @@
 package com.meteorite.meteosuikit.api.control;
 
+import java.util.function.Supplier;
+
+import com.meteorite.meteosuikit.api.input.UiAction;
+
 import com.meteorite.meteosuikit.api.render.UiRenderLayers;
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.meteorite.meteosuikit.api.input.UiPointer;
@@ -45,7 +49,7 @@ public final class UiControl implements UiButtonWidget, UiShellWidget, UiInterac
     @Nullable
     private UiAction action;
     private UiPointerHit.TextTooltip target = new UiPointerHit.TextTooltip(bounds(), List.of());
-    private UiStyleSource theme = UiMinecraftTheme.INSTANCE;
+    private Supplier<? extends UiStyleSource> theme = () -> UiMinecraftTheme.INSTANCE;
     private UiControlRole role = UiControlRole.SECONDARY;
     private final ThemeValueCache<UiControlRole, UiControlSkin> themeSkin = new ThemeValueCache<>(UiStyleSource::controlSkin);
     private UiControlSkin skin = UiMinecraftTheme.INSTANCE.controlSkin(UiControlRole.SECONDARY);
@@ -109,12 +113,12 @@ public final class UiControl implements UiButtonWidget, UiShellWidget, UiInterac
 
     /** 使用主题文字色配置内容，保留皮肤与交互状态。 */
     public void configure(Font font, Component label, @Nullable UiIcon icon, List<Component> tooltip, @Nullable UiAction action) {
-        configure(font, label, theme.controlTextColor(role), icon, tooltip, action);
+        configure(font, label, theme.get().controlTextColor(role), icon, tooltip, action);
         colorOverride = false;
     }
 
     /** 绑定根主题；显式皮肤、结构与文字覆盖继续有效。 */
-    public void setTheme(UiStyleSource theme, UiControlRole role) {
+    public void setTheme(Supplier<? extends UiStyleSource> theme, UiControlRole role) {
         this.theme = Objects.requireNonNull(theme, "theme");
         this.role = Objects.requireNonNull(role, "role");
         themeSkin.invalidate();
@@ -245,6 +249,9 @@ public final class UiControl implements UiButtonWidget, UiShellWidget, UiInterac
         return shell.canFocus();
     }
 
+    /** 普通按钮与共享状态壳使用同一个焦点资格。 */
+    @Override public boolean canFocus() { return shell.canFocus(); }
+
     /**
      * 显式声明是否参与焦点导航，独立于点击动作。
      */
@@ -368,7 +375,7 @@ public final class UiControl implements UiButtonWidget, UiShellWidget, UiInterac
     public void renderFocusOutline(GuiGraphics graphics) {
         refreshTheme();
         if (!styleOverride && skinOverride == null) {
-            theme.drawFocusOutline(graphics, bounds());
+            theme.get().drawFocusOutline(graphics, bounds());
             return;
         }
         int outline = style.focusOutline();

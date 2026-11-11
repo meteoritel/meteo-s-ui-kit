@@ -1,8 +1,5 @@
 package com.meteorite.meteosuikit.api.style;
 
-import com.meteorite.meteosuikit.api.number.UiSliderRole;
-import com.meteorite.meteosuikit.api.number.UiSliderSkin;
-
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;

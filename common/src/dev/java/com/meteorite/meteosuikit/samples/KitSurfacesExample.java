@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.samples;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.control.LightboxImage;
 import com.meteorite.meteosuikit.api.control.UiControlGroup;
 import com.meteorite.meteosuikit.api.control.UiFloatingPanel;
@@ -48,7 +50,7 @@ final class KitSurfacesExample implements UiWidget, UiLayoutSource {
     private static final int SURFACE_COLUMNS = 7;
     private final List<UiRect> surfaceCells = new ArrayList<>();
     private final Font font;
-    private final UiStyleSource theme;
+    private final Supplier<? extends UiStyleSource> theme;
     private final UiDocument document;
     private final UiDocument unprofiled;
     private final UiFloatingPanel panel;
@@ -74,13 +76,14 @@ final class KitSurfacesExample implements UiWidget, UiLayoutSource {
     private boolean previousValid = true;
     private long revision;
     private long themeRevision = -1;
+    private UiStyleSource appliedTheme;
 
-    KitSurfacesExample(UiStyleSource theme, Font font) {
+    KitSurfacesExample(Supplier<? extends UiStyleSource> theme, Font font) {
         this.theme = theme;
         this.font = font;
         document = new UiDocument(TextMeasurer.of(font), true);
         unprofiled = new UiDocument(TextMeasurer.of(font), false);
-        unprofiled.setContent(List.of(new UiNode.Row(label("doc.disabled"), theme.textColor(true))));
+        unprofiled.setContent(List.of(new UiNode.Row(label("doc.disabled"), theme.get().textColor(true))));
         panel = new UiFloatingPanel(font, label("panel"));
         panel.setTheme(theme);
         panel.setContent(new UiFloatingPanel.Content() {
@@ -124,7 +127,7 @@ final class KitSurfacesExample implements UiWidget, UiLayoutSource {
         UiIcon sprite = new UiIcon.Sprite(texture, 0, 0, 16, 16, 16, 16);
         UiIcon item = new UiIcon.Item(new ItemStack(Items.GOLD_INGOT));
         UiIcon rendered = new UiIcon.Rendered(56, 32, (graphics, box) -> {
-            theme.drawInset(graphics, box);
+            theme.get().drawInset(graphics, box);
             int iconWidth = Math.max(0, box.width() / 2 - 4);
             int iconHeight = Math.max(0, box.height() - 4);
             sprite.renderScaled(graphics, new UiRect(box.x() + 2, box.y() + 2, iconWidth, iconHeight), theme);
@@ -137,12 +140,12 @@ final class KitSurfacesExample implements UiWidget, UiLayoutSource {
         actions.obtain(key).configure(font, label(key), null, List.of(), action::run);
     }
     private void rebuildDocument() {
-        document.setContent(++revision, () -> List.of(new UiNode.Row(label("doc.root"), theme.textColor(true)),
+        document.setContent(++revision, () -> List.of(new UiNode.Row(label("doc.root"), theme.get().textColor(true)),
                 new UiNode.Row(12, 0, Component.translatable(KitShowcaseContent.UI + "showcase.doc.page", page),
-                        theme.textColor(true), List.of(), List.of(label("doc.child")), page, null),
-                new UiNode.Gap(8), new UiNode.Divider(theme.surfaces().panelBorder()),
-                new UiNode.Frame(new UiNode.FrameSpec(150, 42, theme.surfaces().panelBorder(), new UiTransform()),
-                        List.of(new UiNode.Row(label("doc.child"), theme.textColor(true))))));
+                        theme.get().textColor(true), List.of(), List.of(label("doc.child")), page, null),
+                new UiNode.Gap(8), new UiNode.Divider(theme.get().surfaces().panelBorder()),
+                new UiNode.Frame(new UiNode.FrameSpec(150, 42, theme.get().surfaces().panelBorder(), new UiTransform()),
+                        List.of(new UiNode.Row(label("doc.child"), theme.get().textColor(true))))));
     }
     public void addFocusTargets(Consumer<UiFocusTarget> sink) { actions.addFocusTargets(sink); }
     List<UiLayer> overlayLayers() { return imageOpen ? overlayLayers : List.of(); }
@@ -196,25 +199,25 @@ final class KitSurfacesExample implements UiWidget, UiLayoutSource {
     }
 
     @Override public void render(GuiGraphics graphics, Font font, UiPointer pointer) {
-        if (themeRevision != theme.revision()) { rebuildDocument(); themeRevision = theme.revision(); }
-        graphics.drawString(font, label("surfaces.actions"), captionRect.x(), captionRect.y(), theme.surfaces().secondaryText(), false);
+        if (appliedTheme != theme.get() || themeRevision != theme.get().revision()) { rebuildDocument(); themeRevision = theme.get().revision(); appliedTheme = theme.get(); }
+        graphics.drawString(font, label("surfaces.actions"), captionRect.x(), captionRect.y(), theme.get().surfaces().secondaryText(), false);
         actions.render(graphics, font, pointer);
         for (int i = 0; i < SURFACE_ROLES.length; i++) {
             UiRect cell = surfaceCells.get(i);
-            theme.drawSurface(graphics, cell, SURFACE_ROLES[i], SURFACE_STATES[i % SURFACE_STATES.length]);
+            theme.get().drawSurface(graphics, cell, SURFACE_ROLES[i], SURFACE_STATES[i % SURFACE_STATES.length]);
             Component name = label("skin.role." + SURFACE_ROLES[i].name().toLowerCase(Locale.ROOT));
             graphics.drawString(font, WorkbenchLayout.ellipsize(font, name, Math.max(0, cell.width() - 4)),
-                    cell.x() + 2, cell.y() + 5, theme.textColor(true), false);
+                    cell.x() + 2, cell.y() + 5, theme.get().textColor(true), false);
         }
-        theme.drawInset(graphics, documentCard);
+        theme.get().drawInset(graphics, documentCard);
         document.render(graphics, font, pointer);
         UiRect doc = document.viewport();
-        UiOrthoLink.drawDown(graphics, doc.x() + 16, doc.bottom() - 40, doc.x() + 120, doc.bottom() - 16, 2, theme.surfaces().panelBorder());
+        UiOrthoLink.drawDown(graphics, doc.x() + 16, doc.bottom() - 40, doc.x() + 120, doc.bottom() - 16, 2, theme.get().surfaces().panelBorder());
         if (panelVisible) panel.render(graphics, pointer);
-        graphics.drawString(font, label("surfaces.state.label"), stateBlock.x(), stateBlock.y(), theme.surfaces().secondaryText(), false);
+        graphics.drawString(font, label("surfaces.state.label"), stateBlock.x(), stateBlock.y(), theme.get().surfaces().secondaryText(), false);
         int lineY = stateBlock.y() + font.lineHeight + 2;
         for (String line : stateLines) {
-            graphics.drawString(font, line, stateBlock.x(), lineY, theme.textColor(true), false);
+            graphics.drawString(font, line, stateBlock.x(), lineY, theme.get().textColor(true), false);
             lineY += font.lineHeight + 2;
         }
     }

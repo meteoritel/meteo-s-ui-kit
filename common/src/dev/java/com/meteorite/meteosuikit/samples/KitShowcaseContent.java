@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.samples;
 
+import java.util.function.Supplier;
+
 import com.meteorite.meteosuikit.api.control.UiControl;
 import com.meteorite.meteosuikit.api.control.UiControlGroup;
 import com.meteorite.meteosuikit.api.input.UiPointer;
@@ -17,7 +19,7 @@ import com.meteorite.meteosuikit.api.number.UiValueInteraction;
 import com.meteorite.meteosuikit.api.render.UiDotGrid;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.meteorite.meteosuikit.api.style.UiStyleSource;
-import com.meteorite.meteosuikit.api.number.UiSliderRole;
+import com.meteorite.meteosuikit.api.style.UiSliderRole;
 import com.meteorite.meteosuikit.api.control.UiModal;
 import com.meteorite.meteosuikit.api.control.UiModalStack;
 import com.meteorite.meteosuikit.api.control.UiTextInput;
@@ -47,7 +49,7 @@ final class KitShowcaseContent implements UiInputTarget, UiLayoutSource {
     private final List<UiControl> buttons;
     private final UiControlGroup navigation = new UiControlGroup();
     private final UiControlGroup footer = new UiControlGroup();
-    private final UiStyleSource theme;
+    private final Supplier<? extends UiStyleSource> theme;
     private final KitInputsExample inputs;
     private final KitModelsExample models;
     private final UiModalStack modals;
@@ -74,7 +76,7 @@ final class KitShowcaseContent implements UiInputTarget, UiLayoutSource {
     private UiRect secondGridRect = new UiRect(0, 0, 0, 0);
     private int scrollCaptionY;
 
-    KitShowcaseContent(Font font, UiStyleSource theme, Runnable back, Runnable nextTheme,
+    KitShowcaseContent(Font font, Supplier<? extends UiStyleSource> theme, Runnable back, Runnable nextTheme,
                        @Nullable Function<PreviewBudget, PreviewScenes> previewFactory) {
         this.font = font;
         this.nextTheme = nextTheme;
@@ -251,38 +253,38 @@ final class KitShowcaseContent implements UiInputTarget, UiLayoutSource {
         footer.render(graphics, font, pointer);
         // 提示画在页脚与弹层之后；弹层开启时由弹层自己出提示
         if (page == Page.CONTROLS && pointer.allowsTooltip() && pointer.hit() != null) {
-            pointer.hit().renderTooltip(graphics, font, theme.tooltipSkin(), (int) pointer.x(), (int) pointer.y());
+            pointer.hit().renderTooltip(graphics, font, theme.get().tooltipSkin(), (int) pointer.x(), (int) pointer.y());
         }
     }
 
     private void renderControls(GuiGraphics graphics, UiPointer pointer) {
         controls.render(graphics, font, pointer);
         slider.render(graphics, font, pointer);
-        graphics.drawString(font, values(), valuesRow.x(), valuesRow.y(), theme.surfaces().text(), false);
+        graphics.drawString(font, values(), valuesRow.x(), valuesRow.y(), theme.get().surfaces().text(), false);
         Component label = text("showcase.resources");
-        int labelColor = theme.surfaces().secondaryText();
+        int labelColor = theme.get().surfaces().secondaryText();
         graphics.drawString(font, label, resourcesRow.x(), resourcesRow.y(), labelColor, false);
         Component resources = Component.translatable(UI + "showcase.resources.values", alternateGrid, gridOwners, resourceEpoch);
         Component trimmed = WorkbenchLayout.ellipsize(font, resources, Math.max(0, resourcesRow.width() - font.width(label) - 12));
         graphics.drawString(font, trimmed, resourcesRow.right() - font.width(trimmed), resourcesRow.y(), labelColor, false);
         if (firstGrid == null) { firstGrid = new UiDotGrid(); gridOwners++; }
         if (secondGrid == null) { secondGrid = new UiDotGrid(); gridOwners++; }
-        theme.drawInset(graphics, firstGridRect);
-        theme.drawInset(graphics, secondGridRect);
+        theme.get().drawInset(graphics, firstGridRect);
+        theme.get().drawInset(graphics, secondGridRect);
         graphics.flush();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         try {
-            int firstColor = alternateGrid ? theme.surfaces().text() : theme.surfaces().secondaryText();
+            int firstColor = alternateGrid ? theme.get().surfaces().text() : theme.get().surfaces().secondaryText();
             firstGrid.draw(graphics, 1, firstGridRect.x(), firstGridRect.y(), firstGridRect.right(), firstGridRect.bottom(),
                     alternateGrid ? 10 : 8, firstColor);
             secondGrid.draw(graphics, 1, secondGridRect.x(), secondGridRect.y(), secondGridRect.right(), secondGridRect.bottom(),
-                    12, theme.surfaces().secondaryText());
+                    12, theme.get().surfaces().secondaryText());
         } finally {
             graphics.flush();
             RenderSystem.disableBlend();
         }
-        graphics.drawString(font, text("showcase.scroll"), bounds.x(), scrollCaptionY, theme.surfaces().secondaryText(), false);
+        graphics.drawString(font, text("showcase.scroll"), bounds.x(), scrollCaptionY, theme.get().surfaces().secondaryText(), false);
         scrollExample.render(graphics, font);
     }
 

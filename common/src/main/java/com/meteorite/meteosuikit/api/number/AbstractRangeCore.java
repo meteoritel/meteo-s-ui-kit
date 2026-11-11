@@ -1,8 +1,7 @@
 package com.meteorite.meteosuikit.api.number;
 
 import com.meteorite.meteosuikit.api.control.UiWidgetShell;
-import com.meteorite.meteosuikit.api.geometry.UiRect;
-import com.meteorite.meteosuikit.api.input.UiFocusState;
+import com.meteorite.meteosuikit.api.control.UiShellTarget;
 import com.meteorite.meteosuikit.api.input.UiInputContext;
 import com.meteorite.meteosuikit.api.input.UiInteractionSession;
 import net.minecraft.network.chat.Component;
@@ -16,13 +15,16 @@ import java.util.function.Function;
 /**
  * 区间核心的端点选择与共同公开入口；会话和拖动锚点由 SliderInteraction 组合实现。
  */
-abstract class AbstractRangeCore<V> implements UiRangeControl {
+abstract class AbstractRangeCore<V> implements UiShellTarget, UiInteractionSession.Target {
     /**
      * 两端重叠时无法按距离区分，点击改为切换当前端。
      */
     static final int OVERLAP_TOLERANCE_PX = 4;
 
     private final UiWidgetShell shell = new UiWidgetShell(this, this::endInteraction);
+
+    /** 真实焦点与资格由同一个状态壳提供。 */
+    @Override public UiWidgetShell shell() { return shell; }
     final SliderInteraction<V> interaction;
     UiRangeEnd selectedEnd = UiRangeEnd.LOW;
     @Nullable Function<Double, Component> formatter;
@@ -48,22 +50,6 @@ abstract class AbstractRangeCore<V> implements UiRangeControl {
      */
     public void setListener(@Nullable UiValueInteraction.Listener<V> listener) {
         this.listener = listener;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public UiRect bounds() {
-        return shell.bounds();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setBounds(int x, int y, int width, int height) {
-        shell.setBounds(x, y, width, height);
     }
 
     /**
@@ -108,18 +94,12 @@ abstract class AbstractRangeCore<V> implements UiRangeControl {
         return bounds().contains(pointerX, pointerY);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
+    /** 当前是否持有指针拖动会话。 */
     public boolean isDragging() {
         return interaction.isDragging();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
+    /** 当前选中的区间端点。 */
     public UiRangeEnd selectedEnd() {
         return selectedEnd;
     }
@@ -138,52 +118,14 @@ abstract class AbstractRangeCore<V> implements UiRangeControl {
         this.formatter = formatter;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isEnabled() {
-        return shell.isEnabled();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
+    /** 禁用时取消本次交互并恢复起点。 */
     public void setEnabled(boolean enabled) {
         shell.setEnabled(enabled);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isVisible() {
-        return shell.isVisible();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
+    /** 隐藏时取消本次交互并恢复起点。 */
     public void setVisible(boolean visible) {
         shell.setVisible(visible);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public UiFocusState focusState() {
-        return shell.focusState();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean canFocus() {
-        return shell.canFocus();
     }
 
     /**
@@ -243,10 +185,7 @@ abstract class AbstractRangeCore<V> implements UiRangeControl {
         return interaction.releaseKey(keyCode);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
+    /** 按结束原因提交或取消当前交互。 */
     public void endInteraction(UiInteractionSession.EndReason reason) {
         interaction.end(reason);
     }

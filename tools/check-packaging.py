@@ -37,9 +37,20 @@ def check(root: Path) -> CheckResult:
                     mixins = json.loads(jar.read('meteos_ui_kit.mixins.json'))
                     if mixins.get('mixins') or mixins.get('client') != ['DisplayPreviewAccessor']:
                         findings.append(Finding(str(path), 'Mixin 端隔离', str(mixins)))
-                    accessor = prefix + module + '/client/mixin/DisplayPreviewAccessor.class'
+                    accessor = prefix + 'internal/preview/mixin/DisplayPreviewAccessor.class'
+                    if mixins.get('package') != 'com.meteorite.meteosuikit.internal.preview.mixin':
+                        findings.append(Finding(str(path), '共享 Mixin 包', str(mixins)))
                     if accessor not in names:
                         findings.append(Finding(str(path), '平台装配缺失', accessor))
+                        continue
+                    if module == 'fabric':
+                        refmap = mixins.get('refmap')
+                        if not refmap or refmap not in names:
+                            findings.append(Finding(str(path), 'Fabric refmap', '共享 Mixin 配置未引用有效 refmap'))
+                        elif accessor.removesuffix('.class') not in json.loads(jar.read(refmap)).get('mappings', {}):
+                            findings.append(Finding(str(path), 'Fabric refmap', '缺少共享 Display accessor 映射'))
+                        if b'net/minecraft/class_' not in jar.read(accessor):
+                            findings.append(Finding(str(path), 'Fabric remap', '共享 Display accessor 未使用 intermediary 类型'))
     return CheckResult(findings, success='库归档、许可、平台装配和开发内容隔离检查通过。')
 
 
