@@ -3,6 +3,7 @@ package com.meteorite.meteosuikit.samples;
 import java.util.function.Supplier;
 
 import com.meteorite.meteosuikit.api.control.LightboxImage;
+import com.meteorite.meteosuikit.api.control.UiDocumentLightboxContent;
 import com.meteorite.meteosuikit.api.control.UiControlGroup;
 import com.meteorite.meteosuikit.api.control.UiFloatingPanel;
 import com.meteorite.meteosuikit.api.control.UiImageView;
@@ -59,7 +60,7 @@ final class KitSurfacesExample implements UiWidget, UiLayoutSource {
     private final UiImageView image;
     private final UiLightbox lightbox;
     private final UiIconLightboxContent iconContent;
-    private final KitDocumentLightboxContent canvas;
+    private final UiDocumentLightboxContent canvas;
     private UiLightbox.Content activeContent;
     private final List<UiLayer> overlayLayers;
     private Runnable overlayChanged = () -> { };
@@ -94,7 +95,7 @@ final class KitSurfacesExample implements UiWidget, UiLayoutSource {
         ResourceLocation texture = ResourceLocation.withDefaultNamespace("textures/block/stone.png");
         image = new UiImageView(LightboxImage.whole(texture, texture, 16, 16, label("image"), label("image.description")), null, true);
         iconContent = new UiIconLightboxContent(scaledIcon(texture), theme);
-        canvas = new KitDocumentLightboxContent(font, theme);
+        canvas = KitDocumentLightboxContent.create(font, theme);
         activeContent = image;
         lightbox = new UiLightbox(new UiLightbox.Labels() {
             @Override public Component close() { return label("image.close"); }

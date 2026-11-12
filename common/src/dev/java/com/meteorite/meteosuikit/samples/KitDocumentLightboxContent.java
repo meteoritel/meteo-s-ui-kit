@@ -1,110 +1,59 @@
 package com.meteorite.meteosuikit.samples;
 
-import java.util.function.Supplier;
-
-import com.meteorite.meteosuikit.api.control.UiLightbox;
-import com.meteorite.meteosuikit.api.geometry.UiRect;
+import com.meteorite.meteosuikit.api.control.UiDocumentLightboxContent;
 import com.meteorite.meteosuikit.api.geometry.UiTransform;
-import com.meteorite.meteosuikit.api.input.UiInputContext;
-import com.meteorite.meteosuikit.api.input.UiInteractionSession;
-import com.meteorite.meteosuikit.api.input.UiPointer;
-import com.meteorite.meteosuikit.api.input.UiPointerHit;
-import com.meteorite.meteosuikit.api.layout.UiDocument;
-import com.meteorite.meteosuikit.api.layout.UiDocumentHit;
 import com.meteorite.meteosuikit.api.layout.UiNode;
 import com.meteorite.meteosuikit.api.render.UiIcon;
 import com.meteorite.meteosuikit.api.style.UiStyleSource;
 import com.meteorite.meteosuikit.api.text.TextMeasurer;
+import java.util.List;
+import java.util.function.Supplier;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import org.jetbrains.annotations.Nullable;
-import org.lwjgl.glfw.GLFW;
 
-import java.util.List;
-
-/** 自定义 Content 展示文档行、图标动作和嵌套 Frame，输入提示仍来自一次 hitTest。 */
-final class KitDocumentLightboxContent implements UiLightbox.Content {
-    private final UiDocument document;
+/** 样例只组装逻辑内容；配对激活、焦点与变换由公开 reader 持有。 */
+final class KitDocumentLightboxContent {
     private final Supplier<? extends UiStyleSource> theme;
-    private @Nullable UiInteractionSession session;
+    private final UiTransform frameTransform = new UiTransform();
+    private final UiDocumentLightboxContent reader;
+    private int activations;
     private long themeRevision = -1;
     private UiStyleSource appliedTheme;
-    private int activations;
 
-    KitDocumentLightboxContent(Font font, Supplier<? extends UiStyleSource> theme) {
+    private KitDocumentLightboxContent(Font font, Supplier<? extends UiStyleSource> theme) {
         this.theme = theme;
-        document = new UiDocument(TextMeasurer.of(font), false);
-        rebuild();
+        reader = new UiDocumentLightboxContent(TextMeasurer.of(font), theme, label("row"));
+        reader.setContentSource(this::content);
     }
+
+    static UiDocumentLightboxContent create(Font font, Supplier<? extends UiStyleSource> theme) {
+        return new KitDocumentLightboxContent(font, theme).reader;
+    }
+
+    private List<UiNode> content() {
+        if (appliedTheme != theme.get() || themeRevision != theme.get().revision()) {
+            rebuild();
+            appliedTheme = theme.get();
+            themeRevision = appliedTheme.revision();
+        }
+        return nodes;
+    }
+
+    private List<UiNode> nodes = List.of();
+
     private void rebuild() {
         UiNode.InlineIcon icon = new UiNode.InlineIcon(new UiIcon.Item(new ItemStack(Items.GOLD_INGOT)),
-                List.of(label("icon")), "icon", () -> activations++);
-        document.setContent(List.of(new UiNode.Row(0, UiNode.NO_PARENT, icon,
+                List.of(label("icon")), "icon", this::activate);
+        nodes = List.of(new UiNode.Row(0, UiNode.NO_PARENT, icon,
                         Component.translatable(KitShowcaseContent.UI + "showcase.canvas.count", activations),
-                        theme.get().textColor(true), List.of(), List.of(label("row")), "row", () -> activations++),
-                new UiNode.Gap(8), new UiNode.Frame(new UiNode.FrameSpec(180, 48, theme.get().surfaces().panelBorder(), new UiTransform()),
-                        List.of(new UiNode.Row(label("child"), theme.get().textColor(true))))));
+                        theme.get().textColor(true), List.of(), List.of(label("row")), "row", this::activate),
+                new UiNode.Gap(8), new UiNode.Frame(new UiNode.FrameSpec(180, 48,
+                        theme.get().surfaces().panelBorder(), frameTransform),
+                        List.of(new UiNode.Row(label("child"), theme.get().textColor(true)))));
     }
-    /** {@inheritDoc} */
-    @Override public int contentWidth() { return document.contentWidth(); }
-    /** {@inheritDoc} */
-    @Override public int contentHeight() { return document.contentHeight(); }
-    /** {@inheritDoc} */
-    @Override public void setViewport(UiRect viewport) {
-        document.setViewport(viewport.x(), viewport.y(), viewport.width(), viewport.height());
-    }
-    /** {@inheritDoc} */
-    @Override public void render(GuiGraphics graphics, Font font, UiPointer pointer) {
-        if (appliedTheme != theme.get() || themeRevision != theme.get().revision()) { rebuild(); themeRevision = theme.get().revision(); appliedTheme = theme.get(); }
-        document.render(graphics, font, pointer);
-    }
-    /** 行与图标提示按文档同一缓存解析，空白仍保留 Content 所有权。 */
-    @Override public UiPointerHit hitTest(double x, double y) {
-        UiPointerHit hit = document.hitTest(x, y);
-        return hit == null ? UiPointerHit.leaf(this, x, y) : hit.within(this);
-    }
-    /** {@inheritDoc} */
-    @Override public boolean zoom(double amount, double x, double y) {
-        if (amount == 0) return false;
-        document.transform().zoomBy((int) Math.signum(amount), x, y);
-        return true;
-    }
-    /** {@inheritDoc} */
-    @Override public boolean zoomBy(int direction) {
-        UiRect viewport = document.viewport();
-        return zoom(direction, viewport.x() + viewport.width() / 2.0, viewport.y() + viewport.height() / 2.0);
-    }
-    /** {@inheritDoc} */
-    @Override public void fit() { document.transform().fit(0, 0, contentWidth(), contentHeight(), 8); }
-    /** {@inheritDoc} */
-    @Override public boolean panBy(double dx, double dy) {
-        if (session == null || !session.owns(this)) return false;
-        document.transform().panBy(dx, dy);
-        return true;
-    }
-    /** 文档动作由宿主解释；按下后仍允许同一手势平移。 */
-    @Override public boolean mousePressed(UiInputContext context) {
-        if (context.button() != GLFW.GLFW_MOUSE_BUTTON_LEFT || !document.viewport().contains(context.pointerX(), context.pointerY())) return false;
-        UiDocumentHit hit = document.hit(context.pointerX(), context.pointerY());
-        if (hit != null && hit.action() != null) { hit.action().run(); rebuild(); }
-        session = context.scope().interaction();
-        session.begin(this, UiInteractionSession.Source.POINTER, GLFW.GLFW_MOUSE_BUTTON_LEFT);
-        return true;
-    }
-    /** {@inheritDoc} */
-    @Override public boolean mouseDragged(UiInputContext context, double dx, double dy) { return panBy(dx, dy); }
-    /** {@inheritDoc} */
-    @Override public boolean mouseReleased(UiInputContext context) { return session != null && session.owns(this); }
-    /** {@inheritDoc} */
-    @Override public void interactionEnded(UiInteractionSession.EndReason reason) { session = null; }
-    /** {@inheritDoc} */
-    @Override public int zoomPercent() { return document.transform().scalePercent(); }
-    /** {@inheritDoc} */
-    @Override public @Nullable Component placeholder() { return null; }
-    /** {@inheritDoc} */
-    @Override public void invalidateResources() { document.invalidateLayout(); rebuild(); }
+
+    private void activate() { activations++; rebuild(); }
     private static Component label(String key) { return Component.translatable(KitShowcaseContent.UI + "showcase.canvas." + key); }
 }

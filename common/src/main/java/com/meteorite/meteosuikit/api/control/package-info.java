@@ -19,6 +19,8 @@
  *   <li>{@code UiWidget}: library</li>
  *   <li>{@code UiWidgetShell}: library</li>
  *   <li>{@code UiStatefulWidget}: library</li>
+ *   <li>{@code UiDocumentView}: library</li>
+ *   <li>{@code UiDocumentLightboxContent}: library</li>
  *   <li>{@code UiTextInput}: library</li>
  *   <li>{@code UiTextArea}: library</li>
  *   <li>{@code UiListView}: library</li>

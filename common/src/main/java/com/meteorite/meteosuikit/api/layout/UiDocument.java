@@ -27,7 +27,7 @@ import java.util.function.Supplier;
  * 命中、动作及业务 payload 由宿主解释。
  * 仅在客户端线程使用；视口及鼠标均使用调用方 GUI 坐标，外部 pose 仅支持正向轴对齐缩放和平移。
  *
- * <p>排版按**自然尺寸**且不折行；行文本的可用宽度以视口宽度（1 倍档参考）为上限，
+ * <p>排版使用自然尺寸，默认单行悬停滚动，也可显式选择折行；文本宽度以视口宽度为上限，
  * 超出部分不参与排版宽度，改为悬停时在带内滚动（见 {@link TextScroll}）。因此平移只在
  * 图标本身超出可视区时才需要，且平移与缩放都不触发重排。</p>
  *
@@ -35,6 +35,15 @@ import java.util.function.Supplier;
  * 子文档的悬停滚动与命中使用同一套几何。</p>
  */
 public final class UiDocument implements UiInputTarget {
+    /** 文本在逻辑行内的显示政策。 */
+    public enum TextOverflow {
+        /** 自然单行，超宽部分悬停滚动。 */
+        HOVER_SCROLL,
+        /** 带样式折行，逻辑动作与父行身份保持。 */
+        WRAP
+    }
+    private TextOverflow textOverflow = TextOverflow.HOVER_SCROLL;
+    private long layoutRevision;
     private static final int PADDING = 2;
     private static final int ICON_GAP = 3;
     /** 行文本带的最小宽度：图标再多也留出这一截，让超宽文本仍可悬停滚动。 */
@@ -47,7 +56,6 @@ public final class UiDocument implements UiInputTarget {
     private final int branchColor;
     private List<UiNode> content = List.of();
     private int layoutWidth = -1;
-    private int layoutHeight = -1;
     private LayoutBlock[] blocks = new LayoutBlock[0];
     /** 每个块的下标对应一份滚动计时：悬停且文本超宽时逐帧递增，否则归零。 */
     private int[] blockTicks = new int[0];
@@ -67,6 +75,15 @@ public final class UiDocument implements UiInputTarget {
         this.branchColor = branchColor;
         this.metrics = new UiMetrics(profiling);
     }
+
+    /** 更换文本政策后重新排版。 */
+    public void setTextOverflow(TextOverflow policy) {
+        if (textOverflow == policy) return;
+        textOverflow = Objects.requireNonNull(policy);
+        dirty = true;
+    }
+    /** 排版代次供阅读控件取消旧目标的按压。 */
+    public long layoutRevision() { layout(); return layoutRevision; }
 
     public UiTransform transform() { return transform; }
     public UiMetrics metrics() { return metrics; }
@@ -96,6 +113,7 @@ public final class UiDocument implements UiInputTarget {
     public void setContent(List<UiNode> nodes) {
         long start = metrics.start();
         List<UiNode> next = List.copyOf(nodes);
+        if (content.equals(next)) { versioned = false; return; }
         validateParents(next);
         content = next;
         versioned = false;
@@ -113,7 +131,7 @@ public final class UiDocument implements UiInputTarget {
 
     public void layout() {
         UiRect viewport = viewport();
-        if (!dirty && layoutWidth == viewport.width() && layoutHeight == viewport.height()) return;
+        if (!dirty && layoutWidth == viewport.width()) return;
         long start = metrics.start();
         int size = content.size();
         int[] parentOf = new int[size];
@@ -141,13 +159,14 @@ public final class UiDocument implements UiInputTarget {
             if (node instanceof UiNode.Gap(int height)) {
                 y += height;
             } else if (node instanceof UiNode.Row row) {
+                LayoutBlock block = layoutRow(row, index, y);
                 BranchPaint branch = branchFor(index, row, y, parentOf, hasLaterSibling,
-                        rowRects, lastChildCenterY);
-                LayoutBlock block = layoutRow(row, index, y, branch);
+                        rowRects, lastChildCenterY, block.rect());
+                block = new LayoutBlock(block.rect(), block.row().withBranch(branch), 0, null);
                 rowRects[index] = block.rect();
                 int parent = parentOf[index];
                 if (parent >= 0 && parent < size && rowRects[parent] != null) {
-                    lastChildCenterY[parent] = block.rect().y() + block.rect().height() / 2;
+                    lastChildCenterY[parent] = block.rect().y() + rowHeight(row) / 2;
                 }
                 next.add(block);
                 y = block.rect().bottom();
@@ -160,6 +179,7 @@ public final class UiDocument implements UiInputTarget {
             } else if (node instanceof UiNode.Frame(var spec, var children)) {
                 UiDocument child = new UiDocument(measurer, spec.transform(), spec.branchColor(), metrics.enabled());
                 child.setViewport(0, y, spec.width(), spec.height());
+                child.setTextOverflow(textOverflow);
                 child.setContent(children);
                 child.layout();
                 next.add(new LayoutBlock(child.viewport(), null, 0, child));
@@ -172,8 +192,8 @@ public final class UiDocument implements UiInputTarget {
         contentWidth = widest;
         contentHeight = y;
         layoutWidth = viewport.width();
-        layoutHeight = viewport.height();
         dirty = false;
+        layoutRevision++;
         metrics.laidOut(start);
     }
 
@@ -199,7 +219,7 @@ public final class UiDocument implements UiInputTarget {
     public List<UiDocumentTarget> targets() {
         List<UiDocumentTarget> targets = new ArrayList<>();
         collectTargets(targets, new TargetProjection(new TargetSpace(1, 0, 0),
-                new TargetSpace(transform.scale(), transform.toScreenX(0), transform.toScreenY(0)), List.of()));
+                new TargetSpace(transform.scale(), transform.toScreenX(0), transform.toScreenY(0)), List.of(), null));
         return List.copyOf(targets);
     }
 
@@ -211,8 +231,10 @@ public final class UiDocument implements UiInputTarget {
             path.add(index);
             if (block.frame() != null) {
                 UiDocument child = block.frame();
+                UiRect clip = projection.content().bounds(child.viewport());
+                if (projection.clip() != null) clip = clip.intersect(projection.clip());
                 child.collectTargets(targets, new TargetProjection(projection.content().child(child.transform),
-                        projection.screen().child(child.transform), path));
+                        projection.screen().child(child.transform), path, clip));
                 continue;
             }
             RowPaint row = block.row();
@@ -229,7 +251,7 @@ public final class UiDocument implements UiInputTarget {
     private void addTarget(List<UiDocumentTarget> targets, TargetProjection projection, UiDocumentHit hit, Component fallback) {
         Component label = hit.kind() == UiDocumentHit.Kind.ICON && !hit.tooltip().isEmpty() ? hit.tooltip().getFirst() : fallback;
         targets.add(new UiDocumentTarget(this, projection.path(), hit, label,
-                projection.content().bounds(hit.rect()), projection.screen().bounds(hit.rect())));
+                projection.content().bounds(hit.rect()), projection.screen().bounds(hit.rect()), projection.clip()));
     }
 
     /** 内容坐标到某个祖先坐标空间的只读正向变换。 */
@@ -246,11 +268,11 @@ public final class UiDocument implements UiInputTarget {
     }
 
     /** 一次导出遍历共享的祖先变换与出现路径。 */
-    private record TargetProjection(TargetSpace content, TargetSpace screen, List<Integer> path) {
+    private record TargetProjection(TargetSpace content, TargetSpace screen, List<Integer> path, @Nullable UiRect clip) {
         TargetProjection at(List<Integer> blockPath, int slot) {
             List<Integer> occurrence = new ArrayList<>(blockPath);
             occurrence.add(slot);
-            return new TargetProjection(content, screen, occurrence);
+            return new TargetProjection(content, screen, occurrence, clip);
         }
     }
 
@@ -273,7 +295,7 @@ public final class UiDocument implements UiInputTarget {
                         true, true, List.of()));
             } else if (block.frame() != null) {
                 nodes.add(new UiLayoutNode(UiLayoutNode.Kind.FRAME, rect, Component.empty(), 0, 0,
-                        true, true, block.frame().screenLayoutNodes(scale, x, y)));
+                        true, true, block.frame().screenLayoutNodes(scale, x, y)).clippedTo(rect));
             } else {
                 nodes.add(new UiLayoutNode(UiLayoutNode.Kind.DIVIDER, rect, Component.empty(), 0, 0, true, true, List.of()));
             }
@@ -331,13 +353,13 @@ public final class UiDocument implements UiInputTarget {
      */
     @Nullable
     private BranchPaint branchFor(int index, UiNode.Row row, int y, int[] parentOf,
-                                  boolean[] hasLaterSibling, UiRect[] rowRects, int[] lastChildCenterY) {
+                                  boolean[] hasLaterSibling, UiRect[] rowRects, int[] lastChildCenterY, UiRect rowRect) {
         int parent = parentOf[index];
         // 只接受位于本行之前的父行：链严格递减，既排除自环也排除乱序输入。
         if (branchColor == 0 || parent < 0 || parent >= index) return null;
         UiRect parentRect = rowRects[parent];
         if (parentRect == null) return null;
-        int trunkX = row.indent() - BRANCH_GAP;
+        int trunkX = rowRect.x() - BRANCH_GAP;
         if (trunkX < 0) return null;
         int height = rowHeight(row);
         int centerY = y + height / 2;
@@ -354,10 +376,10 @@ public final class UiDocument implements UiInputTarget {
             if (rect == null || !hasLaterSibling[a]) continue;
             continuations[slot] = rect.x() - BRANCH_GAP;
             continuations[slot + 1] = y;
-            continuations[slot + 2] = y + height;
+            continuations[slot + 2] = rowRect.bottom();
             slot += 3;
         }
-        return new BranchPaint(trunkX, from, centerY, row.indent(), continuations);
+        return new BranchPaint(trunkX, from, centerY, rowRect.x(), continuations);
     }
 
     private int rowHeight(UiNode.Row row) {
@@ -367,45 +389,52 @@ public final class UiDocument implements UiInputTarget {
         return height + PADDING * 2;
     }
 
-    private LayoutBlock layoutRow(UiNode.Row row, int index, int y, @Nullable BranchPaint branch) {
-        Component label = row.text();
-        int height = rowHeight(row);
-        int cursor = row.indent() + PADDING;
-        @Nullable UiIcon leadingIcon = null;
-        @Nullable UiDocumentHit leadingTarget = null;
-        UiNode.InlineIcon leading = row.leading();
-        if (leading != null) {
-            leadingIcon = leading.icon();
-            leadingTarget = new UiDocumentHit(UiDocumentHit.Kind.ICON, index, leading.payload(),
-                    new UiRect(cursor, y + (height - leadingIcon.height()) / 2, leadingIcon.width(), leadingIcon.height()),
-                    leading.tooltip(), leading.action());
-            cursor += leadingIcon.width() + ICON_GAP;
+    private LayoutBlock layoutRow(UiNode.Row row, int index, int y) {
+        int firstHeight = rowHeight(row);
+        int indent = textOverflow == TextOverflow.WRAP ? Math.min(row.indent(), Math.max(0, viewport().width() - MIN_TEXT_BUDGET)) : row.indent();
+        int textX = indent + PADDING;
+        UiIcon leadingIcon = row.leading() == null ? null : row.leading().icon();
+        if (leadingIcon != null) textX += leadingIcon.width() + ICON_GAP;
+        int iconsWidth = row.icons().stream().mapToInt(icon -> ICON_GAP + icon.icon().width()).sum();
+        int budget = Math.max(MIN_TEXT_BUDGET, viewport().width() - textX - iconsWidth - PADDING);
+        List<Component> lines = textOverflow == TextOverflow.WRAP ? measurer.wrap(row.text(), budget) : List.of(row.text());
+        if (lines.isEmpty()) lines = List.of(Component.empty());
+        int height = firstHeight + (lines.size() - 1) * (measurer.lineHeight() + PADDING * 2);
+        List<TextPaint> text = new ArrayList<>();
+        List<UiRect> fragments = new ArrayList<>();
+        int widest = 0;
+        int naturalWidth = 0;
+        for (int line = 0; line < lines.size(); line++) {
+            Component value = lines.get(line);
+            int width = measurer.width(value);
+            naturalWidth = Math.max(naturalWidth, width);
+            int band = Math.min(width, budget);
+            int lineY = y + (line == 0 ? 0 : firstHeight + (line - 1) * (measurer.lineHeight() + PADDING * 2));
+            int lineHeight = line == 0 ? firstHeight : measurer.lineHeight() + PADDING * 2;
+            text.add(new TextPaint(value.getVisualOrderText(), textX, lineY + (lineHeight - measurer.lineHeight()) / 2, width, budget));
+            fragments.add(new UiRect(line == 0 ? indent : textX, lineY,
+                    Math.max(1, textX + band + (line == 0 ? iconsWidth : 0) + PADDING - (line == 0 ? indent : textX)), lineHeight));
+            widest = Math.max(widest, band);
         }
-        int textX = cursor;
-        int textWidth = measurer.width(row.text());
-        int iconsWidth = 0;
-        for (UiNode.InlineIcon inline : row.icons()) iconsWidth += ICON_GAP + inline.icon().width();
-        // 文本带按视口宽度收敛：超宽文本不再把后续图标挤出视口，而是留在带内、悬停时滚动。
-        int textBudget = Math.max(MIN_TEXT_BUDGET, viewport().width() - textX - iconsWidth - PADDING);
-        int laidOutTextWidth = Math.min(textWidth, textBudget);
-        int x = textX + laidOutTextWidth;
+        UiDocumentHit leadingTarget = leadingIcon == null ? null : new UiDocumentHit(UiDocumentHit.Kind.ICON, index,
+                row.leading().payload(), new UiRect(indent + PADDING, y + (firstHeight - leadingIcon.height()) / 2,
+                leadingIcon.width(), leadingIcon.height()), row.leading().tooltip(), row.leading().action());
+        int x = textX + Math.min(measurer.width(lines.getFirst()), budget);
         UiDocumentHit[] iconTargets = new UiDocumentHit[row.icons().size()];
         UiIcon[] icons = new UiIcon[iconTargets.length];
         for (int i = 0; i < icons.length; i++) {
             UiNode.InlineIcon inline = row.icons().get(i);
             UiIcon icon = inline.icon();
             x += ICON_GAP;
-            UiRect iconRect = new UiRect(x, y + (height - icon.height()) / 2, icon.width(), icon.height());
-            iconTargets[i] = new UiDocumentHit(UiDocumentHit.Kind.ICON, index, inline.payload(), iconRect,
-                    inline.tooltip(), inline.action());
+            UiRect iconRect = new UiRect(x, y + (firstHeight - icon.height()) / 2, icon.width(), icon.height());
+            iconTargets[i] = new UiDocumentHit(UiDocumentHit.Kind.ICON, index, inline.payload(), iconRect, inline.tooltip(), inline.action());
             icons[i] = icon;
             x += icon.width();
         }
-        UiRect rect = new UiRect(row.indent(), y, x + PADDING - row.indent(), height);
+        UiRect rect = new UiRect(indent, y, Math.max(x + PADDING, textX + widest + PADDING) - indent, height);
         UiDocumentHit target = new UiDocumentHit(UiDocumentHit.Kind.ROW, index, row.payload(), rect, row.tooltip(), row.action());
-        RowPaint paint = new RowPaint(row.text().getVisualOrderText(), label, row.color(), textX,
-                y + (height - measurer.lineHeight()) / 2, textWidth, textBudget,
-                leadingIcon, leadingTarget, target, icons, iconTargets, branch);
+        RowPaint paint = new RowPaint(List.copyOf(text), row.text(), row.color(), naturalWidth, budget,
+                leadingIcon, leadingTarget, target, icons, iconTargets, List.copyOf(fragments), null);
         return new LayoutBlock(rect, paint, 0, null);
     }
 
@@ -472,8 +501,10 @@ public final class UiDocument implements UiInputTarget {
                 row.leading().render(graphics, rect.x(), rect.y());
             }
         }
-        TextScroll.draw(graphics, font, row.text(), row.textWidth(), row.textX(), row.textY(),
-                row.textBand(), row.color(), hovered, ticks);
+        for (TextPaint text : row.text()) {
+            TextScroll.draw(graphics, font, text.text(), text.width(), text.x(), text.y(),
+                    text.band(), row.color(), textOverflow == TextOverflow.HOVER_SCROLL && hovered, ticks);
+        }
         for (int i = 0; i < row.icons().length; i++) {
             UiRect rect = row.iconTargets()[i].rect();
             if (rect.right() > left && rect.x() < right && rect.bottom() > top && rect.y() < bottom) {
@@ -523,10 +554,17 @@ public final class UiDocument implements UiInputTarget {
                                int dividerColor, @Nullable UiDocument frame) {}
 
     /** 行绘制数据与命中目标共用自然坐标，避免缩放时重建矩形。 */
-    private record RowPaint(FormattedCharSequence text, Component label, int color, int textX, int textY,
-                            int textWidth, int textBand, @Nullable UiIcon leading, @Nullable UiDocumentHit leadingTarget,
+    private record TextPaint(FormattedCharSequence text, int x, int y, int width, int band) {}
+
+    private record RowPaint(List<TextPaint> text, Component label, int color, int textWidth, int textBand,
+                            @Nullable UiIcon leading, @Nullable UiDocumentHit leadingTarget,
                             UiDocumentHit target, UiIcon[] icons, UiDocumentHit[] iconTargets,
-                            @Nullable BranchPaint branch) {}
+                            List<UiRect> fragments, @Nullable BranchPaint branch) {
+        RowPaint withBranch(@Nullable BranchPaint value) {
+            return new RowPaint(text, label, color, textWidth, textBand, leading, leadingTarget,
+                    target, icons, iconTargets, fragments, value);
+        }
+    }
 
     /**
      * 一行的连线几何：折线竖段从 {@code verticalFromY} 到 {@code verticalToY}，
@@ -560,6 +598,7 @@ public final class UiDocument implements UiInputTarget {
         }
         RowPaint row = block.row();
         if (row == null) return null;
+        if (row.fragments().stream().noneMatch(rect -> rect.contains(localX, localY))) return null;
         UiDocumentHit target = row.target();
         if (row.leadingTarget() != null && row.leadingTarget().rect().contains(localX, localY))
             target = row.leadingTarget();
