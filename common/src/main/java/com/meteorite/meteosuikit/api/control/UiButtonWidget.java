@@ -1,11 +1,10 @@
 package com.meteorite.meteosuikit.api.control;
 
-import com.meteorite.meteosuikit.api.input.UiFocusTarget;
 import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
 import net.minecraft.network.chat.Component;
 
 /** 普通与宿主特殊按钮的共同接入面，供模态等容器统一布局、快照和焦点。 */
-public interface UiButtonWidget extends UiWidget, UiFocusTarget, UiLayoutSource {
+public interface UiButtonWidget extends UiStatefulWidget, UiLayoutSource {
     /** 普通按钮的资格由自身可见性与可用性决定。 */
     @Override
     default boolean canFocus() { return isVisible() && isEnabled(); }

@@ -18,7 +18,7 @@
  *   <li>{@code UiScrollView}: library</li>
  *   <li>{@code UiWidget}: library</li>
  *   <li>{@code UiWidgetShell}: library</li>
- *   <li>{@code UiShellWidget}: library</li>
+ *   <li>{@code UiStatefulWidget}: library</li>
  *   <li>{@code UiTextInput}: library</li>
  *   <li>{@code UiTextArea}: library</li>
  *   <li>{@code UiListView}: library</li>
@@ -30,7 +30,7 @@
  *   <li>{@code UiThemedScreen}: library</li>
  *   <li>{@code UiButtonWidget}: library</li>
  *   <li>{@code UiFocusFollow}: library</li>
- *   <li>{@code UiShellTarget}: library</li>
+ *   <li>{@code UiStatefulTarget}: library</li>
  *   <li>{@code UiPaginationState}: library</li>
  *   <li>{@code UiScrollContainer}: library</li>
  * </ul>

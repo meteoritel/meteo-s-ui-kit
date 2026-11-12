@@ -140,12 +140,18 @@ public final class UiControlGroup implements UiInputContainer {
     /** 已有及后续控件共享根主题；显式 setStyle 覆盖结构画法。 */
     public void setTheme(Supplier<? extends UiStyleSource> theme) {
         this.theme = Objects.requireNonNull(theme, "theme");
-        style = null;
         for (UiControl control : ordered) control.setTheme(theme, UiControlRole.SECONDARY);
     }
 
+    /** 清除组及当前成员的结构覆盖，保留各成员完整皮肤与独立文字覆盖。 */
+    public void clearStyleOverride() {
+        style = null;
+        for (UiControl control : ordered) control.clearStyleOverride();
+    }
+
+    /** 后续新成员的默认结构；成员各自的定制不参与本查询。 */
     public UiControlStyle style() {
-        return style == null ? theme.get().controlStyle(UiControlRole.SECONDARY) : style;
+        return style == null ? theme.get().controlSkin(UiControlRole.SECONDARY).style() : style;
     }
 
     // ---------- 绘制 / 命中 ----------

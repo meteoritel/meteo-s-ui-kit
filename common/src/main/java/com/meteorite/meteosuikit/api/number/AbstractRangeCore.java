@@ -1,7 +1,9 @@
 package com.meteorite.meteosuikit.api.number;
 
+import com.meteorite.meteosuikit.api.input.UiFocusState;
+import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.control.UiWidgetShell;
-import com.meteorite.meteosuikit.api.control.UiShellTarget;
+import com.meteorite.meteosuikit.api.control.UiStatefulTarget;
 import com.meteorite.meteosuikit.api.input.UiInputContext;
 import com.meteorite.meteosuikit.api.input.UiInteractionSession;
 import net.minecraft.network.chat.Component;
@@ -15,7 +17,7 @@ import java.util.function.Function;
 /**
  * 区间核心的端点选择与共同公开入口；会话和拖动锚点由 SliderInteraction 组合实现。
  */
-abstract class AbstractRangeCore<V> implements UiShellTarget, UiInteractionSession.Target {
+abstract class AbstractRangeCore<V> implements UiStatefulTarget, UiInteractionSession.Target {
     /**
      * 两端重叠时无法按距离区分，点击改为切换当前端。
      */
@@ -24,7 +26,17 @@ abstract class AbstractRangeCore<V> implements UiShellTarget, UiInteractionSessi
     private final UiWidgetShell shell = new UiWidgetShell(this, this::endInteraction);
 
     /** 真实焦点与资格由同一个状态壳提供。 */
-    @Override public UiWidgetShell shell() { return shell; }
+    @Override public UiRect bounds() { return shell.bounds(); }
+    /** {@inheritDoc} */
+    @Override public boolean isEnabled() { return shell.isEnabled(); }
+    /** {@inheritDoc} */
+    @Override public boolean isVisible() { return shell.isVisible(); }
+    /** {@inheritDoc} */
+    @Override public UiFocusState focusState() { return shell.focusState(); }
+    /** {@inheritDoc} */
+    @Override public void setLayoutKey(String key) { shell.setLayoutKey(key); }
+    /** {@inheritDoc} */
+    @Override public void setBounds(int x, int y, int width, int height) { shell.setBounds(x, y, width, height); }
     final SliderInteraction<V> interaction;
     UiRangeEnd selectedEnd = UiRangeEnd.LOW;
     @Nullable Function<Double, Component> formatter;
@@ -119,13 +131,15 @@ abstract class AbstractRangeCore<V> implements UiShellTarget, UiInteractionSessi
     }
 
     /** 禁用时取消本次交互并恢复起点。 */
-    public void setEnabled(boolean enabled) {
+    public UiStatefulTarget setEnabled(boolean enabled) {
         shell.setEnabled(enabled);
+        return this;
     }
 
     /** 隐藏时取消本次交互并恢复起点。 */
-    public void setVisible(boolean visible) {
+    public UiStatefulTarget setVisible(boolean visible) {
         shell.setVisible(visible);
+        return this;
     }
 
     /**

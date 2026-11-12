@@ -1,5 +1,7 @@
 package com.meteorite.meteosuikit.api.control;
 
+import com.meteorite.meteosuikit.api.input.UiFocusState;
+import com.meteorite.meteosuikit.api.geometry.UiRect;
 import java.util.function.Supplier;
 
 import com.meteorite.meteosuikit.api.input.UiPointer;
@@ -35,7 +37,7 @@ import org.lwjgl.glfw.GLFW;
  * 支持占位提示、长度限制、输入过滤、提交（Enter）与取消（Esc）。
  * <p>点击输入框可定位光标并拖动选择；焦点顺序由宿主的 {@code UiFocusManager} 统一维护。
  */
-public final class UiTextInput implements UiSingleLineEditor, UiShellWidget, UiLayoutSource, UiInteractionSession.Target {
+public final class UiTextInput implements UiSingleLineEditor, UiStatefulWidget, UiLayoutSource, UiInteractionSession.Target {
 
     // 左右内边距
     private static final int PADDING_X = TextInputSupport.PADDING_X;
@@ -67,9 +69,21 @@ public final class UiTextInput implements UiSingleLineEditor, UiShellWidget, UiL
     private Component hint;
 
     /** {@inheritDoc} */
-    @Override
-    public UiWidgetShell shell() {
-        return shell;
+    @Override public UiRect bounds() { return shell.bounds(); }
+    /** {@inheritDoc} */
+    @Override public boolean isEnabled() { return shell.isEnabled(); }
+    /** {@inheritDoc} */
+    @Override public boolean isVisible() { return shell.isVisible(); }
+    /** {@inheritDoc} */
+    @Override public UiFocusState focusState() { return shell.focusState(); }
+    /** {@inheritDoc} */
+    @Override public void setLayoutKey(String key) { shell.setLayoutKey(key); }
+    /** {@inheritDoc} */
+    @Override public UiTextInput setEnabled(boolean enabled) {
+        shell.setEnabled(enabled);
+        editSession.setEnabled(enabled);
+        editBox.active = enabled;
+        return this;
     }
 
     /** 使用原版默认主题创建单行输入。 */
@@ -327,7 +341,7 @@ public final class UiTextInput implements UiSingleLineEditor, UiShellWidget, UiL
         Component content = text.isEmpty() ? accessibleName : Component.literal(text);
         int budget = Math.max(0, bounds().width() - PADDING_X * 2);
         return List.of(new UiLayoutNode(UiLayoutNode.Kind.TEXT_INPUT, bounds(), content, font.width(content),
-                budget, editable, true, List.of()));
+                budget, isEnabled() && editable, true, List.of()).identified(shell.layoutKey(), this));
     }
 
     /** {@inheritDoc} */
@@ -392,7 +406,7 @@ public final class UiTextInput implements UiSingleLineEditor, UiShellWidget, UiL
     /** {@inheritDoc} */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (!isVisible() || !editBox.isFocused()) {
+        if (!canFocus() || !editBox.isFocused()) {
             return false;
         }
         UiHistoryShortcut shortcut = UiHistoryShortcut.fromKey(keyCode, modifiers);
@@ -422,7 +436,7 @@ public final class UiTextInput implements UiSingleLineEditor, UiShellWidget, UiL
     /** {@inheritDoc} */
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
-        if (!isVisible()) {
+        if (!canFocus() || !editBox.isFocused()) {
             return false;
         }
         return editSession.edit(() -> editBox.charTyped(codePoint, modifiers));
@@ -431,7 +445,7 @@ public final class UiTextInput implements UiSingleLineEditor, UiShellWidget, UiL
     /** {@inheritDoc} */
     @Override
     public boolean canFocus() {
-        return isVisible() && editable;
+        return isVisible() && isEnabled() && editable;
     }
 
     @Override
@@ -442,7 +456,7 @@ public final class UiTextInput implements UiSingleLineEditor, UiShellWidget, UiL
     /** {@inheritDoc} */
     @Override
     public boolean activate() {
-        if (!isVisible() || onCommit == null) {
+        if (!canFocus() || onCommit == null) {
             return false;
         }
         onCommit.accept(editBox.getValue());

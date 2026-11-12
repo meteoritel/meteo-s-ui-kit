@@ -1,5 +1,6 @@
 package com.meteorite.meteosuikit.api.number;
 
+import com.meteorite.meteosuikit.api.input.UiFocusState;
 import java.util.function.Supplier;
 
 import com.meteorite.meteosuikit.api.style.UiSliderPainter;
@@ -12,7 +13,7 @@ import com.meteorite.meteosuikit.api.style.UiSliderRole;
 
 import com.meteorite.meteosuikit.api.input.UiPointer;
 import com.meteorite.meteosuikit.api.control.UiWidgetShell;
-import com.meteorite.meteosuikit.api.control.UiShellTarget;
+import com.meteorite.meteosuikit.api.control.UiStatefulTarget;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.input.UiInputContext;
 import com.meteorite.meteosuikit.api.input.UiInteractionSession;
@@ -55,7 +56,7 @@ import org.lwjgl.glfw.GLFW;
  * <p>本类只依赖 kit 与客户端通用类型：默认绘制使用 {@link UiSliderPainter} 与 {@link UiSliderStyle}，
  * 宿主可替换成主题化或贴图实现。</p>
  */
-public final class UiScalarSlider implements UiShellTarget, UiInteractionSession.Target {
+public final class UiScalarSlider implements UiStatefulTarget, UiInteractionSession.Target {
 
     /**
      * 默认显示小数位数：整数按 {@link UiNumbers} 的整数直出规则显示。
@@ -71,7 +72,17 @@ public final class UiScalarSlider implements UiShellTarget, UiInteractionSession
     private final UiWidgetShell shell = new UiWidgetShell(this, this::endInteraction);
 
     /** 真实焦点与资格由同一个状态壳提供。 */
-    @Override public UiWidgetShell shell() { return shell; }
+    @Override public UiRect bounds() { return shell.bounds(); }
+    /** {@inheritDoc} */
+    @Override public boolean isEnabled() { return shell.isEnabled(); }
+    /** {@inheritDoc} */
+    @Override public boolean isVisible() { return shell.isVisible(); }
+    /** {@inheritDoc} */
+    @Override public UiFocusState focusState() { return shell.focusState(); }
+    /** {@inheritDoc} */
+    @Override public void setLayoutKey(String key) { shell.setLayoutKey(key); }
+    /** {@inheritDoc} */
+    @Override public void setBounds(int x, int y, int width, int height) { shell.setBounds(x, y, width, height); }
     private final SliderInteraction<Double> interaction = new SliderInteraction<>(this,
             Double::isFinite, (first, second) -> first.doubleValue() == second.doubleValue(),
             this::value, restored -> this.value = restored, this::interactionListener);

@@ -20,6 +20,7 @@ import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
 import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
 import com.meteorite.meteosuikit.api.layout.UiLinearLayout;
 import com.meteorite.meteosuikit.api.style.UiStyleSource;
+import com.meteorite.meteosuikit.api.style.UiControlRole;
 import com.meteorite.meteosuikit.api.tree.UiTreeEditor;
 import com.meteorite.meteosuikit.api.tree.UiTreeNavigation;
 import com.meteorite.meteosuikit.api.tree.UiTreePath;
@@ -44,7 +45,7 @@ final class KitModelsExample implements UiWidget, UiInputContainer, UiLayoutSour
     private final KitTextModelExample text;
     private final UiListView<UiTreeProjection.Entry<Node>> tree;
     private final UiTreeEditor<Node> editor;
-    private final UiControl restoreView;
+    private final KitControlExample restoreView;
     private UiTreeViewState view = UiTreeViewState.EMPTY.select(UiTreePath.ROOT);
     private @Nullable Node savedRoot;
     private UiTreeViewState savedView = UiTreeViewState.EMPTY;
@@ -77,13 +78,15 @@ final class KitModelsExample implements UiWidget, UiInputContainer, UiLayoutSour
         actions.obtain("fold").configure(font, label("fold"), null, List.of(),
                 () -> editor.setCollapsed(UiTreePath.ROOT, !view.collapsed().contains(UiTreePath.ROOT)));
         actions.obtain("save").configure(font, label("save"), null, List.of(), this::saveView);
-        restoreView = actions.obtain("restore");
-        restoreView.configure(font, label("restore"), null, List.of(),
-                () -> editor.setViewState(savedView));
+        UiControl restore = new UiControl();
+        restore.setTheme(theme, UiControlRole.SECONDARY);
+        restore.setFocusable(true);
+        restore.configure(font, label("restore"), null, List.of(), () -> editor.setViewState(savedView));
+        restoreView = new KitControlExample(restore);
         actions.endUpdate();
         toolbar.setChildren(List.of(UiLinearLayout.Child.remain(), UiLinearLayout.Child.remain(),
                 UiLinearLayout.Child.remain(), UiLinearLayout.Child.remain()));
-        children.add(actions); children.add(text); children.add(tree);
+        children.add(actions); children.add(restoreView); children.add(text); children.add(tree);
         rebuild();
         editor.select(UiTreePath.ROOT);
     }
@@ -141,17 +144,20 @@ final class KitModelsExample implements UiWidget, UiInputContainer, UiLayoutSour
             UiRect cell = toolbar.bounds(i);
             actions.controls().get(i).setBounds(cell.x(), cell.y(), cell.width(), cell.height());
         }
+        UiRect restoreBounds = toolbar.bounds(3);
+        restoreView.setBounds(restoreBounds.x(), restoreBounds.y(), restoreBounds.width(), restoreBounds.height());
         text.setBounds(x, y + 24, width, 20);
         tree.setBounds(x, y + 48, width, Math.max(0, height - 48));
     }
     /** {@inheritDoc} */
     @Override public void render(GuiGraphics graphics, Font font, UiPointer pointer) {
-        actions.render(graphics, font, pointer); text.render(graphics, font, pointer); tree.render(graphics, font, pointer);
+        actions.render(graphics, font, pointer); restoreView.render(graphics, font, pointer); text.render(graphics, font, pointer); tree.render(graphics, font, pointer);
     }
     /** {@inheritDoc} */
     @Override public List<UiLayoutNode> layoutNodes() {
         var nodes = new ArrayList<UiLayoutNode>();
         for (var control : actions.controls()) nodes.addAll(control.layoutNodes());
+        nodes.addAll(restoreView.layoutNodes());
         nodes.add(new UiLayoutNode(UiLayoutNode.Kind.TEXT_INPUT, text.bounds(), text.accessibleName(), 0,
                 text.bounds().width(), true, true, List.of()));
         var rows = projection.visible(view);

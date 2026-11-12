@@ -1,6 +1,7 @@
 package com.meteorite.meteosuikit.api.control;
 
 import java.util.function.Supplier;
+import java.util.Objects;
 
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.input.UiFocusState;
@@ -26,6 +27,12 @@ public final class UiWidgetShell {
     private boolean enabled = true;
     private boolean visible = true;
     private boolean focusable = true;
+    private String layoutKey = "";
+
+    /** 宿主提供跨布局稳定的业务身份，空字符串保留仅展示语义。 */
+    public void setLayoutKey(String key) { layoutKey = Objects.requireNonNull(key); }
+    /** 几何快照与实际控件共享身份。 */
+    public String layoutKey() { return layoutKey; }
     private @Nullable Component accessibleName;
 
     /**

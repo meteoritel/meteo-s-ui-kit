@@ -1,5 +1,6 @@
 package com.meteorite.meteosuikit.api.control;
 
+import com.meteorite.meteosuikit.api.input.UiFocusState;
 import java.util.function.Supplier;
 
 import com.meteorite.meteosuikit.api.input.UiPointer;
@@ -36,7 +37,7 @@ import org.lwjgl.glfw.GLFW;
  * <p>与 {@link UiTextInput} 的分工：单行短文本仍走原版 {@code EditBox}；需要同时看到多行或允许换行的字段用本控件。
  * <p>长度上限按 Unicode 码点计数，超限的这一次输入整体回退，不会把半个代理对或超过上限的整段文本写进草稿。
  */
-public final class UiTextArea implements UiShellWidget, UiTextValue, UiLayoutSource {
+public final class UiTextArea implements UiStatefulWidget, UiTextValue, UiLayoutSource {
 
     // 左右内边距
     private static final int PADDING_X = TextInputSupport.PADDING_X;
@@ -81,9 +82,20 @@ public final class UiTextArea implements UiShellWidget, UiTextValue, UiLayoutSou
     private final Supplier<? extends UiStyleSource> theme;
 
     /** {@inheritDoc} */
-    @Override
-    public UiWidgetShell shell() {
-        return shell;
+    @Override public UiRect bounds() { return shell.bounds(); }
+    /** {@inheritDoc} */
+    @Override public boolean isEnabled() { return shell.isEnabled(); }
+    /** {@inheritDoc} */
+    @Override public boolean isVisible() { return shell.isVisible(); }
+    /** {@inheritDoc} */
+    @Override public UiFocusState focusState() { return shell.focusState(); }
+    /** {@inheritDoc} */
+    @Override public void setLayoutKey(String key) { shell.setLayoutKey(key); }
+    /** {@inheritDoc} */
+    @Override public UiTextArea setEnabled(boolean enabled) {
+        shell.setEnabled(enabled);
+        editSession.setEnabled(enabled);
+        return this;
     }
 
     /** 使用原版默认主题创建多行输入。 */
@@ -250,9 +262,10 @@ public final class UiTextArea implements UiShellWidget, UiTextValue, UiLayoutSou
     }
 
     /** 隐藏时结束当前交互并退出焦点序列，恢复显示保留内容。 */
-    public void setVisible(boolean nextVisible) {
+    public UiTextArea setVisible(boolean nextVisible) {
         shell.setVisible(nextVisible);
         editSession.setVisible(nextVisible);
+        return this;
     }
 
     // 回填后把光标与垂直滚动复位到开头；编辑期间不调用，避免抢走用户光标
@@ -297,7 +310,7 @@ public final class UiTextArea implements UiShellWidget, UiTextValue, UiLayoutSou
         Component content = firstLine.isEmpty() && hint != null ? hint : Component.literal(firstLine);
         int budget = Math.max(0, bounds().width() - PADDING_X * 2);
         return List.of(new UiLayoutNode(UiLayoutNode.Kind.TEXT_INPUT, bounds(), content, font.width(content),
-                budget, editable, true, List.of()));
+                budget, isEnabled() && editable, true, List.of()).identified(shell.layoutKey(), this));
     }
 
     /** {@inheritDoc} */
@@ -394,7 +407,7 @@ public final class UiTextArea implements UiShellWidget, UiTextValue, UiLayoutSou
     /** {@inheritDoc} */
     @Override
     public boolean mousePressed(UiInputContext context) {
-        if (isVisible() && scroll.mousePressed(context)) return true;
+        if (isVisible() && isEnabled() && scroll.mousePressed(context)) return true;
         return editSession.beginSelection(context, bounds(), canFocus());
     }
 
@@ -422,7 +435,7 @@ public final class UiTextArea implements UiShellWidget, UiTextValue, UiLayoutSou
     public boolean mouseScrolled(UiInputContext context, double scrollX, double scrollY) {
         double mouseX = context.pointerX();
         double mouseY = context.pointerY();
-        if (!isVisible() || !bounds().contains(mouseX, mouseY)) {
+        if (!isVisible() || !isEnabled() || !bounds().contains(mouseX, mouseY)) {
             return false;
         }
         int maxScroll = maxScroll();
@@ -436,7 +449,7 @@ public final class UiTextArea implements UiShellWidget, UiTextValue, UiLayoutSou
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         scroll.endInteraction(UiInteractionSession.EndReason.RELEASE);
-        if (!isVisible() || !isFocused() || (!editable && !selectableWhenReadOnly)) {
+        if (!isVisible() || !isEnabled() || !isFocused() || (!editable && !selectableWhenReadOnly)) {
             return false;
         }
         UiHistoryShortcut shortcut = UiHistoryShortcut.fromKey(keyCode, modifiers);
@@ -465,7 +478,7 @@ public final class UiTextArea implements UiShellWidget, UiTextValue, UiLayoutSou
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
         scroll.endInteraction(UiInteractionSession.EndReason.RELEASE);
-        if (!isVisible() || !editable || !isFocused()) {
+        if (!isVisible() || !isEnabled() || !editable || !isFocused()) {
             return false;
         }
         if (!StringUtil.isAllowedChatCharacter(codePoint)) {
@@ -480,7 +493,7 @@ public final class UiTextArea implements UiShellWidget, UiTextValue, UiLayoutSou
     /** {@inheritDoc} */
     @Override
     public boolean canFocus() {
-        return isVisible() && (editable || selectableWhenReadOnly);
+        return isVisible() && isEnabled() && (editable || selectableWhenReadOnly);
     }
 
     private static boolean isReadOnlyNavigation(int keyCode, int modifiers) {
@@ -588,7 +601,7 @@ public final class UiTextArea implements UiShellWidget, UiTextValue, UiLayoutSou
             UiPointerHit scrollHit = scroll.hitTest(x, y);
             if (scrollHit != null) return scrollHit.within(this);
         }
-        UiPointerHit hit = UiShellWidget.super.hitTest(x, y);
+        UiPointerHit hit = UiStatefulWidget.super.hitTest(x, y);
         return hit == null ? null : editSession.includeSelectionOwner(hit);
     }
 }

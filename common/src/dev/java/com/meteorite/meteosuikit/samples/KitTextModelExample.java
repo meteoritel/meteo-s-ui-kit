@@ -1,6 +1,8 @@
 package com.meteorite.meteosuikit.samples;
 
-import com.meteorite.meteosuikit.api.control.UiShellWidget;
+import com.meteorite.meteosuikit.api.input.UiFocusState;
+import com.meteorite.meteosuikit.api.geometry.UiRect;
+import com.meteorite.meteosuikit.api.control.UiStatefulWidget;
 import com.meteorite.meteosuikit.api.control.UiWidgetShell;
 import com.meteorite.meteosuikit.api.input.UiHistoryShortcut;
 import com.meteorite.meteosuikit.api.input.UiInputContext;
@@ -15,7 +17,7 @@ import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
 /** 独立 Model 演示：原版模型持有文本，session 持有接纳、选择与局部历史。 */
-final class KitTextModelExample implements UiShellWidget {
+final class KitTextModelExample implements UiStatefulWidget {
     private final UiWidgetShell shell = new UiWidgetShell(this, this::endSelection);
     private final TrackedEditBox box;
     private final UiTextEditSession session;
@@ -41,7 +43,19 @@ final class KitTextModelExample implements UiShellWidget {
 
     private void endSelection(UiInteractionSession.EndReason reason) { session.endInteraction(reason); }
     /** {@inheritDoc} */
-    @Override public UiWidgetShell shell() { return shell; }
+    @Override public UiRect bounds() { return shell.bounds(); }
+    /** {@inheritDoc} */
+    @Override public boolean isEnabled() { return shell.isEnabled(); }
+    /** {@inheritDoc} */
+    @Override public boolean isVisible() { return shell.isVisible(); }
+    /** {@inheritDoc} */
+    @Override public UiFocusState focusState() { return shell.focusState(); }
+    /** {@inheritDoc} */
+    @Override public void setLayoutKey(String key) { shell.setLayoutKey(key); }
+    /** {@inheritDoc} */
+    @Override public KitTextModelExample setEnabled(boolean enabled) { shell.setEnabled(enabled); box.active = enabled; return this; }
+    /** {@inheritDoc} */
+    @Override public KitTextModelExample setVisible(boolean visible) { shell.setVisible(visible); box.setVisible(visible); session.setVisible(visible); return this; }
     /** 原版换宽后恢复方向与光标；整个过程保留局部历史。 */
     @Override public void setBounds(int x, int y, int width, int height) {
         shell.setBounds(x, y, width, height);
@@ -60,7 +74,7 @@ final class KitTextModelExample implements UiShellWidget {
     }
     /** {@inheritDoc} */
     @Override public @Nullable UiPointerHit hitTest(double x, double y) {
-        UiPointerHit hit = UiShellWidget.super.hitTest(x, y);
+        UiPointerHit hit = UiStatefulWidget.super.hitTest(x, y);
         return hit == null ? null : session.includeSelectionOwner(hit);
     }
     /** {@inheritDoc} */
@@ -69,12 +83,14 @@ final class KitTextModelExample implements UiShellWidget {
     }
     /** {@inheritDoc} */
     @Override public boolean keyPressed(int key, int scan, int modifiers) {
+        if (!canFocus() || !isFocused()) return false;
         UiHistoryShortcut history = UiHistoryShortcut.fromKey(key, modifiers);
         if (history != null) { session.applyHistory(history); return true; }
         return session.edit(() -> box.keyPressed(key, scan, modifiers));
     }
     /** {@inheritDoc} */
     @Override public boolean charTyped(char value, int modifiers) {
+        if (!canFocus() || !isFocused()) return false;
         return session.edit(() -> box.charTyped(value, modifiers));
     }
     /** 文本由字符与导航键编辑，不把 Enter/Space 当作按钮激活。 */

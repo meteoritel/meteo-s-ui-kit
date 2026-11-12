@@ -123,6 +123,9 @@ public final class UiTextEditSession implements UiInputTarget {
         return selection.mousePressed(context);
     }
 
+    /** 同步所属控件资格，禁用时结束指针选择。 */
+    public void setEnabled(boolean enabled) { selection.setEnabled(enabled); }
+
     /** 隐藏时结束指针选择。 */
     public void setVisible(boolean visible) {
         selection.setVisible(visible);

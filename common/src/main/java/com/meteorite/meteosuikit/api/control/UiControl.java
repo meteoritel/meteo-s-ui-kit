@@ -1,5 +1,6 @@
 package com.meteorite.meteosuikit.api.control;
 
+import com.meteorite.meteosuikit.api.input.UiFocusState;
 import java.util.function.Supplier;
 
 import com.meteorite.meteosuikit.api.input.UiAction;
@@ -38,7 +39,7 @@ import java.util.Objects;
  *
  * <p>绘制只在文字或图标确实越出控件矩形时才设置裁剪，未越界时不提交绘制批次。</p>
  */
-public final class UiControl implements UiButtonWidget, UiShellWidget, UiInteractionSession.Target {
+public final class UiControl implements UiButtonWidget, UiStatefulWidget, UiInteractionSession.Target {
     private final UiWidgetShell shell = new UiWidgetShell(this, this::cancelPress);
     private final UiLabelPresentation label;
     private @Nullable Font configuredFont;
@@ -149,7 +150,7 @@ public final class UiControl implements UiButtonWidget, UiShellWidget, UiInterac
     @Override
     public List<UiLayoutNode> layoutNodes() {
         return List.of(new UiLayoutNode(UiLayoutNode.Kind.CONTROL, bounds(), accessibleName(), configuredFont == null ? 0 : label.width(configuredFont),
-                bounds().width(), isEnabled(), isVisible(), List.of()));
+                bounds().width(), isEnabled(), isVisible(), List.of()).identified(shell.layoutKey(), this));
     }
 
     /** 更新矩形并同步提示目标，几何变化保持按压会话。 */
@@ -161,10 +162,15 @@ public final class UiControl implements UiButtonWidget, UiShellWidget, UiInterac
     }
 
     /** {@inheritDoc} */
-    @Override
-    public UiWidgetShell shell() {
-        return shell;
-    }
+    @Override public UiRect bounds() { return shell.bounds(); }
+    /** {@inheritDoc} */
+    @Override public boolean isEnabled() { return shell.isEnabled(); }
+    /** {@inheritDoc} */
+    @Override public boolean isVisible() { return shell.isVisible(); }
+    /** {@inheritDoc} */
+    @Override public UiFocusState focusState() { return shell.focusState(); }
+    /** {@inheritDoc} */
+    @Override public void setLayoutKey(String key) { shell.setLayoutKey(key); }
 
     /** 显式结构覆盖使用纯色画法；后调用的 setSkin 可替换完整皮肤。 */
     public void setStyle(UiControlStyle style) {
@@ -177,6 +183,12 @@ public final class UiControl implements UiButtonWidget, UiShellWidget, UiInterac
         skinOverride = Objects.requireNonNull(skin, "skin");
         styleOverride = false;
         themeSkin.invalidate();
+        refreshTheme();
+    }
+
+    /** 只清除结构覆盖，恢复当前皮肤或根主题的画法；文字覆盖保持。 */
+    public void clearStyleOverride() {
+        styleOverride = false;
         refreshTheme();
     }
 
@@ -202,8 +214,9 @@ public final class UiControl implements UiButtonWidget, UiShellWidget, UiInterac
     }
 
     /** 隐藏时结束按压并退出焦点序列。 */
-    public void setVisible(boolean next) {
+    public UiControl setVisible(boolean next) {
         shell.setVisible(next);
+        return this;
     }
 
     public void setSelected(boolean selected) {

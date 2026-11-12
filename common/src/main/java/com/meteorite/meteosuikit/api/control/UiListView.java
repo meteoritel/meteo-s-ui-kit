@@ -1,5 +1,6 @@
 package com.meteorite.meteosuikit.api.control;
 
+import com.meteorite.meteosuikit.api.input.UiFocusState;
 import java.util.function.Supplier;
 
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
@@ -34,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * 行内容由调用方通过 {@link RowRenderer} 决定，控件只负责背景、选中标记与命中判定。
  * <p>单击选中、双击激活；键盘 {@code Enter} 同样触发激活。
  */
-public final class UiListView<T> implements UiShellWidget {
+public final class UiListView<T> implements UiStatefulWidget {
 
     /**
      * 行渲染回调：背景、选中/悬停/焦点标记与命中由控件处理，行内容由调用方绘制；{@code row} 已为左侧选中标记预留空间。
@@ -87,10 +88,17 @@ public final class UiListView<T> implements UiShellWidget {
     private final Supplier<? extends UiStyleSource> theme;
 
     /** {@inheritDoc} */
-    @Override
-    public UiWidgetShell shell() {
-        return shell;
-    }
+    @Override public UiRect bounds() { return shell.bounds(); }
+    /** {@inheritDoc} */
+    @Override public boolean isEnabled() { return shell.isEnabled(); }
+    /** {@inheritDoc} */
+    @Override public boolean isVisible() { return shell.isVisible(); }
+    /** {@inheritDoc} */
+    @Override public UiFocusState focusState() { return shell.focusState(); }
+    /** {@inheritDoc} */
+    @Override public void setLayoutKey(String key) { shell.setLayoutKey(key); }
+    /** {@inheritDoc} */
+    @Override public UiListView<T> setEnabled(boolean enabled) { shell.setEnabled(enabled); return this; }
 
     private void invalidateInteraction(UiInteractionSession.EndReason reason) {
         scrollView.endInteraction(reason);
@@ -385,7 +393,7 @@ public final class UiListView<T> implements UiShellWidget {
 
         double mouseX = context.pointerX();
         double mouseY = context.pointerY();
-        if (!isVisible() || !bounds().contains(mouseX, mouseY)) {
+        if (!isVisible() || !isEnabled() || !bounds().contains(mouseX, mouseY)) {
             return false;
         }
         if (scrollView.mousePressed(context)) {
@@ -427,7 +435,7 @@ public final class UiListView<T> implements UiShellWidget {
     public boolean mouseScrolled(UiInputContext context, double scrollX, double scrollY) {
         double mouseX = context.pointerX();
         double mouseY = context.pointerY();
-        if (!isVisible() || !bounds().contains(mouseX, mouseY) || scrollY == 0.0D) {
+        if (!isVisible() || !isEnabled() || !bounds().contains(mouseX, mouseY) || scrollY == 0.0D) {
             return false;
         }
         return scrollView.scrollBy(scrollY);
@@ -436,7 +444,7 @@ public final class UiListView<T> implements UiShellWidget {
     /** {@inheritDoc} */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (!isVisible() || items.isEmpty()) {
+        if (!isVisible() || !isEnabled() || items.isEmpty()) {
             return false;
         }
         if (keyCode == GLFW.GLFW_KEY_UP) {
@@ -488,7 +496,7 @@ public final class UiListView<T> implements UiShellWidget {
     @Override
     public boolean activate() {
         T item = selectedItem();
-        if (!isVisible() || item == null || onActivate == null) {
+        if (!isVisible() || !isEnabled() || item == null || onActivate == null) {
             return false;
         }
         onActivate.accept(item);
@@ -502,7 +510,7 @@ public final class UiListView<T> implements UiShellWidget {
     /** 使用当前布局解析实际命中，保留容器归属与叶子身份。 */
     @Override
     public @Nullable UiPointerHit hitTest(double x, double y) {
-        if (!isVisible() || !bounds().contains(x, y)) return null;
+        if (!isVisible() || !isEnabled() || !bounds().contains(x, y)) return null;
         UiPointerHit hit = scrollView.hitTest(x, y);
         if (hit != null) return hit.within(this);
         int index = indexAt(x, y);
