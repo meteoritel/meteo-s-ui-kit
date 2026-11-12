@@ -1,6 +1,9 @@
 package com.meteorite.meteosuikit.api.layout;
 
 import com.meteorite.meteosuikit.api.geometry.UiRect;
+import com.meteorite.meteosuikit.api.geometry.UiViewport;
+import com.meteorite.meteosuikit.api.input.UiInputTarget;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.network.chat.Component;
 
@@ -23,9 +26,13 @@ import java.util.List;
  * @param enabled 节点当前是否可交互
  * @param visible 节点当前是否可见
  * @param children 子节点；叶节点为空列表，永不为 {@code null}
+ * @param key 宿主稳定身份；空字符串表示仅展示
+ * @param visibleRect 当前坐标空间内已叠加祖先裁剪的矩形
+ * @param target 真实输入归属；展示节点为空，不可自动点击
  */
 public record UiLayoutNode(Kind kind, UiRect rect, Component text, int textWidth, int textBudget,
-                           boolean enabled, boolean visible, List<UiLayoutNode> children) {
+                           boolean enabled, boolean visible, List<UiLayoutNode> children,
+                           String key, UiRect visibleRect, @Nullable UiInputTarget target) {
     /** 节点种类：控件、文本输入、树、文档行、分隔线、文档 Frame、模态层。 */
     public enum Kind { CONTROL, TEXT_INPUT, TREE, ROW, DIVIDER, FRAME, MODAL }
 
@@ -37,5 +44,32 @@ public record UiLayoutNode(Kind kind, UiRect rect, Component text, int textWidth
     /** 文案按带宽裁过：可用带宽装不下完整文案。 */
     public boolean clipped() {
         return textBudget > 0 && textWidth > textBudget;
+    }
+
+    /** 原有展示节点沿用自身矩形，输入归属由实际所有者补充。 */
+    public UiLayoutNode(Kind kind, UiRect rect, Component text, int textWidth, int textBudget,
+                        boolean enabled, boolean visible, List<UiLayoutNode> children) {
+        this(kind, rect, text, textWidth, textBudget, enabled, visible, children, "", rect, null);
+    }
+
+    /** 业务身份与真实目标一同附着；不维护第二个控件登记表。 */
+    public UiLayoutNode identified(String key, UiInputTarget target) {
+        return new UiLayoutNode(kind, rect, text, textWidth, textBudget, enabled, visible, children,
+                key, visibleRect, target);
+    }
+
+    /** 仅裁剪可见区域，保留原始几何，递归应用于子内容。 */
+    public UiLayoutNode clippedTo(UiRect clip) {
+        UiRect effective = visibleRect.intersect(clip);
+        return new UiLayoutNode(kind, rect, text, textWidth, textBudget, enabled, visible,
+                children.stream().map(child -> child.clippedTo(effective)).toList(), key, effective, target);
+    }
+
+    /** 根统一投影到原版 GUI 空间，文字带宽与几何使用相同单位。 */
+    public UiLayoutNode projected(UiViewport viewport) {
+        return new UiLayoutNode(kind, viewport.project(rect), text,
+                (int) Math.ceil(textWidth * viewport.scale()), (int) Math.floor(textBudget * viewport.scale()),
+                enabled, visible, children.stream().map(child -> child.projected(viewport)).toList(),
+                key, viewport.project(visibleRect).intersect(viewport.bounds()), target);
     }
 }

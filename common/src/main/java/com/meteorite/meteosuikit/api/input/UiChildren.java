@@ -2,6 +2,8 @@ package com.meteorite.meteosuikit.api.input;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
+import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
+import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
 import java.util.List;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
@@ -13,11 +15,18 @@ import org.jetbrains.annotations.Nullable;
  * 容器的实际有序成员：绘制方直接遍历本集合，命中按逆序，Tab 默认按声明顺序。
  * 只持有结构，不持有捕获；拖动与释放继续由作用域的唯一会话派发。
  */
-public final class UiChildren<T extends UiInputTarget> extends AbstractList<T> implements UiInputTarget {
+public final class UiChildren<T extends UiInputTarget> extends AbstractList<T> implements UiInputTarget, UiLayoutSource {
     private final List<T> members = new ArrayList<>();
     private final Map<T, Integer> tabOrder = new IdentityHashMap<>();
     private List<T> navigation;
     private long revision;
+
+    /** 直接读取实际有序成员贡献的布局，不创建平行输入树。 */
+    @Override public List<UiLayoutNode> layoutNodes() {
+        List<UiLayoutNode> nodes = new ArrayList<>();
+        for (T member : members) if (member instanceof UiLayoutSource source) nodes.addAll(source.layoutNodes());
+        return List.copyOf(nodes);
+    }
 
     /** 读取声明顺序中的成员。 */
     @Override public T get(int index) { return members.get(index); }

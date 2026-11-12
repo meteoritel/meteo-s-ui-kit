@@ -15,6 +15,14 @@ public record UiRect(int x, int y, int width, int height) {
     public int right() { return x + width; }
     public int bottom() { return y + height; }
 
+    /** 有效可见区域沿祖先裁剪相交；无交集时返回零面积。 */
+    public UiRect intersect(UiRect other) {
+        int left = Math.max(x, other.x);
+        int top = Math.max(y, other.y);
+        return new UiRect(left, top, Math.max(0, Math.min(right(), other.right()) - left),
+                Math.max(0, Math.min(bottom(), other.bottom()) - top));
+    }
+
     public boolean contains(double mouseX, double mouseY) {
         return mouseX >= x && mouseX < right() && mouseY >= y && mouseY < bottom();
     }

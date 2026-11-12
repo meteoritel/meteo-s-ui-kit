@@ -1,15 +1,21 @@
 package com.meteorite.meteosuikit.api.input;
 
 import java.util.function.Consumer;
+import java.util.List;
+import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
+import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * 普通容器的成员与输入接入；特殊裁剪、命令和视口回退由容器覆写。
  * 持续拖动与匹配释放始终由作用域直接送给会话目标。
  */
-public interface UiInputContainer extends UiInputTarget {
+public interface UiInputContainer extends UiInputTarget, UiLayoutSource {
     /** 实际成员按绘制顺序存放，容器稳定持有同一集合。 */
     UiChildren<? extends UiInputTarget> inputChildren();
+
+    /** 默认贡献同一成员树的几何，自绘容器可追加自身投影。 */
+    @Override default List<UiLayoutNode> layoutNodes() { return inputChildren().layoutNodes(); }
 
     /** 保留实际叶子与容器身份。 */
     @Override default @Nullable UiPointerHit hitTest(double x, double y) {

@@ -74,7 +74,7 @@ public final class KitShowcaseScreen extends UiThemedScreen implements UiLayoutS
                     (graphics, renderFont, pointer, depth) -> content.render(graphics, pointer), content));
         }
         content.setOnScopeChanged(this::refreshUiState);
-        content.layout(width, height);
+        content.layout(viewport().logicalWidth(), viewport().logicalHeight());
         refreshUiState();
     }
 
@@ -85,16 +85,13 @@ public final class KitShowcaseScreen extends UiThemedScreen implements UiLayoutS
         return presentation;
     }
 
-    @Override protected void layoutUi() { content.layout(width, height); }
+    @Override protected void layoutUi() { content.layout(viewport().logicalWidth(), viewport().logicalHeight()); }
+    @Override protected int minimumUiWidth() { return 640; }
+    @Override protected int minimumUiHeight() { return 480; }
 
     @Override
     protected void renderThemedUi(@NotNull GuiGraphics graphics, int x, int y, float delta) {
         layers().render(graphics, font, x, y);
-    }
-
-    @Override
-    public List<UiLayoutNode> layoutNodes() {
-        return content == null ? List.of() : layers().layoutNodes();
     }
 
     private void nextTheme() { requestTheme(themes.get(themeIndex = (themeIndex + 1) % themes.size())); }

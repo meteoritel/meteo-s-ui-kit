@@ -17,6 +17,7 @@ import com.meteorite.meteosuikit.api.input.UiHistoryShortcut;
 import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
 import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
+import com.meteorite.meteosuikit.api.render.UiRenderLayers;
 import com.meteorite.meteosuikit.api.style.UiStyleSource;
 import com.meteorite.meteosuikit.api.style.UiMinecraftTheme;
 import java.util.Objects;
@@ -306,7 +307,7 @@ public final class UiModal implements UiWidget, UiInputContainer {
      * 此时只报一个覆盖内容区的 FRAME 节点，让探针仍能读到内容区几何。文案取标题，带宽按标题栏
      * 可用宽度算，标题过长时探针可据此发现。</p>
      */
-    List<UiLayoutNode> layoutNodes() {
+    @Override public List<UiLayoutNode> layoutNodes() {
         if (!visible) {
             return List.of();
         }
@@ -549,12 +550,15 @@ public final class UiModal implements UiWidget, UiInputContainer {
             theme.get().drawInset(graphics, contentRect);
             List<FormattedCharSequence> lines = messageLines(contentRect.width() - theme.get().padding() * 2);
             int textY = contentRect.y() + theme.get().padding() - messageScrollOffset;
-            graphics.enableScissor(contentRect.x(), contentRect.y(), contentRect.right(), contentRect.bottom());
-            for (FormattedCharSequence line : lines) {
-                graphics.drawString(font, line, contentRect.x() + theme.get().padding(), textY, theme.get().surfaces().text(), false);
-                textY += font.lineHeight + 2;
+            UiRenderLayers.enableScissor(graphics, contentRect);
+            try {
+                for (FormattedCharSequence line : lines) {
+                    graphics.drawString(font, line, contentRect.x() + theme.get().padding(), textY, theme.get().surfaces().text(), false);
+                    textY += font.lineHeight + 2;
+                }
+            } finally {
+                UiRenderLayers.disableScissor(graphics);
             }
-            graphics.disableScissor();
         }
         for (UiButtonWidget button : buttons) {
             if (button.isVisible()) {

@@ -5,6 +5,7 @@ org.jetbrains.*
 org.joml.*
 org.lwjgl.*
 com.mojang.blaze3d.platform.Lighting
+com.mojang.blaze3d.platform.Window
 com.mojang.blaze3d.vertex.PoseStack
 com.mojang.blaze3d.vertex.VertexConsumer
 com.mojang.blaze3d.systems.RenderSystem

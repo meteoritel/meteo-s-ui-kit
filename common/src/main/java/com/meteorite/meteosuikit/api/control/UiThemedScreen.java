@@ -25,8 +25,12 @@ public abstract class UiThemedScreen extends UiScreen {
 
     /** 原版世界背景后绘制主题窗口；宿主可覆写整段背景画法。 */
     protected void renderThemedBackground(GuiGraphics graphics, int x, int y, float delta) {
-        renderBackground(graphics, x, y, delta);
-        theme.get().drawWindow(graphics, new UiRect(0, 0, width, height));
+        graphics.pose().pushPose();
+        float inverse = (float) (1 / viewport().scale());
+        graphics.pose().scale(inverse, inverse, 1);
+        try { renderBackground(graphics, (int) (x * viewport().scale()), (int) (y * viewport().scale()), delta); }
+        finally { graphics.pose().popPose(); }
+        theme.get().drawWindow(graphics, new UiRect(0, 0, viewport().logicalWidth(), viewport().logicalHeight()));
     }
 
     /** 主题发布、布局和作用域准备完成后，在背景上绘制内容。 */

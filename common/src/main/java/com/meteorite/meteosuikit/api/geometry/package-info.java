@@ -6,6 +6,7 @@
  * 公开返回链随用途说明，嵌套公开契约随顶层类型维护。</p>
  * <ul>
  *   <li>{@code UiRect}: library</li>
+ *   <li>{@code UiViewport}: library；用途：根 Screen 共用绘制、输入与快照缩放</li>
  *   <li>{@code UiTransform}: library</li>
  * </ul>
  */

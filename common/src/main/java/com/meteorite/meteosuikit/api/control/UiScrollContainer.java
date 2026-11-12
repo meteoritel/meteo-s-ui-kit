@@ -9,16 +9,24 @@ import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.List;
+import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
+import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
 import java.util.function.Consumer;
 
 /**
  * 屏幕坐标内容的滚动输入组合；普通命中受视口裁剪，捕获输入仍由 scope 直达目标。
  * 内容自行按滚动偏移布局和绘制，本类不再执行内容坐标变换。
  */
-public final class UiScrollContainer implements UiInputTarget {
+public final class UiScrollContainer implements UiInputTarget, UiLayoutSource {
     private final UiScrollView scroll;
     private final UiInputTarget content;
     private final UiChildren<UiInputTarget> members = new UiChildren<>();
+
+    /** 读取真实内容布局并叠加同一滚动视口裁剪。 */
+    @Override public List<UiLayoutNode> layoutNodes() {
+        return members.layoutNodes().stream().map(node -> node.clippedTo(scroll.viewport())).toList();
+    }
 
     /** 内容与滚动视图由调用方稳定持有，保留成员结构只在本类内维护。 */
     public UiScrollContainer(UiScrollView scroll, UiInputTarget content) {
