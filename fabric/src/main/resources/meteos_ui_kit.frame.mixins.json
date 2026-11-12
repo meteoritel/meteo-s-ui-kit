@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "com.meteorite.meteosuikit.fabric.client",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["FrameCaptureMixin"],
+  "injectors": {"defaultRequire": 1}
+}

@@ -30,6 +30,7 @@ public final class UiKitClientLifecycle {
 
     /** 客户端终止时释放共享 GPU 工作区。 */
     public static void release() {
+        UiFrameCaptureState.release();
         UiRenderLayers.releaseModels();
         world = null;
         language = null;

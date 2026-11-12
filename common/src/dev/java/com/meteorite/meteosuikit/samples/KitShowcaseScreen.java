@@ -3,6 +3,7 @@ package com.meteorite.meteosuikit.samples;
 import com.meteorite.meteosuikit.api.input.UiInputScope;
 import com.meteorite.meteosuikit.api.render.UiLayer;
 import com.meteorite.meteosuikit.api.render.UiLayers;
+import com.meteorite.meteosuikit.api.render.UiFrameCapture;
 import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
 import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
 import net.minecraft.client.gui.GuiGraphics;
@@ -102,6 +103,14 @@ public final class KitShowcaseScreen extends UiThemedScreen implements UiLayoutS
     @Override protected void prepareUi() { themePublication.prepare(inputRouter().active()); }
 
     @Override public boolean keyPressed(int key, int scan, int mods) {
+        if (key == GLFW.GLFW_KEY_F9 && minecraft != null && minecraft.player != null) {
+            UiFrameCapture.capture(minecraft.gameDirectory.toPath().resolve("screenshots/kit-" + System.nanoTime() + ".png"))
+                    .whenComplete((result, error) -> minecraft.execute(() -> {
+                        if (minecraft.player != null) minecraft.player.displayClientMessage(Component.literal(
+                                error == null ? result.path().toString() : error.toString()), false);
+                    }));
+            return true;
+        }
         if (key == GLFW.GLFW_KEY_G && content.controlsVisible()) { content.changeGrid(); return true; }
         if (key == GLFW.GLFW_KEY_R && content.controlsVisible() && minecraft != null) { minecraft.reloadResourcePacks(); return true; }
         if (key == GLFW.GLFW_KEY_F6) { nextTheme(); return true; }

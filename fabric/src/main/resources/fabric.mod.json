@@ -8,6 +8,6 @@
   "license": "MIT",
   "environment": "*",
   "entrypoints": {"client": ["com.meteorite.meteosuikit.fabric.client.FabricUiKitClient"]},
-  "mixins": ["meteos_ui_kit.mixins.json"],
+  "mixins": ["meteos_ui_kit.mixins.json", "meteos_ui_kit.frame.mixins.json"],
   "depends": {"fabricloader": ">=0.16.9", "fabric-api": "*", "minecraft": "1.21.1", "java": ">=21"}
 }

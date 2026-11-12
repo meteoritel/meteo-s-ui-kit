@@ -6,6 +6,7 @@
  * 公开返回链随用途说明，嵌套公开契约随顶层类型维护。</p>
  * <ul>
  *   <li>{@code UiDotGrid}: library</li>
+ *   <li>{@code UiFrameCapture}: library；用途：后续完成帧的原尺寸 PNG 与异步采样结果</li>
  *   <li>{@code UiFlatText}: library</li>
  *   <li>{@code UiIcon}: library</li>
  *   <li>{@code UiIconSheet}: library</li>
