@@ -2,6 +2,12 @@
 
 普通页面使用 `UiScreen` 或 `UiThemedScreen`，原版容器组合唯一的 router 与 `UiInputBridge`。输入前准备、布局和选域，返回未消费时才回退原版父类。
 
+固定画布在 `UiScreen` 声明最小尺寸，由根统一缩放绘制、输入与布局快照。根按实际 framebuffer 选择能容纳画布的整数物理像素倍率，原版 GUI 倍率为放大上限；不足 `1×` 时连续缩小以保留访问能力。无需缩小时保留原版 GUI 尺寸及取整语义。宿主迁移见 [dev.8 → dev.9](migrations/dev.8-to-dev.9.md)。
+
+`UiPointerHit.renderTooltip` 接收当前轴对齐二维 pose 内的指针，在原版 GUI 空间呈现普通与富提示，保留当前 Z 层和主题。富提示回调收到 GUI 坐标，直接调用原版 Tooltip 即可；作用域门禁仍由调用方检查。逻辑内容裁剪使用 `UiRenderLayers.enableScissor/disableScissor` 在 `finally` 中配对；提示在内容裁剪退出后呈现。
+
+自绘内容从实际输入成员贡献稳定身份和裁剪几何；按需帧末 PNG 通过 `UiFrameCapture` 异步采集。布局与采样生命周期见 [dev.7 → dev.8](migrations/dev.7-to-dev.8.md)。
+
 宿主稳定持有主题 Context、输入根、业务内容与场景所有者。`PreviewPlatforms.geometry()` 在库客户端初始化完成后提供默认平台能力；宿主仍注入 executor、时钟、诊断和预算，并关闭自己的 `PreviewScenes`。
 
 库平台入口安装默认 Geometry，并接入共享客户端生命周期对模型工作区的世代观察及终止释放。Display accessor 与 client Mixin 配置使用 common 共享源码和资源，各端保留自己的 block 渲染路径与事件相位。根卸载仍释放自己的资源。业务资源世代、缓存、线程池与文案继续归宿主。
@@ -28,7 +34,9 @@ dev 序列允许源码、二进制与行为破坏，每个新 dev 坐标附迁�
 
 `UiTextScheme` 提供共同文字语义及浅/暗底预设。`UiSurfaceStyle.withText(scheme)` 只映射正文、标签与弱化文字；业务专属语义和结构色由宿主配方维护。
 
-`UiShellTarget` 复用非渲染状态壳，`UiShellWidget` 在其上组合绘制契约。输入目标自行贡献可见焦点子树和资格；禁用目标保留登记，由 `canFocus` 控制导航。
+`UiStatefulTarget` 表达几何、可见性、可用性和布局身份，`UiStatefulWidget` 组合绘制契约。普通消费调用控件 setter，由控件同步原版模型、焦点和子会话。自定义控件私有组合 `UiWidgetShell`；包装现有 control 时转发语义操作并共享核心的 `focusState()`。扩展与迁移示例见 [dev.9 → dev.10](migrations/dev.9-to-dev.10.md)，Frame 裁剪几何修正见 [dev.10 → dev.11](migrations/dev.10-to-dev.11.md)，视口幂等与 resize 按压政策见 [dev.11 → dev.12](migrations/dev.11-to-dev.12.md)。
+
+根主题切换保留成员显式结构、完整 skin 与独立文字覆盖。`UiControlGroup.setStyle` 和 `clearStyleOverride` 广播到当前成员并更新后续成员默认值；`style()` 返回后续新成员的默认结构。控件清除结构覆盖后使用完整 skin 或根主题，`clearSkinOverride` 同时清除结构和完整 skin，文字覆盖保持独立。
 
 `UiPaginationState` 将动态页数和页码归一化，读取后保留合法状态；内容、选择和翻页副作用由宿主解释。`UiScrollContainer` 组合既有滚动视图与屏幕坐标内容，集中处理视口命中、滚动条优先和子级未消费的滚轮回退。内容按偏移布局并裁剪，捕获由 scope 直达实际目标。`UiFormLayout` 的结果可同时驱动控件、标签、内容高度与焦点滚动。
 
@@ -38,6 +46,12 @@ dev 序列允许源码、二进制与行为破坏，每个新 dev 坐标附迁�
 
 `UiDocument.targets()` 从排版缓存返回 `UiDocumentTarget` 快照。行、前置图标和尾随图标保留各自 `UiDocumentHit`，宿主按 `hit().action()` 选择动作，按 `payload()` 解释业务语义。同一动作出现多次时保留每次出现，`path()` 表示当前内容结构中的出现位置；跨内容版本的身份由宿主 payload 决定。
 
-`hit().rect()` 位于叶子文档的内容空间，`contentBounds()` 位于查询文档的内容空间，`screenBounds()` 位于调用方 GUI 空间。Frame 子文档保留 `document()` 归属，两个投影包含相应的嵌套变换。结果包含视口外节点，宿主负责滚动定位与裁剪；外部 pose 仍由宿主转换。内容、字体、尺寸或资源失效后重新读取，缩放和平移后重新取得屏幕几何。
+`hit().rect()` 位于叶子文档的内容空间，`contentBounds()` 位于查询文档的内容空间，`screenBounds()` 位于调用方 GUI 空间。Frame 子文档保留 `document()` 归属，两个投影包含相应的嵌套变换，`contentClip()` 提供祖先 Frame 的内容空间裁剪。结果包含视口外节点，宿主负责滚动定位与裁剪；外部 pose 仍由宿主转换。内容、字体、尺寸或资源失效后重新读取，缩放和平移后重新取得屏幕几何。
+
+`UiDocument.TextOverflow.WRAP` 将带样式文本折为视觉片段，逻辑父行、行/图标动作身份保持稳定；默认 `HOVER_SCROLL` 保留自然单行。`TextMeasurer.wrap` 是分行 seam，原版 adapter 使用字体 splitter。布局只随内容版本、宽度或显式失效重建，移动视口、滚动和变换复用排版。
+
+页内使用 `UiDocumentView`，其 bounds 是正文内矩形，业务边框在外部绘制；通过 offset 读写阅读位置。灯箱使用 `UiDocumentLightboxContent`，独立持有文档和变换，可从稳定内容 Supplier 读取业务节点。两者统一持有动作导航、鼠标与键盘配对激活及失效取消，Frame 背景和正文使用同一裁剪。业务 Background 回调只解释 payload 和选中提示，在文档内容坐标绘制。语言或字体资源变化时调用阅读入口的布局失效方法。
+
+灯箱 fit 不放大小内容并左上对齐；手动缩放后 resize 保留档位并钳制平移，fit 状态 resize 重新适配。关闭灯箱丢弃自己的阅读变换，页内 offset 由其控件保留。
 
 灯箱内容实现 `UiFocusTarget` 或贡献子焦点目标时，`UiLightbox` 将其加入同一作用域的 Tab 序列。内容持焦时先接收普通按键与字符，配对释放和退出通知沿内容传递；Escape 仍由灯箱关闭入口处理。
