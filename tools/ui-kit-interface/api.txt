@@ -1298,6 +1298,7 @@ com.meteorite.meteosuikit.api.input.UiInputScope | METHOD [public] pointer : (do
 com.meteorite.meteosuikit.api.input.UiInputScope | METHOD [public] refreshFocus : ()void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputScope
 com.meteorite.meteosuikit.api.input.UiInputScope | METHOD [public] setEscape : (java.lang.Runnable)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputScope
 com.meteorite.meteosuikit.api.input.UiInputScope | METHOD [public] setHistory : (java.util.function.@org.jetbrains.annotations.Nullable Consumer<com.meteorite.meteosuikit.api.input.UiHistoryShortcut>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputScope
+com.meteorite.meteosuikit.api.input.UiInputScope | METHOD [public] setNavigationBack : (java.lang.@org.jetbrains.annotations.Nullable Runnable)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputScope
 com.meteorite.meteosuikit.api.input.UiInputTarget | INTERFACE [public, abstract]  bounds [] extends none implements
 com.meteorite.meteosuikit.api.input.UiInputTarget | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.input.UiInputTarget | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget

@@ -22,6 +22,7 @@ import com.meteorite.meteosuikit.api.style.*;
 import com.meteorite.meteosuikit.api.text.TextMeasurer;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.*;
 import net.minecraft.util.FormattedCharSequence;
 import java.util.*;
@@ -271,7 +272,130 @@ public final class KitArchitectureCheck {
                 "reselected scope resumes focus after exit callback");
         router.close();
     }
-    public static void main(String[] args) { theme();layout();input();routing();reentrantFocus();listGeometry();memberTree();formBody();modalViewport();System.out.println("PASS: theme policy, styled layout/cache/hits, paired actions, semantic state, inline/lightbox input, list geometry, member tree, form body and modal viewport"); }
+    static UiInputContext backAt(UiInputScope scope) {
+        return UiInputContext.pointer(scope, 3, 3, GLFW.GLFW_MOUSE_BUTTON_4, 0);
+    }
+    static void navigation() {
+        UiInputRouter router = new UiInputRouter();
+        AtomicInteger backs = new AtomicInteger(), presses = new AtomicInteger(), releases = new AtomicInteger();
+        boolean[] consumesBackspace = {false};
+        UiInputScope base = new UiInputScope(new UiInputTarget() {
+            @Override public boolean mousePressed(UiInputContext context) { presses.incrementAndGet(); return true; }
+            @Override public boolean mouseReleased(UiInputContext context) { releases.incrementAndGet(); return true; }
+            @Override public boolean keyPressed(int key, int scan, int modifiers) {
+                return consumesBackspace[0] && key == GLFW.GLFW_KEY_BACKSPACE;
+            }
+        });
+        router.select(base);
+        router.mousePressed(backAt(base)); router.mouseReleased(backAt(base));
+        check(presses.get()==1 && releases.get()==1, "unconfigured scope preserves side-button content input");
+        base.setNavigationBack(backs::incrementAndGet);
+        check(router.mousePressed(backAt(base)), "configured back press is consumed");
+        check(router.mousePressed(backAt(base)) && backs.get()==1, "duplicate press waits for paired release");
+        check(router.mouseDragged(backAt(base),4,4) && router.mouseReleased(backAt(base)), "back drag and release are consumed");
+        router.mouseReleased(backAt(base));
+        check(presses.get()==1 && releases.get()==1 && backs.get()==1, "back never reaches content or activates on release");
+        UiInputContext forward = UiInputContext.pointer(base,3,3,GLFW.GLFW_MOUSE_BUTTON_5,0);
+        router.mousePressed(forward);router.mouseReleased(forward);
+        check(presses.get()==2 && releases.get()==2 && backs.get()==1, "forward button keeps ordinary dispatch");
+        consumesBackspace[0]=true;router.keyPressed(GLFW.GLFW_KEY_BACKSPACE,0,0);
+        check(backs.get()==1, "content consumes Backspace before navigation");
+        consumesBackspace[0]=false;router.keyPressed(GLFW.GLFW_KEY_BACKSPACE,0,0);
+        check(backs.get()==2, "unconsumed Backspace shares navigation callback");
+        UiInputScope modal = new UiInputScope(new UiInputTarget() {
+            @Override public boolean blocksInput() { return true; }
+        });
+        base.setNavigationBack(() -> { backs.incrementAndGet();router.select(modal); });
+        router.mousePressed(backAt(base));
+        check(router.active()==modal && router.mouseDragged(backAt(modal),4,4) && router.mouseReleased(backAt(modal)),
+                "back release stays claimed when callback changes scope");
+        router.mousePressed(backAt(modal));router.mouseReleased(backAt(modal));router.keyPressed(GLFW.GLFW_KEY_BACKSPACE,0,0);
+        check(backs.get()==3, "modal without callback never searches underlying navigation");
+        router.select(base);base.setNavigationBack(backs::incrementAndGet);
+        UiInteractionSession.EndReason[] ended = {null};
+        UiInteractionSession.Target changing = reason -> { ended[0]=reason;router.select(modal); };
+        base.interaction().begin(changing,UiInteractionSession.Source.POINTER,0);
+        router.mousePressed(backAt(base));
+        check(ended[0]==UiInteractionSession.EndReason.CANCEL && backs.get()==3 && router.active()==modal,
+                "cancellation changing scope skips stale navigation callback");
+        router.mouseReleased(backAt(modal));router.select(base);
+        base.interaction().begin(reason -> router.close(),UiInteractionSession.Source.KEY,GLFW.GLFW_KEY_ENTER);
+        router.mousePressed(backAt(base));
+        check(router.active()==null && backs.get()==3 && !router.mouseReleased(backAt(base)),
+                "cancellation closing root clears back pairing without invoking stale callback");
+        router.select(base);base.setNavigationBack(router::close);
+        check(router.mousePressed(backAt(base)) && router.active()==null, "callback can close root while press stays consumed");
+        router.select(base);
+        check(!router.mouseReleased(backAt(base)), "root close discards old back release");
+        base.setNavigationBack(null);router.mousePressed(backAt(base));router.mouseReleased(backAt(base));
+        check(presses.get()==3 && releases.get()==3, "callback can be removed");
+        router.close();
+
+        UiControl button = new UiControl();button.setBounds(0,0,20,20);
+        AtomicInteger actions = new AtomicInteger();
+        button.configure(new MetricFont(),Component.literal("action"),null,List.of(),actions::incrementAndGet);
+        UiInputScope buttons = new UiInputScope(button);buttons.setNavigationBack(backs::incrementAndGet);
+        router.select(buttons);buttons.refreshFocus();
+        router.mousePressed(at(buttons,3,3));router.mousePressed(backAt(buttons));
+        router.mouseReleased(at(buttons,3,3));router.mouseReleased(backAt(buttons));
+        check(actions.get()==0 && buttons.interaction().target()==null, "back cancels held primary button and late activation");
+        router.close();
+
+        UiInputBridge bridge = new UiInputBridge(router);router.select(buttons);buttons.refreshFocus();
+        buttons.setNavigationBack(() -> router.select(modal));
+        bridge.mousePressed(at(buttons,3,3));bridge.mousePressed(backAt(buttons));
+        check(bridge.mouseReleased(at(modal,3,3)) && bridge.mouseReleased(backAt(modal)) && actions.get()==0,
+                "container bridge consumes late primary and back releases after navigation changes scope");
+        bridge.close();
+
+        UiDocumentView reader = new UiDocumentView(new CountingMeasurer(),()->UiMinecraftTheme.INSTANCE,Component.literal("reader"));
+        reader.setBounds(0,0,80,40);reader.setContent(List.of(row("action",actions::incrementAndGet)));
+        UiInputScope reading = new UiInputScope(reader);reading.setNavigationBack(backs::incrementAndGet);
+        router.select(reading);reading.refreshFocus();reading.focus().focusOn(reader);
+        router.keyPressed(GLFW.GLFW_KEY_ENTER,0,0);router.keyPressed(GLFW.GLFW_KEY_BACKSPACE,0,0);router.keyReleased(GLFW.GLFW_KEY_ENTER,0,0);
+        check(actions.get()==0 && reading.interaction().target()==null, "Backspace cancels pending keyboard document activation");
+        router.close();
+
+        UiTextInput text = new UiTextInput(new MetricFont(),Component.literal("draft"));text.setBounds(0,0,100,20);
+        UiInputScope editing = new UiInputScope(text);editing.setNavigationBack(backs::incrementAndGet);
+        router.select(editing);editing.refreshFocus();editing.focus().focusOn(text);
+        router.charTyped('x',0);int beforeUndo=backs.get();
+        router.keyPressed(GLFW.GLFW_KEY_Z,0,GLFW.GLFW_MOD_CONTROL);
+        check(text.value().isEmpty() && backs.get()==beforeUndo, "text undo remains separate from page back");
+        router.keyPressed(GLFW.GLFW_KEY_Y,0,GLFW.GLFW_MOD_CONTROL);
+        check(text.value().equals("x") && backs.get()==beforeUndo, "text redo remains local");
+        router.mousePressed(backAt(editing));router.mouseReleased(backAt(editing));
+        check(text.value().equals("x") && backs.get()==beforeUndo+1, "side button navigates without undoing text");
+        router.close();
+    }
+    static final class ClosingScreen extends UiScreen {
+        final UiInputScope scope = new UiInputScope(new UiInputTarget() {});
+        int preparations;
+        ClosingScreen() { super(Component.empty());scope.setNavigationBack(this::removed);scope.setEscape(this::removed); }
+        @Override protected UiInputScope inputScope() { return scope; }
+        @Override protected void prepareUi() { preparations++; }
+        @Override protected void renderUi(GuiGraphics graphics,int x,int y,float delta) { }
+        boolean hasActiveScope() { return inputRouter().active()!=null; }
+    }
+    static void navigationLifecycle() {
+        ClosingScreen screen = new ClosingScreen();
+        check(screen.keyPressed(GLFW.GLFW_KEY_BACKSPACE,0,0), "screen consumes empty-history close action");
+        check(!screen.hasActiveScope() && !screen.scope.isActive() && screen.preparations==1,
+                "event completion does not prepare or reactivate removed screen");
+        screen.keyPressed(GLFW.GLFW_KEY_ESCAPE,0,0);
+        check(!screen.hasActiveScope() && !screen.scope.isActive(), "reused screen closes in its new lifecycle");
+    }
+    static void navigationHistory() {
+        UiNavigationHistory<Integer> history = new UiNavigationHistory<>(2);
+        List<Integer> restored = new ArrayList<>();
+        history.push(1);history.push(1);history.push(2);history.push(3);
+        check(history.back(value -> value<3, value -> { restored.add(value);history.push(9); }), "back skips invalid newest entry");
+        check(restored.equals(List.of(2)) && !history.back(value -> true,restored::add), "bounded history and restore-time recording suppression");
+        history.push(4);history.push(5);
+        check(!history.canGoBack(value -> value<4) && !history.back(value -> true,restored::add), "invalid history is exhausted");
+        history.push(6);history.clear();check(!history.canGoBack(value -> true), "clear removes navigation history");
+    }
+    public static void main(String[] args) { theme();layout();input();routing();reentrantFocus();navigation();navigationLifecycle();navigationHistory();listGeometry();memberTree();formBody();modalViewport();System.out.println("PASS: theme, layout, paired input, scoped navigation/history/lifecycle, list geometry, member tree, form body and modal viewport"); }
 }
 """
 

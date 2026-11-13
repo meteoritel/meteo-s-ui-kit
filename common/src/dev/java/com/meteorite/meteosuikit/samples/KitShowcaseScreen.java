@@ -4,7 +4,6 @@ import com.meteorite.meteosuikit.api.input.UiInputScope;
 import com.meteorite.meteosuikit.api.render.UiLayer;
 import com.meteorite.meteosuikit.api.render.UiLayers;
 import com.meteorite.meteosuikit.api.render.UiFrameCapture;
-import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
 import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
 import net.minecraft.client.gui.GuiGraphics;
 import com.meteorite.meteosuikit.api.style.UiStyleSource;
@@ -71,6 +70,7 @@ public final class KitShowcaseScreen extends UiThemedScreen implements UiLayoutS
             content = new KitShowcaseContent(font, theme::current, this::onClose, this::nextTheme, previewFactory);
             UiInputScope scope = new UiInputScope(content);
             scope.setEscape(this::onClose);
+            scope.setNavigationBack(this::onClose);
             presentation = new UiLayers(new UiLayer(scope,
                     (graphics, renderFont, pointer, depth) -> content.render(graphics, pointer), content));
         }

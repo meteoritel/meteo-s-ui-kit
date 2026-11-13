@@ -37,7 +37,7 @@ public final class UiNavigationHistory<State> {
 
     /**
      * 从最新往回找第一个有效快照后恢复；恢复期间触发的 {@link #push(State)} 不写入历史。
-     * 没有有效项时返回 {@code false}，历史保持原样。
+     * 没有有效项时剔除已失效快照并返回 {@code false}；空栈行为由宿主决定。
      */
     public boolean back(Predicate<State> valid, Consumer<State> restore) {
         while (!entries.isEmpty()) {

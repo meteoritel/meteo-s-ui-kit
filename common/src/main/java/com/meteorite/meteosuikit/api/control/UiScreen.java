@@ -11,6 +11,7 @@ import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.mojang.blaze3d.platform.Window;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.GuiGraphics;
 import org.jetbrains.annotations.NotNull;
@@ -24,6 +25,7 @@ import net.minecraft.network.chat.Component;
 public abstract class UiScreen extends Screen implements UiLayoutSource {
     private final UiInputRouter input = new UiInputRouter();
     private Language resources;
+    private long lifecycle;
 
     /** 创建原版屏幕，标题由宿主本地化。 */
     protected UiScreen(Component title) { super(title); }
@@ -106,7 +108,10 @@ public abstract class UiScreen extends Screen implements UiLayoutSource {
         input.select(scope);
         return scope;
     }
-    private boolean finish(boolean consumed) {
+    private boolean dispatchInput(BooleanSupplier action) {
+        long version = lifecycle;
+        boolean consumed = action.getAsBoolean();
+        if (lifecycle != version) return consumed;
         prepareUi();
         layoutUi();
         refreshUiState();
@@ -121,40 +126,41 @@ public abstract class UiScreen extends Screen implements UiLayoutSource {
     }
     @Override public boolean mouseClicked(double x, double y, int button) {
         UiInputContext context = pointer(x, y, button);
-        return finish(input.mousePressed(context));
+        return dispatchInput(() -> input.mousePressed(context));
     }
     @Override public boolean mouseReleased(double x, double y, int button) {
         UiInputContext context = pointer(x, y, button);
-        return finish(input.mouseReleased(context));
+        return dispatchInput(() -> input.mouseReleased(context));
     }
     @Override public boolean mouseDragged(double x, double y, int button, double dx, double dy) {
         UiInputContext context = pointer(x, y, button);
         UiViewport viewport = viewport();
-        return finish(input.mouseDragged(context, viewport.toLogical(dx), viewport.toLogical(dy)));
+        return dispatchInput(() -> input.mouseDragged(context, viewport.toLogical(dx), viewport.toLogical(dy)));
     }
     @Override public boolean mouseScrolled(double x, double y, double sx, double sy) {
         UiInputContext context = pointer(x, y, -1);
-        return finish(input.mouseScrolled(context, sx, sy));
+        return dispatchInput(() -> input.mouseScrolled(context, sx, sy));
     }
     @Override public boolean keyPressed(int key, int scan, int modifiers) {
         prepareUi();
         layoutUi();
         selectScope();
-        return finish(input.keyPressed(key, scan, modifiers));
+        return dispatchInput(() -> input.keyPressed(key, scan, modifiers));
     }
     @Override public boolean keyReleased(int key, int scan, int modifiers) {
         prepareUi();
         layoutUi();
         selectScope();
-        return finish(input.keyReleased(key, scan, modifiers));
+        return dispatchInput(() -> input.keyReleased(key, scan, modifiers));
     }
     @Override public boolean charTyped(char value, int modifiers) {
         prepareUi();
         layoutUi();
         selectScope();
-        return finish(input.charTyped(value, modifiers));
+        return dispatchInput(() -> input.charTyped(value, modifiers));
     }
     @Override public void removed() {
+        lifecycle++;
         input.close();
         try { releaseUiResources(); }
         finally {

@@ -12,6 +12,7 @@ import org.lwjgl.glfw.GLFW;
 public final class UiInputRouter {
     private @Nullable UiInputScope active;
     private final Map<Integer, UiPointerHit> pressedButtons = new HashMap<>();
+    private boolean isBackPressed;
     private long scopeVersion;
 
     /**
@@ -40,6 +41,16 @@ public final class UiInputRouter {
     public boolean mousePressed(UiInputContext context) {
         UiInputScope scope = context.scope();
         if (scope == null || scope != active) return false;
+        if (context.button() == GLFW.GLFW_MOUSE_BUTTON_4) {
+            if (isBackPressed) return true;
+            Runnable navigationBack = scope.navigationBack();
+            if (navigationBack != null) {
+                isBackPressed = true;
+                scope.focus().setKeyboardMode(false);
+                navigateBack(scope, navigationBack);
+                return true;
+            }
+        }
         long version = scopeVersion;
         pressedButtons.remove(context.button());
         scope.focus().setKeyboardMode(false);
@@ -58,6 +69,7 @@ public final class UiInputRouter {
      * 拖出矩形后继续送达原会话目标。
      */
     public boolean mouseDragged(UiInputContext context, double dragX, double dragY) {
+        if (context.button() == GLFW.GLFW_MOUSE_BUTTON_4 && isBackPressed) return true;
         UiInputScope scope = active;
         if (scope == null || context.scope() != scope) return false;
         UiInteractionSession session = scope.interaction();
@@ -70,6 +82,10 @@ public final class UiInputRouter {
      * 切域、关屏与重复释放均不复用旧按下。
      */
     public boolean mouseReleased(UiInputContext context) {
+        if (context.button() == GLFW.GLFW_MOUSE_BUTTON_4 && isBackPressed) {
+            isBackPressed = false;
+            return true;
+        }
         UiInputScope scope = active;
         if (scope == null || context.scope() != scope) return false;
         UiPointerHit paired = pressedButtons.remove(context.button());
@@ -112,6 +128,11 @@ public final class UiInputRouter {
             return true;
         }
         if (consumed) return true;
+        Runnable navigationBack = scope.navigationBack();
+        if (keyCode == GLFW.GLFW_KEY_BACKSPACE && navigationBack != null) {
+            navigateBack(scope, navigationBack);
+            return true;
+        }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             scope.escape();
             return true;
@@ -143,10 +164,18 @@ public final class UiInputRouter {
         return scope != null && (scope.content().charTyped(codePoint, modifiers) || scope.content().blocksInput());
     }
 
+    private void navigateBack(UiInputScope scope, Runnable action) {
+        long version = scopeVersion;
+        pressedButtons.clear();
+        scope.interaction().end(UiInteractionSession.EndReason.CANCEL);
+        if (scope == active && scopeVersion == version) action.run();
+    }
+
     /**
      * 关屏先取消未完成交互，再由宿主冲刷已提交草稿。
      */
     public void close() {
+        isBackPressed = false;
         pressedButtons.clear();
         scopeVersion++;
         UiInputScope previous = active;

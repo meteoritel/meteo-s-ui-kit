@@ -14,6 +14,7 @@ public final class UiInputScope {
     private final UiFocusManager focus = new UiFocusManager(this);
     private final UiInteractionSession interaction = new UiInteractionSession();
     private @Nullable Consumer<UiHistoryShortcut> history;
+    private @Nullable Runnable navigationBack;
     private Runnable escape = () -> {
     };
     private boolean focusDirty = true;
@@ -68,6 +69,14 @@ public final class UiInputScope {
     }
 
     /**
+     * 注入页面回退动作；仅当前活动域处理第四个鼠标键和内容未消费的 Backspace。
+     * 动作执行前取消持续交互；是否恢复历史或关闭页面由宿主决定，传 null 关闭此能力。
+     */
+    public void setNavigationBack(@Nullable Runnable navigationBack) {
+        this.navigationBack = navigationBack;
+    }
+
+    /**
      * 注入交互与内容未消费 Esc 时的退出动作。
      */
     public void setEscape(Runnable escape) {
@@ -102,6 +111,10 @@ public final class UiInputScope {
 
     @Nullable Consumer<UiHistoryShortcut> history() {
         return history;
+    }
+
+    @Nullable Runnable navigationBack() {
+        return navigationBack;
     }
 
     void escape() {

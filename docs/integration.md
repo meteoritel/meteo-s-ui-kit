@@ -2,6 +2,10 @@
 
 普通页面使用 `UiScreen` 或 `UiThemedScreen`，原版容器组合唯一的 router 与 `UiInputBridge`。输入前准备、布局和选域，返回未消费时才回退原版父类。
 
+`UiInputScope.setNavigationBack` 绑定当前页面的回退动作：第四个鼠标键按下时执行，或在内容未消费 Backspace 时执行。回退先取消持续交互与旧指针按压，再调用宿主动作；侧键的拖动和释放由根配对消费，切换作用域后仍接住释放。未绑定动作时沿既有输入规则派发，顶层作用域只查询自己的动作。
+
+页面历史通过 `UiNavigationHistory` 保存宿主快照，快照有效性、恢复与空栈行为由宿主决定。文本框的 Ctrl+Z / Ctrl+Y 保持局部编辑历史。宿主在事件结束时记录导航，需要跳过本次回退，避免将刚离开的页面重新入栈。`UiScreen` 在回调卸载根后跳过事件结束刷新；同一实例重新打开后按新的生命周期处理输入。接入说明见 [dev.15 → dev.16](migrations/dev.15-to-dev.16.md)。
+
 固定画布在 `UiScreen` 声明最小尺寸，由根统一缩放绘制、输入与布局快照。根按实际 framebuffer 选择能容纳画布的整数物理像素倍率，原版 GUI 倍率为放大上限；不足 `1×` 时连续缩小以保留访问能力。无需缩小时保留原版 GUI 尺寸及取整语义。宿主迁移见 [dev.8 → dev.9](migrations/dev.8-to-dev.9.md)。
 
 `UiPointerHit.renderTooltip` 接收当前轴对齐二维 pose 内的指针，在原版 GUI 空间呈现普通与富提示，保留当前 Z 层和主题。富提示回调收到 GUI 坐标，直接调用原版 Tooltip 即可；作用域门禁仍由调用方检查。逻辑内容裁剪使用 `UiRenderLayers.enableScissor/disableScissor` 在 `finally` 中配对；提示在内容裁剪退出后呈现。
