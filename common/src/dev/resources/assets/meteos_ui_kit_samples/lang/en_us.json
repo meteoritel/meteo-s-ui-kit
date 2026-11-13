@@ -202,5 +202,13 @@
   "gui.meteos_ui_kit.samples.showcase.canvas.icon": "Inline icon action",
   "gui.meteos_ui_kit.samples.showcase.canvas.child": "Nested document viewport",
   "gui.meteos_ui_kit.samples.showcase.canvas.count": "Activations: %s",
-  "key.meteos_ui_kit.samples": "UI Kit samples (F8); container (Shift+F8)"
+  "key.meteos_ui_kit.samples": "UI Kit samples (F8); container (Shift+F8)",
+  "gui.meteos_ui_kit.samples.showcase.models.form": "Form",
+  "gui.meteos_ui_kit.samples.showcase.models.failure": "Draw failure",
+  "gui.meteos_ui_kit.samples.showcase.models.restored": "Drawing restored (outside list)",
+  "gui.meteos_ui_kit.samples.showcase.form.title": "Form body",
+  "gui.meteos_ui_kit.samples.showcase.form.name": "Name",
+  "gui.meteos_ui_kit.samples.showcase.form.reset": "Reset",
+  "gui.meteos_ui_kit.samples.showcase.form.notes": "Notes",
+  "gui.meteos_ui_kit.samples.showcase.form.description": "Tab reveals each field. Resize to wrap this custom content and trailing action; text drafts remain in their original editors."
 }

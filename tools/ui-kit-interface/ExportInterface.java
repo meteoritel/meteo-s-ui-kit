@@ -37,7 +37,7 @@ public final class ExportInterface {
     private static final String API = "com.meteorite.meteosuikit.api.";
     private static final String KIT = "com.meteorite.meteosuikit.";
 
-    /** 参数依次为 kit 源码、输出、write/check、依赖白名单与宿主命名空间。 */
+    /** 参数依次为 kit 源码、输出、write/check、依赖白名单与宿主命名空间配置文件。 */
     public static void main(String[] args) throws Exception {
         Path source = Path.of(args[0]);
         Path output = Path.of(args[1]);
@@ -61,8 +61,10 @@ public final class ExportInterface {
             if (!errors.isEmpty()) throw new IllegalStateException(errors.toString());
             var trees = Trees.instance(task);
             var allowed = Files.readAllLines(Path.of(args[3]), StandardCharsets.UTF_8);
+            var hostNamespaces = Files.readAllLines(Path.of(args[4]), StandardCharsets.UTF_8).stream()
+                    .map(String::strip).filter(namespace -> !namespace.isEmpty()).toList();
             var violations = new TreeSet<String>();
-            for (var unit : units) new References(trees, unit, allowed, args[4], violations).scan(unit, null);
+            for (var unit : units) new References(trees, unit, allowed, hostNamespaces, violations).scan(unit, null);
             if (!violations.isEmpty()) throw new IllegalStateException(String.join("\n", violations));
             var lines = new TreeSet<String>();
             for (TypeElement type : roots) collect(type, task.getElements(), task.getTypes(), lines);
@@ -83,13 +85,13 @@ public final class ExportInterface {
         private final Trees trees;
         private final CompilationUnitTree unit;
         private final List<String> allowed;
-        private final String hostNamespace;
+        private final List<String> hostNamespaces;
         private final TreeSet<String> violations;
 
-        private References(Trees trees, CompilationUnitTree unit, List<String> allowed, String hostNamespace,
+        private References(Trees trees, CompilationUnitTree unit, List<String> allowed, List<String> hostNamespaces,
                            TreeSet<String> violations) {
             this.trees = trees; this.unit = unit; this.allowed = allowed;
-            this.hostNamespace = hostNamespace; this.violations = violations;
+            this.hostNamespaces = hostNamespaces; this.violations = violations;
         }
         private void checkType() {
             Element element = trees.getElement(getCurrentPath());
@@ -130,11 +132,13 @@ public final class ExportInterface {
                 String name = method.getSimpleName().toString();
                 String argument = constant(tree.getArguments().getFirst());
                 if (argument != null && owner.equals("net.minecraft.network.chat.Component") && name.startsWith("translatable")
-                        && (argument.startsWith(hostNamespace + ".") || argument.contains("." + hostNamespace + ".")))
+                        && (hostNamespaces.stream().anyMatch(namespace -> argument.startsWith(namespace + ".")
+                                || argument.contains("." + namespace + "."))))
                     report("宿主本地化 key：" + argument);
                 if (argument != null && owner.equals("net.minecraft.resources.ResourceLocation")
-                        && ((name.equals("fromNamespaceAndPath") && argument.equals(hostNamespace))
-                        || ((name.equals("parse") || name.equals("tryParse")) && argument.startsWith(hostNamespace + ":"))))
+                        && (hostNamespaces.stream().anyMatch(namespace ->
+                                (name.equals("fromNamespaceAndPath") && argument.equals(namespace))
+                                || ((name.equals("parse") || name.equals("tryParse")) && argument.startsWith(namespace + ":")))))
                     report("宿主资源命名空间：" + argument);
             }
             return super.visitMethodInvocation(tree, unused);

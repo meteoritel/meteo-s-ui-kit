@@ -1,6 +1,8 @@
 package com.meteorite.meteosuikit.samples;
 
 import java.util.function.Supplier;
+import net.minecraft.client.Minecraft;
+import org.joml.Matrix4f;
 
 import java.util.function.Consumer;
 import com.meteorite.meteosuikit.api.input.UiFocusTarget;
@@ -51,13 +53,19 @@ final class KitModelsExample implements UiWidget, UiInputContainer, UiLayoutSour
     private UiTreeViewState savedView = UiTreeViewState.EMPTY;
     private boolean refreshingRows;
     private UiTreeProjection<Node> projection;
+    private boolean failNextRow;
+    private boolean restoredDrawing;
+    private final RuntimeException rowFailure = new RuntimeException("controlled row failure");
     private UiRect bounds = new UiRect(0, 0, 0, 0);
 
     KitModelsExample(Font font, Supplier<? extends UiStyleSource> theme) {
         text = new KitTextModelExample(font);
-        tree = new UiListView<>(theme, (graphics, renderFont, entry, index, row, selected, hovered, focused) ->
-                graphics.drawString(renderFont, label(entry.node().key()), row.x() + entry.depth() * 10,
-                        row.y() + 4, theme.get().textColor(true), false));
+        tree = new UiListView<>(theme, (graphics, renderFont, entry, index, row, selected, hovered, focused) -> {
+            if (failNextRow) { failNextRow = false; throw rowFailure; }
+            graphics.drawString(renderFont, label(entry.node().key()), row.x() + entry.depth() * 10,
+                    row.y() + 4, theme.get().textColor(true), false);
+        });
+        tree.setLayoutKey("models/tree"); tree.setItemKey(entry -> "models/" + entry.node().key());
         editor = new UiTreeEditor<>(new UiTreeEditor.Adapter<>() {
             @Override public List<Node> children(Node node) { return node.children(); }
             @Override public Node withChildren(Node node, List<Node> nodes) { return new Node(node.key(), nodes); }
@@ -83,8 +91,12 @@ final class KitModelsExample implements UiWidget, UiInputContainer, UiLayoutSour
         restore.setFocusable(true);
         restore.configure(font, label("restore"), null, List.of(), () -> editor.setViewState(savedView));
         restoreView = new KitControlExample(restore);
+        actions.obtain("form").configure(font, label("form"), null, List.of(),
+                () -> Minecraft.getInstance().setScreen(new KitFormExampleScreen(Minecraft.getInstance().screen)));
+        actions.obtain("failure").configure(font, label("failure"), null, List.of(), () -> failNextRow = true);
         actions.endUpdate();
         toolbar.setChildren(List.of(UiLinearLayout.Child.remain(), UiLinearLayout.Child.remain(),
+                UiLinearLayout.Child.remain(), UiLinearLayout.Child.remain(),
                 UiLinearLayout.Child.remain(), UiLinearLayout.Child.remain()));
         children.add(actions); children.add(restoreView); children.add(text); children.add(tree);
         rebuild();
@@ -141,7 +153,7 @@ final class KitModelsExample implements UiWidget, UiInputContainer, UiLayoutSour
         bounds = new UiRect(x, y, width, height);
         toolbar.setBounds(x, y, width, 20);
         for (int i = 0; i < actions.size(); i++) {
-            UiRect cell = toolbar.bounds(i);
+            UiRect cell = toolbar.bounds(i < 3 ? i : i + 1);
             actions.controls().get(i).setBounds(cell.x(), cell.y(), cell.width(), cell.height());
         }
         UiRect restoreBounds = toolbar.bounds(3);
@@ -151,7 +163,15 @@ final class KitModelsExample implements UiWidget, UiInputContainer, UiLayoutSour
     }
     /** {@inheritDoc} */
     @Override public void render(GuiGraphics graphics, Font font, UiPointer pointer) {
-        actions.render(graphics, font, pointer); restoreView.render(graphics, font, pointer); text.render(graphics, font, pointer); tree.render(graphics, font, pointer);
+        actions.render(graphics, font, pointer); restoreView.render(graphics, font, pointer); text.render(graphics, font, pointer);
+        Matrix4f before = new Matrix4f(graphics.pose().last().pose());
+        try { tree.render(graphics, font, pointer); }
+        catch (RuntimeException failure) {
+            if (failure != rowFailure) throw failure;
+            if (!before.equals(graphics.pose().last().pose())) throw new IllegalStateException("List pose was not restored");
+            restoredDrawing = true;
+        }
+        if (restoredDrawing) graphics.drawString(font, label("restored"), bounds.x(), bounds.bottom() + 2, 0xFF55FF55, false);
     }
     /** {@inheritDoc} */
     @Override public List<UiLayoutNode> layoutNodes() {
@@ -160,14 +180,7 @@ final class KitModelsExample implements UiWidget, UiInputContainer, UiLayoutSour
         nodes.addAll(restoreView.layoutNodes());
         nodes.add(new UiLayoutNode(UiLayoutNode.Kind.TEXT_INPUT, text.bounds(), text.accessibleName(), 0,
                 text.bounds().width(), true, true, List.of()));
-        var rows = projection.visible(view);
-        var rowNodes = new ArrayList<UiLayoutNode>();
-        for (int i = 0; i < rows.size(); i++) {
-            UiRect row = tree.visibleRowBounds(i);
-            if (row != null) rowNodes.add(new UiLayoutNode(UiLayoutNode.Kind.ROW, row, label(rows.get(i).node().key()),
-                    0, row.width(), true, true, List.of()));
-        }
-        nodes.add(new UiLayoutNode(UiLayoutNode.Kind.TREE, tree.bounds(), label("root"), 0, 0, true, true, rowNodes));
+        nodes.addAll(tree.layoutNodes());
         return List.copyOf(nodes);
     }
     private static Component label(String key) { return Component.translatable(KitShowcaseContent.UI + "showcase.models." + key); }

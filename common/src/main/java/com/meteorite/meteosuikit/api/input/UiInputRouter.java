@@ -20,11 +20,11 @@ public final class UiInputRouter {
     public void select(@Nullable UiInputScope next) {
         if (active == next) return;
         pressedButtons.clear();
-        scopeVersion++;
+        long version = ++scopeVersion;
         UiInputScope previous = active;
         active = next;
-        if (previous != null) previous.deactivate(UiInteractionSession.EndReason.SCOPE_CHANGED);
-        if (next != null) next.activate();
+        if (previous != null && previous.isActive()) previous.deactivate(UiInteractionSession.EndReason.SCOPE_CHANGED);
+        if (next != null && active == next && scopeVersion == version) next.activate();
     }
 
     /**
@@ -151,6 +151,6 @@ public final class UiInputRouter {
         scopeVersion++;
         UiInputScope previous = active;
         active = null;
-        if (previous != null) previous.deactivate(UiInteractionSession.EndReason.HOST_CLOSED);
+        if (previous != null && previous.isActive()) previous.deactivate(UiInteractionSession.EndReason.HOST_CLOSED);
     }
 }

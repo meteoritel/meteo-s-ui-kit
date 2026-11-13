@@ -68,6 +68,25 @@ tasks.register('exportUiKitInterface', JavaExec) {
             rootProject.file(providers.gradleProperty('kitInterfaceOutput').getOrElse('tools/ui-kit-interface/api.txt')).absolutePath,
             providers.gradleProperty('kitInterfaceMode').getOrElse('check'),
             rootProject.file('tools/ui-kit-interface/dependencies.txt').absolutePath,
-            "itemdespawntowhat"
+            rootProject.file('tools/ui-kit-interface/host-namespaces.txt').absolutePath
 }
 tasks.named('check') { dependsOn tasks.named('exportUiKitInterface') }
+
+// 行为用例走真实公开入口，临时 Java 输入不进入发布源集。
+tasks.register('checkUiKitBehavior', Exec) {
+    group = 'verification'
+    description = '验证公开主题、输入、阅读及资源隔离契约。'
+    dependsOn tasks.named('classes'), tasks.named('compileUiKitInterfaceTool')
+    def runtimeClasspath = layout.buildDirectory.file('contract-check/classpath.txt')
+    def launcher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
+    doFirst {
+        def target = runtimeClasspath.get().asFile
+        target.parentFile.mkdirs()
+        target.setText((files(interfaceToolClasses) + sourceSets.main.output + sourceSets.main.compileClasspath
+                + fileTree(layout.buildDirectory.dir('moddev/artifacts')) { include '*minecraft-resources-aka-client-extra.jar' }).asPath, 'UTF-8')
+        commandLine 'python', '-B', rootProject.file('tools/contract-check/check.py'),
+                '--classpath-file', target.absolutePath,
+                '--java-home', launcher.get().metadata.installationPath.asFile.absolutePath
+    }
+}
+tasks.named('check') { dependsOn tasks.named('checkUiKitBehavior') }

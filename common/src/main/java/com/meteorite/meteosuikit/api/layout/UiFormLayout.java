@@ -65,8 +65,8 @@ public final class UiFormLayout {
             if (!row.usesLabelColumn() && row.fixedHeight() < 0) {
                 label = Math.clamp(text.width(row.label()), Math.min(column, metrics.minimumLabelWidth()), column);
             }
-            boolean sideLabel = row.labelVisible() && !row.stackedLabel();
-            boolean stacked = row.stackedLabel() || (narrow && row.labelVisible());
+            boolean stacked = row.labelVisible() && (row.stackedLabel() || narrow);
+            boolean sideLabel = row.labelVisible() && !stacked;
             int controlRoom = sideLabel ? Math.max(0, width - label - metrics.labelGap()) : width;
             int[] actionWidths = new int[row.actions().size()];
             int reserved = 0;

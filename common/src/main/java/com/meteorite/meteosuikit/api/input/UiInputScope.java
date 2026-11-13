@@ -115,9 +115,9 @@ public final class UiInputScope {
 
     void deactivate(UiInteractionSession.EndReason reason) {
         active = false;
+        focus.suspend();
         interaction.end(reason);
         content.scopeExited(reason);
-        focus.suspend();
     }
 
     void finishPointer(@Nullable UiPointerHit hit) {

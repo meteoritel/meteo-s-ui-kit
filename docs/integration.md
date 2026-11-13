@@ -38,7 +38,7 @@ dev 序列允许源码、二进制与行为破坏，每个新 dev 坐标附迁�
 
 根主题切换保留成员显式结构、完整 skin 与独立文字覆盖。`UiControlGroup.setStyle` 和 `clearStyleOverride` 广播到当前成员并更新后续成员默认值；`style()` 返回后续新成员的默认结构。控件清除结构覆盖后使用完整 skin 或根主题，`clearSkinOverride` 同时清除结构和完整 skin，文字覆盖保持独立。
 
-`UiPaginationState` 将动态页数和页码归一化，读取后保留合法状态；内容、选择和翻页副作用由宿主解释。`UiScrollContainer` 组合既有滚动视图与屏幕坐标内容，集中处理视口命中、滚动条优先和子级未消费的滚轮回退。内容按偏移布局并裁剪，捕获由 scope 直达实际目标。`UiFormLayout` 的结果可同时驱动控件、标签、内容高度与焦点滚动。
+`UiPaginationState` 将动态页数和页码归一化，读取后保留合法状态；内容、选择和翻页副作用由宿主解释。`UiScrollContainer` 组合既有滚动视图与屏幕坐标内容，集中处理视口命中、滚动条优先和子级未消费的滚轮回退。内容按偏移布局并裁剪，捕获由 scope 直达实际目标。`UiFormLayout` 提供相对行几何；`UiFormBody` 持有真实字段和统一结果，负责标签、字段、尾随动作、裁剪与焦点滚入。正文固定预留轨道带宽，字段按屏幕坐标放置；宿主通过已有 listener 调用 `reveal(current)`，内容或字体变化后调用 `invalidateLayout()`。
 
 `TextWrap.fit` 使用原版格式化逻辑折行，按宽度和行数裁剪后才执行视觉排序；超行时为末行预留 ASCII `...`。缓存与生命周期归调用方，普通原版折行可直接使用 `Font.split`。
 
@@ -55,3 +55,5 @@ dev 序列允许源码、二进制与行为破坏，每个新 dev 坐标附迁�
 灯箱 fit 不放大小内容并左上对齐；手动缩放后 resize 保留档位并钳制平移，fit 状态 resize 重新适配。关闭灯箱丢弃自己的阅读变换，页内 offset 由其控件保留。
 
 灯箱内容实现 `UiFocusTarget` 或贡献子焦点目标时，`UiLightbox` 将其加入同一作用域的 Tab 序列。内容持焦时先接收普通按键与字符，配对释放和退出通知沿内容传递；Escape 仍由灯箱关闭入口处理。
+
+列表快照和表单正文接入见 [dev.12 → dev.13](migrations/dev.12-to-dev.13.md)。`UiOverlay` 从同一实际内容转发布局、命中与焦点；活动模态使用该布局参与根快照与业务 key 定位，见 [dev.13 → dev.14](migrations/dev.13-to-dev.14.md)。模态栈复用弹窗的屏内布局，窄窗及层叠偏移保持页脚可达，见 [dev.14 → dev.15](migrations/dev.14-to-dev.15.md)。

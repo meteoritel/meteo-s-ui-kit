@@ -202,5 +202,13 @@
   "gui.meteos_ui_kit.samples.showcase.canvas.icon": "行内图标动作",
   "gui.meteos_ui_kit.samples.showcase.canvas.child": "子文档视口",
   "gui.meteos_ui_kit.samples.showcase.canvas.count": "激活次数：%s",
-  "key.meteos_ui_kit.samples": "UI Kit 样例（F8）；容器（Shift+F8）"
+  "key.meteos_ui_kit.samples": "UI Kit 样例（F8）；容器（Shift+F8）",
+  "gui.meteos_ui_kit.samples.showcase.models.form": "表单",
+  "gui.meteos_ui_kit.samples.showcase.models.failure": "绘制异常",
+  "gui.meteos_ui_kit.samples.showcase.models.restored": "绘制已恢复（列表外）",
+  "gui.meteos_ui_kit.samples.showcase.form.title": "表单正文",
+  "gui.meteos_ui_kit.samples.showcase.form.name": "名称",
+  "gui.meteos_ui_kit.samples.showcase.form.reset": "重置",
+  "gui.meteos_ui_kit.samples.showcase.form.notes": "备注",
+  "gui.meteos_ui_kit.samples.showcase.form.description": "Tab 会显示当前字段。缩窄窗口可观察自绘说明与行尾动作换行，草稿始终由原编辑器持有。"
 }

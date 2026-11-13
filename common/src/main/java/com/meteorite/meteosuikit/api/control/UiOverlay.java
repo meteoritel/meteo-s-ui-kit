@@ -7,7 +7,10 @@ import com.meteorite.meteosuikit.api.input.UiInputScope;
 import com.meteorite.meteosuikit.api.input.UiInputTarget;
 import com.meteorite.meteosuikit.api.input.UiInteractionSession;
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
+import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
+import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
 import com.meteorite.meteosuikit.api.render.UiRenderLayers;
+import java.util.List;
 import java.util.function.Consumer;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -15,7 +18,7 @@ import net.minecraft.client.gui.GuiGraphics;
  * 覆盖面的共同外壳：拥有阻断作用域、背景命中和局部遮罩/内容层。
  * 宿主选择活动覆盖面及深度，内容仍解释自己的布局、导航和关闭业务。
  */
-public final class UiOverlay implements UiInputTarget {
+public final class UiOverlay implements UiInputTarget, UiLayoutSource {
     private final UiInputTarget content;
     private final UiInputScope scope = new UiInputScope(this);
 
@@ -23,6 +26,10 @@ public final class UiOverlay implements UiInputTarget {
     public UiOverlay(UiInputTarget content) { this.content = content; }
     /** 供根选择的唯一覆盖作用域。 */
     public UiInputScope inputScope() { return scope; }
+    /** 活动内容贡献自己的真实布局，覆盖外壳不另建节点。 */
+    @Override public List<UiLayoutNode> layoutNodes() {
+        return content instanceof UiLayoutSource source ? source.layoutNodes() : List.of();
+    }
     /** 相对宿主当前绘制域安排遮罩及内容；透明遮罩仍保留输入阻断。 */
     public void render(GuiGraphics graphics, UiRect bounds, int depth, int mask, Runnable painter) {
         UiRenderLayers.mask(graphics, bounds, depth, mask);

@@ -33,8 +33,8 @@ import java.util.List;
 public record UiLayoutNode(Kind kind, UiRect rect, Component text, int textWidth, int textBudget,
                            boolean enabled, boolean visible, List<UiLayoutNode> children,
                            String key, UiRect visibleRect, @Nullable UiInputTarget target) {
-    /** 节点种类：控件、文本输入、树、文档行、分隔线、文档 Frame、模态层。 */
-    public enum Kind { CONTROL, TEXT_INPUT, TREE, ROW, DIVIDER, FRAME, MODAL }
+    /** 节点种类：控件、文本输入、列表、树、文档行、分隔线、文档 Frame、模态层。 */
+    public enum Kind { CONTROL, TEXT_INPUT, LIST, TREE, ROW, DIVIDER, FRAME, MODAL }
 
     public UiLayoutNode {
         text = text == null ? Component.empty() : text;

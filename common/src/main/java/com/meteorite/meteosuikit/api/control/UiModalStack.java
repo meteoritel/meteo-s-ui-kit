@@ -212,11 +212,10 @@ public final class UiModalStack implements UiWidget, UiLayoutSource {
     private void relayout() {
         for (int i = 0; i < modals.size(); i++) {
             UiModal modal = modals.get(i);
-            int width = modal.preferredWidth();
-            int height = modal.preferredHeight();
-            int x = (bounds.width() - width) / 2 + i * STACK_OFFSET;
-            int y = (bounds.height() - height) / 2 + i * STACK_OFFSET;
-            modal.layoutAt(x, y, width, height);
+            UiRect centered = modal.layoutCentered(bounds.width(), bounds.height()).bounds();
+            int x = Math.clamp(centered.x() + i * STACK_OFFSET, 0, Math.max(0, bounds.width() - centered.width()));
+            int y = Math.clamp(centered.y() + i * STACK_OFFSET, 0, Math.max(0, bounds.height() - centered.height()));
+            modal.layoutAt(x, y, centered.width(), centered.height());
         }
     }
 

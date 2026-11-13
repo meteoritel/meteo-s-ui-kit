@@ -2,6 +2,9 @@ package com.meteorite.meteosuikit.api.control;
 
 import com.meteorite.meteosuikit.api.input.UiFocusState;
 import java.util.function.Supplier;
+import java.util.function.Function;
+import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
+import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
 
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.meteorite.meteosuikit.api.input.UiPointer;
@@ -35,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * 行内容由调用方通过 {@link RowRenderer} 决定，控件只负责背景、选中标记与命中判定。
  * <p>单击选中、双击激活；键盘 {@code Enter} 同样触发激活。
  */
-public final class UiListView<T> implements UiStatefulWidget {
+public final class UiListView<T> implements UiStatefulWidget, UiLayoutSource {
 
     /**
      * 行渲染回调：背景、选中/悬停/焦点标记与命中由控件处理，行内容由调用方绘制；{@code row} 已为左侧选中标记预留空间。
@@ -80,6 +83,7 @@ public final class UiListView<T> implements UiStatefulWidget {
     private boolean activateOnSingleClick;
     private boolean selectionMarkerVisible = true;
     private boolean chipRows;
+    private Function<? super T, String> itemKey = item -> "";
     // 上次点击时间与下标（双击判定）
     private long lastClickTime;
     private int lastClickIndex = -1;
@@ -113,6 +117,28 @@ public final class UiListView<T> implements UiStatefulWidget {
         this.rowHeight = this.theme.get().rowHeight();
         scrollView.setStep(Math.max(1, rowHeight * 2));
         this.rowRenderer = rowRenderer;
+    }
+
+    /** 设置稳定业务身份；未配置时行仅作展示，不使用当前索引作为身份。 */
+    public UiListView<T> setItemKey(Function<? super T, String> itemKey) {
+        this.itemKey = Objects.requireNonNull(itemKey);
+        return this;
+    }
+
+    /** 快照复用实际行几何；行输入仍归列表，不创建独立焦点目标。 */
+    @Override
+    public List<UiLayoutNode> layoutNodes() {
+        refreshTheme();
+        if (!isVisible()) return List.of();
+        List<UiLayoutNode> rows = new ArrayList<>();
+        for (int index = 0; index < items.size(); index++) {
+            UiRect visible = visibleRowBounds(index);
+            if (visible == null || visible.width() <= 0) continue;
+            rows.add(new UiLayoutNode(UiLayoutNode.Kind.ROW, rowBounds(index), Component.empty(), 0, 0,
+                    isEnabled(), true, List.of(), Objects.requireNonNull(itemKey.apply(items.get(index))), visible, this));
+        }
+        return List.of(new UiLayoutNode(UiLayoutNode.Kind.LIST, bounds(), emptyMessage, 0, 0,
+                isEnabled(), true, rows, shell.layoutKey(), bounds(), this));
     }
 
     // ---- 数据 ----
@@ -360,26 +386,29 @@ public final class UiListView<T> implements UiStatefulWidget {
         int hoveredIndex = pointer.allowed() && pointer.hit() != null ? pointer.hit().rowIndex(this) : -1;
         int rowWidth = scrollView.contentWidth();
         scrollView.push(graphics);
-        for (int i = 0; i < items.size(); i++) {
-            int rowY = i * rowHeight;
-            if (rowY + rowHeight < scrollView.offset() || rowY > scrollView.offset() + viewport.height()) {
-                continue;
+        try {
+            for (int i = 0; i < items.size(); i++) {
+                int rowY = i * rowHeight;
+                if (rowY + rowHeight < scrollView.offset() || rowY > scrollView.offset() + viewport.height()) {
+                    continue;
+                }
+                UiRect row = new UiRect(0, rowY, rowWidth, rowContentHeight());
+                if (chipRows) {
+                    theme.get().drawChip(graphics, row, i == selectedIndex, i == hoveredIndex);
+                } else if (i == selectedIndex) {
+                    theme.get().drawSelection(graphics, row);
+                    if (selectionMarkerVisible) theme.get().drawSelectMarker(graphics, row);
+                } else if (i == hoveredIndex) {
+                    graphics.fill(row.x(), row.y(), row.right(), row.bottom(), theme.get().controlStyle(UiControlRole.SECONDARY).hoverBackground());
+                }
+                int markerWidth = !chipRows && selectionMarkerVisible ? theme.get().selectMarkerWidth() : 0;
+                UiRect textRow = new UiRect(row.x() + markerWidth, row.y(),
+                        Math.max(0, row.width() - markerWidth), row.height());
+                rowRenderer.renderRow(graphics, font, items.get(i), i, textRow, i == selectedIndex, i == hoveredIndex, isFocused());
             }
-            UiRect row = new UiRect(0, rowY, rowWidth, rowContentHeight());
-            if (chipRows) {
-                theme.get().drawChip(graphics, row, i == selectedIndex, i == hoveredIndex);
-            } else if (i == selectedIndex) {
-                theme.get().drawSelection(graphics, row);
-                if (selectionMarkerVisible) theme.get().drawSelectMarker(graphics, row);
-            } else if (i == hoveredIndex) {
-                graphics.fill(row.x(), row.y(), row.right(), row.bottom(), theme.get().controlStyle(UiControlRole.SECONDARY).hoverBackground());
-            }
-            int markerWidth = !chipRows && selectionMarkerVisible ? theme.get().selectMarkerWidth() : 0;
-            UiRect textRow = new UiRect(row.x() + markerWidth, row.y(),
-                    Math.max(0, row.width() - markerWidth), row.height());
-            rowRenderer.renderRow(graphics, font, items.get(i), i, textRow, i == selectedIndex, i == hoveredIndex, isFocused());
+        } finally {
+            scrollView.pop(graphics);
         }
-        scrollView.pop(graphics);
         if (isFocusVisible()) {
             UiRect focusBounds = chipRows ? visibleRowBounds(selectedIndex) : bounds();
             if (focusBounds != null) shell.renderFocusOutline(graphics, focusBounds, theme);
