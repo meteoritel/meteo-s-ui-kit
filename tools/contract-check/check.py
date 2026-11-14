@@ -23,6 +23,9 @@ import com.meteorite.meteosuikit.api.text.TextMeasurer;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import net.minecraft.network.chat.*;
 import net.minecraft.util.FormattedCharSequence;
 import java.util.*;
@@ -38,9 +41,9 @@ public final class KitArchitectureCheck {
         @Override public int width(String text) { return text.codePointCount(0, text.length()) * 6; }
         @Override public int width(FormattedText text) { return width(text.getString()); }
         @Override public int width(FormattedCharSequence text) { int[] size = {0}; text.accept((i,s,c) -> {size[0]++; return true;}); return size[0]*6; }
-        @Override public String plainSubstrByWidth(String text, int width) { return text.substring(0, Math.min(text.length(), Math.max(0,width/6))); }
+        @Override public String plainSubstrByWidth(String text, int width) { return text.substring(0, text.offsetByCodePoints(0, Math.min(text.codePointCount(0,text.length()), Math.max(0,width/6)))); }
         @Override public String plainSubstrByWidth(String text, int width, boolean reverse) {
-            return reverse ? text.substring(Math.max(0, text.length()-Math.max(0,width/6))) : plainSubstrByWidth(text,width);
+            return reverse ? text.substring(text.offsetByCodePoints(text.length(), -Math.min(text.codePointCount(0,text.length()), Math.max(0,width/6)))) : plainSubstrByWidth(text,width);
         }
     }
     static final class CountingMeasurer implements TextMeasurer {
@@ -205,7 +208,13 @@ public final class KitArchitectureCheck {
         int measured=measures.get(); int fieldWidth=first.bounds().width();
         UiInputScope scope = new UiInputScope(body); UiInputRouter router = new UiInputRouter();
         scope.focus().setListener((previous,current)->body.reveal(current));
-        router.select(scope);scope.refreshFocus();scope.focus().focusOn(last);
+        router.select(scope);scope.refreshFocus();body.advanceFrame(0);
+        int fieldY=first.bounds().y();
+        check(router.mouseScrolled(at(scope,11,22),0,-1),"form accepts wheel target");
+        body.setBounds(10,20,130,65);body.layoutNodes();body.advanceFrame(16);
+        check(body.offset()>0&&first.bounds().y()==fieldY-body.offset(),"form animation projects real field coordinates");
+        check(body.layoutNodes().stream().anyMatch(node->node.target()==first&&node.rect().equals(first.bounds())),"form snapshot uses animated field geometry");
+        body.setOffset(0);scope.focus().focusOn(last);
         check(body.offset()>0 && last.bounds().y()<body.bounds().bottom(),"focus reveals offscreen multiline field");
         body.setBounds(10,20,130,65);body.layoutNodes();body.setOffset(0);
         check(measures.get()==measured,"same geometry and scrolling reuse measurement");
@@ -395,7 +404,100 @@ public final class KitArchitectureCheck {
         check(!history.canGoBack(value -> value<4) && !history.back(value -> true,restored::add), "invalid history is exhausted");
         history.push(6);history.clear();check(!history.canGoBack(value -> true), "clear removes navigation history");
     }
-    public static void main(String[] args) { theme();layout();input();routing();reentrantFocus();navigation();navigationLifecycle();navigationHistory();listGeometry();memberTree();formBody();modalViewport();System.out.println("PASS: theme, layout, paired input, scoped navigation/history/lifecycle, list geometry, member tree, form body and modal viewport"); }
+    static UiScrollView scrollView() {
+        UiScrollView view=new UiScrollView();view.setViewport(0,0,100,40);view.setContentHeight(400);view.setScrollbarVisible(true);return view;
+    }
+    static void settle(UiInputTarget target,long from) { for(long time=from;time<=from+1000;time+=16) target.advanceFrame(time); }
+    static void scrollMotion() {
+        UiScrollView view=scrollView();view.advanceFrame(0);
+        check(view.scrollByPixels(-100)&&view.offset()==0,"wheel accepts target before visible motion");
+        view.advanceFrame(16);int first=view.offset();check(first>0&&first<100,"damped intermediate position");
+        view.advanceFrame(16);check(view.offset()==first,"same frame is idempotent");
+        for(int time=32;time<=160;time+=16) {
+            view.setViewport(0,0,100,40);view.setContentHeight(400);view.setPolicy(new UiScrollView.Policy(1,8,0,false,false));
+            view.advanceFrame(time);check(view.offset()>=first&&view.offset()<=100,"range updates preserve forward motion");first=view.offset();
+        }
+        settle(view,176);check(view.offset()==100,"animation converges exactly");
+        UiScrollView a=scrollView(),b=scrollView();a.advanceFrame(0);b.advanceFrame(0);a.scrollByPixels(-100);b.scrollByPixels(-100);
+        a.advanceFrame(16);a.advanceFrame(32);b.advanceFrame(32);check(Math.abs(a.offset()-b.offset())<=1,"elapsed time independent of short frame partition");
+        view.scrollByPixels(-100);view.scrollByPixels(50);settle(view,1200);check(view.offset()==150,"events accumulate from pending target");
+        view.setOffset(0);view.advanceFrame(2500);for(int i=0;i<8;i++)view.scrollByPixels(-0.125);settle(view,2516);check(view.offset()==1,"subpixel wheel accumulates");
+        view.scrollByPixels(-100);view.setOffset(20);settle(view,3700);check(view.offset()==20,"immediate offset cancels old target");
+        view.ensureVisibleSmoothly(new UiRect(0,200,10,10));check(view.offset()==20,"smooth reveal preserves current position");settle(view,4800);check(view.offset()==170,"smooth reveal uses viewport bottom");
+        view.scrollByPixels(-100);view.ensureVisible(new UiRect(0,0,10,10));settle(view,5900);check(view.offset()==0,"immediate reveal cancels animation");
+        view.scrollByPixels(-500);check(!view.scrollByPixels(-1),"target edge bubbles");view.setContentHeight(45);settle(view,7000);check(view.offset()==5,"shrinking clamps actual and pending motion");
+        view.setContentHeight(10);check(view.offset()==0&&!view.scrollBy(-1),"short content has no motion");
+        view=scrollView();view.advanceFrame(0);view.scrollByPixels(-100);view.advanceFrame(16);int stopped=view.offset();view.scopeExited(UiInteractionSession.EndReason.SCOPE_CHANGED);settle(view,32);check(view.offset()==stopped,"scope exit cancels pending motion");
+        view.setPolicy(new UiScrollView.Policy(10,8,0,false,false));view.setOffset(13);check(view.offset()==10,"immediate position preserves alignment");view.scrollByPixels(-21);settle(view,1200);check(view.offset()%10==0,"animated position preserves alignment");
+        UiScrollView dragged=scrollView();UiInputScope scope=new UiInputScope(dragged);UiInputRouter router=new UiInputRouter();router.select(scope);
+        dragged.advanceFrame(0);dragged.scrollByPixels(-100);dragged.advanceFrame(16);int beforeDrag=dragged.offset();
+        router.mousePressed(at(scope,98,dragged.scrollbarThumb().y()+1));settle(dragged,32);check(dragged.offset()==beforeDrag,"thumb press takes over pending motion");
+        router.mouseDragged(at(scope,98,30),0,29);int end=dragged.offset();router.mouseReleased(at(scope,98,30));settle(dragged,1200);check(dragged.offset()==end,"drag release keeps final position");router.close();
+    }
+    static void frameTree() {
+        UiListView<String> list=new UiListView<>((g,f,item,index,rect,selected,hovered,focused)->{});
+        list.setBounds(0,0,100,40);list.setItems(List.of("a","b","c","d","e","f"));
+        UiChildren<UiInputTarget> members=new UiChildren<>();members.add(list);UiOverlay overlay=new UiOverlay(members);
+        UiInputScope scope=overlay.inputScope();UiInputRouter router=new UiInputRouter();router.select(scope);scope.refreshFocus();
+        overlay.advanceFrame(0);router.mouseScrolled(at(scope,5,5),0,-1);int initial=list.rowBounds(0).y();
+        list.layoutNodes();list.hitTest(5,5);check(list.rowBounds(0).y()==initial,"read-only queries do not animate");
+        overlay.advanceFrame(16);check(list.rowBounds(0).y()<initial,"overlay member tree advances list");
+        int row=list.itemIndexAt(5,5);check(row>=0&&list.visibleRowBounds(row).contains(5,5),"animated hit matches projected row");
+        list.setVisible(false);int stopped=list.rowBounds(0).y();settle(overlay,32);list.setVisible(true);settle(overlay,1200);check(list.rowBounds(0).y()==stopped,"hidden list clears pending target");router.close();
+        UiModal modal=UiModal.create(new MetricFont()).contentWidget(list,40).cancel(Component.literal("Cancel"));
+        modal.setBounds(0,0,160,100);scope=modal.inputScope();router.select(scope);scope.refreshFocus();
+        scope.content().advanceFrame(0);int modalY=list.rowBounds(0).y();
+        router.mouseScrolled(at(scope,list.bounds().x()+2,list.bounds().y()+2),0,-1);
+        scope.content().advanceFrame(16);check(list.rowBounds(0).y()<modalY,"modal content wrapper forwards frame");
+        router.select(new UiInputScope(new UiInputTarget() {}));stopped=list.rowBounds(0).y();
+        settle(scope.content(),32);check(list.rowBounds(0).y()==stopped,"leaving modal cancels pending scroll");router.close();
+    }
+    static Minecraft headlessMinecraft() {
+        // 绘制记录器无需窗口和 GPU，跳过原版客户端构造，只供 GuiGraphics 读取空 sprite 槽。
+        try {
+            Class<?> unsafe=Class.forName("sun.misc.Unsafe");Field field=unsafe.getDeclaredField("theUnsafe");field.setAccessible(true);
+            Method allocate=unsafe.getMethod("allocateInstance",Class.class);return (Minecraft)allocate.invoke(field.get(null),Minecraft.class);
+        } catch(ReflectiveOperationException failure) { throw new AssertionError(failure); }
+    }
+    static final class RecordingGraphics extends GuiGraphics {
+        record Text(String text,int x,int y,int color,boolean shadow) {}
+        final List<Text> texts=new ArrayList<>();int clips;
+        RecordingGraphics() { super(headlessMinecraft(),null); }
+        @Override public void flush() {}
+        @Override public void enableScissor(int left,int top,int right,int bottom) { clips++; }
+        @Override public void disableScissor() { clips--; }
+        @Override public void fill(int left,int top,int right,int bottom,int color) {}
+        @Override public int drawString(Font font,FormattedCharSequence text,int x,int y,int color,boolean shadow) {
+            StringBuilder value=new StringBuilder();text.accept((index,style,code)->{value.appendCodePoint(code);return true;});
+            texts.add(new Text(value.toString(),x,y,color,shadow));return x+font.width(text);
+        }
+        void reset() { texts.clear();check(clips==0,"clip stack restored"); }
+    }
+    static void flatSingleLine() {
+        MetricFont font=new MetricFont();RecordingGraphics graphics=new RecordingGraphics();
+        UiThemeContext<UiStyleSource> context=new UiThemeContext<>(UiMinecraftTheme.INSTANCE);
+        UiTextInput input=new UiTextInput(context::current,font,Component.literal("hint"));input.setBounds(10,10,48,20);
+        input.render(graphics,font,UiPointer.at(0,0));check(graphics.texts.size()==1&&!graphics.texts.getFirst().shadow(),"placeholder is flat");
+        check(graphics.texts.getFirst().color()==context.current().surfaces().disabledText(),"placeholder uses theme");graphics.reset();
+        input.setValue("abcdefghijklmnop");input.moveCursorToStart();input.render(graphics,font,UiPointer.at(0,0));
+        check(graphics.texts.getFirst().x()==13&&graphics.texts.stream().noneMatch(RecordingGraphics.Text::shadow),"flat text starts at shared viewport");graphics.reset();
+        UiInputScope scope=new UiInputScope(input);UiInputRouter router=new UiInputRouter();router.select(scope);scope.refreshFocus();
+        router.mousePressed(at(scope,25,18));router.mouseReleased(at(scope,25,18));input.charTyped('X',0);check(input.value().equals("abXcdefghijklmnop"),"pointer position edits visible character");
+        input.keyPressed(GLFW.GLFW_KEY_Z,0,GLFW.GLFW_MOD_CONTROL);check(input.value().equals("abcdefghijklmnop"),"local undo survives renderer");
+        input.keyPressed(GLFW.GLFW_KEY_Y,0,GLFW.GLFW_MOD_CONTROL);check(input.value().equals("abXcdefghijklmnop"),"local redo survives renderer");
+        input.selectAll();input.charTyped('Q',0);check(input.value().equals("Q"),"selection replacement uses original model");
+        input.setValue("a\uD83D\uDE00b").moveCursorToStart();router.mousePressed(at(scope,25,18));router.mouseReleased(at(scope,25,18));input.charTyped('X',0);
+        check(input.value().equals("a\uD83D\uDE00Xb"),"pointer preserves surrogate boundary");
+        input.setValue("\u05D0\u05D1\u05D2").moveCursorToStart();graphics.reset();input.render(graphics,font,UiPointer.at(0,0));
+        check(graphics.texts.getFirst().text().equals("\u05D2\u05D1\u05D0"),"RTL visual order");
+        router.mousePressed(at(scope,13,18));router.mouseReleased(at(scope,13,18));input.charTyped('X',0);check(input.value().equals("\u05D0\u05D1\u05D2X"),"RTL left edge seeks logical end");
+        input.setValue("abcdefghijklmnop");input.selectAll();graphics.reset();input.render(graphics,font,UiPointer.at(0,0));check(graphics.texts.getFirst().x()<13,"long text scrolls to visible caret");
+        input.setBounds(10,10,200,20);graphics.reset();input.render(graphics,font,UiPointer.at(0,0));check(graphics.texts.getFirst().x()==13,"resize reveals full text");
+        UiStyleSource recolored=UiThemes.builder(UiMinecraftTheme.INSTANCE).colors(colors->colors.withInput(colors.inputFill(),colors.inputBorder(),0xFF123456)).build();
+        context.setTheme(recolored);graphics.reset();input.render(graphics,font,UiPointer.at(0,0));check(graphics.texts.getFirst().color()==0xFF123456&&input.value().equals("abcdefghijklmnop"),"theme updates color without losing draft");
+        input.setEnabled(false);graphics.reset();input.render(graphics,font,UiPointer.at(0,0));check(graphics.texts.getFirst().color()==recolored.surfaces().disabledText(),"disabled text follows theme");graphics.reset();router.close();
+    }
+    public static void main(String[] args) { scrollMotion();frameTree();flatSingleLine();theme();layout();input();routing();reentrantFocus();navigation();navigationLifecycle();navigationHistory();listGeometry();memberTree();formBody();modalViewport();System.out.println("PASS: scroll motion/frame tree, flat single-line input, theme, layout, paired input, scoped navigation/history/lifecycle, list geometry, member tree, form body and modal viewport"); }
 }
 """
 

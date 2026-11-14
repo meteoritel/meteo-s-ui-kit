@@ -10,6 +10,7 @@ import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.input.UiPointer;
 import com.meteorite.meteosuikit.api.input.UiFocusTarget;
 import com.meteorite.meteosuikit.api.input.UiInputContext;
+import com.meteorite.meteosuikit.api.input.UiInteractionSession;
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
 import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
@@ -79,6 +80,8 @@ final class KitInputsExample implements UiWidget, UiLayoutSource {
         widgets.addFocusTargets(sink);
     }
     @Override public long focusRevision() { return widgets.focusRevision(); }
+    @Override public void advanceFrame(long nowMillis) { widgets.advanceFrame(nowMillis); }
+    @Override public void scopeExited(UiInteractionSession.EndReason reason) { widgets.scopeExited(reason); }
     @Override public UiRect bounds() { return bounds; }
 
     /**

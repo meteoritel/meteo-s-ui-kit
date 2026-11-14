@@ -105,7 +105,7 @@ public final class UiListView<T> implements UiStatefulWidget, UiLayoutSource {
     @Override public UiListView<T> setEnabled(boolean enabled) { shell.setEnabled(enabled); return this; }
 
     private void invalidateInteraction(UiInteractionSession.EndReason reason) {
-        scrollView.endInteraction(reason);
+        scrollView.scopeExited(reason);
     }
 
     /** 使用原版主题装配泛型行列表。 */
@@ -139,6 +139,18 @@ public final class UiListView<T> implements UiStatefulWidget, UiLayoutSource {
         }
         return List.of(new UiLayoutNode(UiLayoutNode.Kind.LIST, bounds(), emptyMessage, 0, 0,
                 isEnabled(), true, rows, shell.layoutKey(), bounds(), this));
+    }
+
+    /** 列表范围准备后推进，行绘制与命中读取同一实际偏移。 */
+    @Override public void advanceFrame(long nowMillis) {
+        if (!isVisible() || !isEnabled()) return;
+        refreshTheme();
+        scrollView.advanceFrame(nowMillis);
+    }
+
+    /** 退出作用域时结清滚动目标。 */
+    @Override public void scopeExited(UiInteractionSession.EndReason reason) {
+        scrollView.scopeExited(reason);
     }
 
     // ---- 数据 ----

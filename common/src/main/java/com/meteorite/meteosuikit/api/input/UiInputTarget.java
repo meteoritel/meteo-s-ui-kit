@@ -12,6 +12,10 @@ import java.util.function.Consumer;
  */
 public interface UiInputTarget {
 
+    /** 每个绘制帧在命中前推进；同一根的实际成员共用单调毫秒时间，输入准备与只读查询不调用。 */
+    default void advanceFrame(long nowMillis) {
+    }
+
     /** 贡献实际 Tab 根；复合内容按自己的成员结构展开，语义组仍由 focusTargets 解释。 */
     default void addFocusTargets(Consumer<UiFocusTarget> out) {
         if (this instanceof UiFocusTarget target) out.accept(target);

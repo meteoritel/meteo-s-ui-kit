@@ -199,6 +199,14 @@ public final class UiFormBody implements UiWidget, UiInputContainer {
         }
     }
 
+    /** 沿实际容器推进后立即更新字段的屏幕投影。 */
+    @Override public void advanceFrame(long nowMillis) {
+        ensureLayout();
+        scroll.advanceFrame(nowMillis);
+        project();
+        fields.advanceFrame(nowMillis);
+    }
+
     /** 标签、字段和动作共用裁剪；tooltip 由退出裁剪后的根命中绘制。 */
     @Override public void render(GuiGraphics graphics, Font font, UiPointer pointer) {
         ensureLayout(); project();

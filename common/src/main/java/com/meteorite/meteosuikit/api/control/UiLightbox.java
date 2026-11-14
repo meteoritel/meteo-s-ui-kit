@@ -639,6 +639,8 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
     }
     @Override public long focusRevision() { return controls.focusRevision() * 31 + content.focusRevision(); }
     @Override public void scopeExited(UiInteractionSession.EndReason reason) { content.scopeExited(reason); }
+    /** 帧时间沿实际覆盖内容传递。 */
+    @Override public void advanceFrame(long nowMillis) { content.advanceFrame(nowMillis); }
     @Override public boolean keyReleased(int key, int scan, int modifiers) { return content.keyReleased(key, scan, modifiers); }
     @Override public boolean charTyped(char value, int modifiers) { return content.hasFocus() && content.charTyped(value, modifiers); }
 

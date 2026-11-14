@@ -52,6 +52,14 @@ public final class UiTextArea implements UiStatefulWidget, UiTextValue, UiLayout
     // 光标闪烁周期（毫秒）
     private static final long BLINK_INTERVAL = 300L;
 
+    /** 滚轮动画与编辑光标共用实际视口，光标滚入仍立即定位。 */
+    @Override public void advanceFrame(long nowMillis) {
+        if (isVisible() && isEnabled()) scroll.advanceFrame(nowMillis);
+    }
+
+    /** 退出字段时结清选择及滚动目标。 */
+    @Override public void scopeExited(UiInteractionSession.EndReason reason) { endInteraction(reason); }
+
     private final Font font;
     // 文本模型：宽度为 final，宽度变化时按当前值重建
     private AccessibleTextField textField;
@@ -426,7 +434,7 @@ public final class UiTextArea implements UiStatefulWidget, UiTextValue, UiLayout
      */
     @Override
     public void endInteraction(UiInteractionSession.EndReason reason) {
-        scroll.endInteraction(reason);
+        scroll.scopeExited(reason);
         editSession.endInteraction(reason);
     }
 

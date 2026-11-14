@@ -36,6 +36,12 @@ public final class UiScrollContainer implements UiInputTarget, UiLayoutSource {
         members.add(scroll);
     }
 
+    /** 先推进视口，再让实际内容同步屏幕投影。 */
+    @Override public void advanceFrame(long nowMillis) {
+        scroll.advanceFrame(nowMillis);
+        content.advanceFrame(nowMillis);
+    }
+
     /** 滚动条优先于内容，空白视口保留本容器的输入归属。 */
     @Override public @Nullable UiPointerHit hitTest(double x, double y) {
         if (!scroll.contains(x, y)) return null;

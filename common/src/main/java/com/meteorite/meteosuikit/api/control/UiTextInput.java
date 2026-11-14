@@ -27,13 +27,18 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextColor;
+import net.minecraft.Util;
+import net.minecraft.locale.Language;
+import net.minecraft.client.resources.language.FormattedBidiReorder;
+import net.minecraft.util.FormattedCharSequence;
+import java.text.Bidi;
+import java.util.ArrayList;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 /**
  * 单行文本输入框。
- * <p>封装原版 {@link EditBox}：关闭原版边框，改由主题绘制内凹像素框；
+ * <p>保留原版 {@link EditBox} 编辑模型；私有单行视图统一无阴影文字、选区、光标与指针几何，主题绘制内凹像素框；
  * 支持占位提示、长度限制、输入过滤、提交（Enter）与取消（Esc）。
  * <p>点击输入框可定位光标并拖动选择；焦点顺序由宿主的 {@code UiFocusManager} 统一维护。
  */
@@ -45,6 +50,7 @@ public final class UiTextInput implements UiSingleLineEditor, UiStatefulWidget, 
     private static final int PADDING_Y = TextInputSupport.PADDING_Y;
     // 最小宽度
     private static final int MIN_WIDTH = TextInputSupport.MIN_WIDTH;
+    private static final long BLINK_INTERVAL_MILLIS = 300L;
 
     // 原版输入框
     private final TrackedEditBox editBox;
@@ -64,8 +70,8 @@ public final class UiTextInput implements UiSingleLineEditor, UiStatefulWidget, 
 
     // 注入的宿主主题
     private final Supplier<? extends UiStyleSource> theme;
-    private long themeRevision = -1;
-    private UiStyleSource appliedTheme;
+    private final SingleLineView textView = new SingleLineView();
+    private long focusedTime;
     private Component hint;
 
     /** {@inheritDoc} */
@@ -96,9 +102,6 @@ public final class UiTextInput implements UiSingleLineEditor, UiStatefulWidget, 
         this.hint = hint;
         this.editBox = new TrackedEditBox(font, theme.get().rowHeight());
         this.editBox.setBordered(false);
-        this.editBox.setHint(placeholder(hint));
-        this.editBox.setTextColor(theme.get().surfaces().inputText());
-        this.editBox.setTextColorUneditable(theme.get().surfaces().disabledText());
         // 长度由码点过滤器控制；程序回填不经过原版截断。
         this.editBox.setMaxLength(Integer.MAX_VALUE);
         this.accessibleName = hint;
@@ -226,23 +229,7 @@ public final class UiTextInput implements UiSingleLineEditor, UiStatefulWidget, 
 
     public UiTextInput setHint(Component hint) {
         this.hint = hint;
-        editBox.setHint(placeholder(hint));
         return this;
-    }
-
-    /**
-     * 把占位提示染成禁用文本色，与多行输入框的占位提示保持一致。
-     *
-     * <p>原版 {@link EditBox} 绘制提示时复用正文的 {@code textColor}，无法单独指定颜色；
-     * 但组件自带的 {@link net.minecraft.network.chat.Style} 颜色优先于绘制参数，
-     * 因此在这里给提示挂上样式色即可只影响提示，不影响用户实际输入的正文。</p>
-     */
-    private Component placeholder(Component hint) {
-        // 提示为 null 或空时无需着色，避免无意义地构造副本
-        if (hint == null || hint.getString().isEmpty()) {
-            return hint;
-        }
-        return hint.copy().withStyle(hint.getStyle().withColor(TextColor.fromRgb(theme.get().surfaces().disabledText())));
     }
 
     /**
@@ -313,16 +300,7 @@ public final class UiTextInput implements UiSingleLineEditor, UiStatefulWidget, 
         shell.setBounds(x, y, width, height);
         editBox.setX(bounds().x() + PADDING_X);
         editBox.setY(bounds().y() + Math.max(PADDING_Y, (bounds().height() - font.lineHeight) / 2));
-        int textWidth = Math.max(1, bounds().width() - PADDING_X * 2);
-        if (textWidth != editBox.getWidth()) {
-            int cursor = editBox.getCursorPosition();
-            int anchor = editBox.anchor();
-            editBox.setWidth(textWidth);
-            // EditBox 扩宽不会清理旧滚动偏移；先归零视口再恢复编辑位置，避免能放下的文本仍缺首字。
-            editBox.moveCursorToStart(false);
-            editBox.setCursorPosition(cursor);
-            editBox.setHighlightPos(anchor);
-        }
+        editBox.setWidth(Math.max(1, bounds().width() - PADDING_X * 2));
         editBox.setHeight(Math.max(1, bounds().height() - PADDING_Y * 2));
     }
 
@@ -347,21 +325,9 @@ public final class UiTextInput implements UiSingleLineEditor, UiStatefulWidget, 
     /** {@inheritDoc} */
     @Override
     public void render(GuiGraphics graphics, Font font, UiPointer incomingPointer) {
-        if (appliedTheme != theme.get() || themeRevision != theme.get().revision()) {
-            editBox.setTextColor(theme.get().surfaces().inputText());
-            editBox.setTextColorUneditable(theme.get().surfaces().disabledText());
-            editBox.setHint(placeholder(hint));
-            themeRevision = theme.get().revision(); appliedTheme = theme.get();
-        }
-        UiPointer pointer = incomingPointer.resolve(this).forTarget(this);
-        int mouseX = (int) pointer.x();
-        int mouseY = (int) pointer.y();
-        if (!isVisible()) {
-            return;
-        }
+        if (!isVisible()) return;
         TextInputSupport.drawBackground(graphics, bounds(), theme);
-        UiRenderLayers.draw(graphics, UiRenderLayers.FOREGROUND,
-                () -> editBox.renderWidget(graphics, mouseX, mouseY, 0.0F));
+        UiRenderLayers.draw(graphics, UiRenderLayers.FOREGROUND, () -> textView.render(graphics));
         shell.renderFocusOutline(graphics, bounds(), theme);
     }
 
@@ -392,7 +358,8 @@ public final class UiTextInput implements UiSingleLineEditor, UiStatefulWidget, 
     }
 
     private void seekCursor(double mouseX, double mouseY) {
-        editBox.onClick(mouseX, mouseY);
+        textView.sync();
+        editBox.moveCursorTo(textView.indexAt(mouseX - editBox.getX()), false);
         if (!editSession.isSelecting()) return;
         int cursor = editBox.getCursorPosition();
         // 越界拖动越过可见文本的端点，推动水平视口；按码点移动，避免拆开代理对。
@@ -451,6 +418,7 @@ public final class UiTextInput implements UiSingleLineEditor, UiStatefulWidget, 
     @Override
     public void focusChanged(boolean focused) {
         editBox.setFocused(focused);
+        if (focused) focusedTime = Util.getMillis();
     }
 
     /** {@inheritDoc} */
@@ -471,6 +439,124 @@ public final class UiTextInput implements UiSingleLineEditor, UiStatefulWidget, 
     private void backfill(String value) {
         editSession.backfill(value);
     }
+
+    /** 单行的视觉顺序、光标和指针共用同一水平像素窗口。 */
+    private final class SingleLineView {
+        private String text;
+        private Language language;
+        private List<TextRun> runs = List.of();
+        private int[] caretX = {0};
+        private int width;
+        private int pixelOffset;
+
+        private void sync() {
+            String value = value();
+            Language current = Language.getInstance();
+            if (!value.equals(text) || language != current) {
+                text = value;
+                language = current;
+                layout();
+            }
+            int available = Math.max(0, bounds().width() - PADDING_X * 2 - 1);
+            int cursor = caretX[editBox.getCursorPosition()];
+            if (cursor < pixelOffset) pixelOffset = cursor;
+            else if (cursor > pixelOffset + available) pixelOffset = cursor - available;
+            pixelOffset = Math.clamp(pixelOffset, 0, Math.max(0, width - available));
+        }
+
+        private void layout() {
+            caretX = new int[text.length() + 1];
+            width = 0;
+            if (text.isEmpty()) { runs = List.of(); return; }
+            Bidi bidi = new Bidi(text, language.isDefaultRightToLeft()
+                    ? Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT : Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT);
+            TextRun[] ordered = new TextRun[bidi.getRunCount()];
+            byte[] levels = new byte[ordered.length];
+            for (int index = 0; index < ordered.length; index++) {
+                levels[index] = (byte) bidi.getRunLevel(index);
+                int start = bidi.getRunStart(index);
+                int end = bidi.getRunLimit(index);
+                boolean reversed = (levels[index] & 1) != 0;
+                ordered[index] = new TextRun(start, end, reversed,
+                        FormattedBidiReorder.reorder(Component.literal(text.substring(start, end)), reversed));
+            }
+            Bidi.reorderVisually(levels, 0, ordered, 0, ordered.length);
+            List<TextRun> result = new ArrayList<>();
+            for (TextRun run : ordered) {
+                int runWidth = font.width(run.visual());
+                for (int index = run.start(); index <= run.end();) {
+                    int prefix = font.width(FormattedBidiReorder.reorder(
+                            Component.literal(text.substring(run.start(), index)), run.reversed()));
+                    caretX[index] = width + (run.reversed() ? runWidth - prefix : prefix);
+                    if (index == run.end()) break;
+                    index = text.offsetByCodePoints(index, 1);
+                }
+                result.add(run);
+                width += runWidth;
+            }
+            runs = List.copyOf(result);
+        }
+
+        private int indexAt(double x) {
+            double desired = x + pixelOffset;
+            int closest = 0;
+            double distance = Double.POSITIVE_INFINITY;
+            for (int index = 0; index <= text.length();) {
+                double next = Math.abs(caretX[index] - desired);
+                if (next < distance) { distance = next; closest = index; }
+                if (index == text.length()) break;
+                index = text.offsetByCodePoints(index, 1);
+            }
+            return closest;
+        }
+
+        private void render(GuiGraphics graphics) {
+            sync();
+            UiRect clip = new UiRect(editBox.getX(), bounds().y(),
+                    Math.max(0, bounds().width() - PADDING_X * 2), bounds().height());
+            UiRenderLayers.enableScissor(graphics, clip);
+            try {
+                int x = editBox.getX() - pixelOffset;
+                int y = editBox.getY();
+                int color = isEnabled() && editable ? theme.get().surfaces().inputText()
+                        : theme.get().surfaces().disabledText();
+                if (text.isEmpty()) {
+                    if (hint != null) graphics.drawString(font, hint.getVisualOrderText(), editBox.getX(), y,
+                            theme.get().surfaces().disabledText(), false);
+                } else {
+                    int selectedStart = Math.min(editBox.anchor(), editBox.getCursorPosition());
+                    int selectedEnd = Math.max(editBox.anchor(), editBox.getCursorPosition());
+                    int runX = x;
+                    for (TextRun run : runs) {
+                        int start = Math.max(selectedStart, run.start());
+                        int end = Math.min(selectedEnd, run.end());
+                        if (start < end) {
+                            int left = runX + runPosition(run, start);
+                            int right = runX + runPosition(run, end);
+                            graphics.fill(Math.min(left, right), y - 1, Math.max(left, right), y + font.lineHeight,
+                                    theme.get().surfaces().selectionFill());
+                        }
+                        graphics.drawString(font, run.visual(), runX, y, color, false);
+                        runX += font.width(run.visual());
+                    }
+                }
+                if (isFocused() && (Util.getMillis() - focusedTime) / BLINK_INTERVAL_MILLIS % 2 == 0) {
+                    int cursor = x + caretX[editBox.getCursorPosition()];
+                    graphics.fill(cursor, y - 1, cursor + 1, y + font.lineHeight, color);
+                }
+            } finally {
+                UiRenderLayers.disableScissor(graphics);
+            }
+        }
+
+        private int runPosition(TextRun run, int index) {
+            int prefix = font.width(FormattedBidiReorder.reorder(
+                    Component.literal(text.substring(run.start(), index)), run.reversed()));
+            return run.reversed() ? font.width(run.visual()) - prefix : prefix;
+        }
+    }
+
+    private record TextRun(int start, int end, boolean reversed, FormattedCharSequence visual) { }
 
     // 原版未暴露选择锚点；记录公开设置入口，避免用重复文本猜测选择方向。
     private static final class TrackedEditBox extends EditBox {

@@ -16,6 +16,11 @@ import org.jetbrains.annotations.Nullable;
  * 只持有结构，不持有捕获；拖动与释放继续由作用域的唯一会话派发。
  */
 public final class UiChildren<T extends UiInputTarget> extends AbstractList<T> implements UiInputTarget, UiLayoutSource {
+    /** 将根的同一帧时间沿实际成员传递。 */
+    @Override public void advanceFrame(long nowMillis) {
+        for (T member : members) member.advanceFrame(nowMillis);
+    }
+
     private final List<T> members = new ArrayList<>();
     private final Map<T, Integer> tabOrder = new IdentityHashMap<>();
     private List<T> navigation;

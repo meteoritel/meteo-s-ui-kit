@@ -26,7 +26,9 @@ import net.minecraft.client.gui.GuiGraphics;
  * <p>偏移恒钳制在 [0, {@link #maxOffset()}]：视口尺寸变化、内容变短以及 {@link #setContentHeight(int)}
  * 之后都会重新钳制。内容高度不超过有效视口高度时偏移必为 0、{@link #maxOffset()} 为 0，滚动条不显示。</p>
  *
- * <p>滚动偏移、轨道几何及拖动会话由本视口持有；内容与滚轮消费政策由宿主按
+ * <p>实际偏移、阻尼目标、轨道几何及拖动会话由本视口持有；滚轮请求通过
+ * {@link #advanceFrame(long)} 推进，{@link #setOffset(int)} 与 {@link #ensureVisible(UiRect)} 立即定位。
+ * 内容与滚轮消费政策由宿主按
  * {@link #contains(double, double)} 决定。{@link Policy} 可指定内容步长、轨道留宽及按下行为。</p>
  */
 public final class UiScrollView implements UiInteractionSession.Target {
@@ -38,6 +40,9 @@ public final class UiScrollView implements UiInteractionSession.Target {
      * 滑块最小高度：内容再长也要留出可抓取区域。
      */
     private static final int MIN_THUMB_HEIGHT = 8;
+    private static final double SMOOTH_SCROLL_RATE = 18.0;
+    private static final double SMOOTH_SCROLL_SNAP_PX = 0.35;
+    private static final double MAX_FRAME_SECONDS = 0.1;
 
     /** 滚动政策；alignment 为内容步长，其他参数仅控制轨道交互与留宽。 */
     public record Policy(int alignment, int minimumThumb, int grabMargin,
@@ -67,6 +72,9 @@ public final class UiScrollView implements UiInteractionSession.Target {
     private UiRect viewport = new UiRect(0, 0, 1, 1);
     private int contentHeight;
     private int offset;
+    private double animatedOffset;
+    private double targetOffset;
+    private long lastFrameMillis = -1;
     private int step = 20;
     private int scrollbarWidth = SCROLLBAR_WIDTH;
     private boolean scrollbarVisible;
@@ -123,8 +131,31 @@ public final class UiScrollView implements UiInteractionSession.Target {
     }
 
     public void setOffset(int offset) {
-        int bounded = Math.clamp(offset, 0, maxOffset());
-        this.offset = Math.min(maxOffset(), (int) Math.round(bounded / (double) policy.alignment()) * policy.alignment());
+        this.offset = alignedOffset(offset);
+        animatedOffset = this.offset;
+        targetOffset = this.offset;
+        lastFrameMillis = -1;
+    }
+
+    private int alignedOffset(double value) {
+        double bounded = Math.clamp(value, 0.0, maxOffset());
+        return Math.min(maxOffset(), (int) Math.round(bounded / policy.alignment()) * policy.alignment());
+    }
+
+    /** 按根提供的帧时间推进阻尼；位置、命中与轨道读取同一个实际偏移。 */
+    @Override
+    public void advanceFrame(long nowMillis) {
+        if (lastFrameMillis < 0 || isDragging()) {
+            lastFrameMillis = nowMillis;
+            return;
+        }
+        if (nowMillis <= lastFrameMillis) return;
+        double seconds = Math.min((nowMillis - lastFrameMillis) / 1000.0, MAX_FRAME_SECONDS);
+        lastFrameMillis = nowMillis;
+        double delta = targetOffset - animatedOffset;
+        animatedOffset = Math.abs(delta) <= SMOOTH_SCROLL_SNAP_PX ? targetOffset
+                : animatedOffset + delta * (1.0 - Math.exp(-seconds * SMOOTH_SCROLL_RATE));
+        offset = alignedOffset(animatedOffset);
     }
 
     public void setStep(int step) {
@@ -142,11 +173,11 @@ public final class UiScrollView implements UiInteractionSession.Target {
         return scrollByPixels(direction * (double) step);
     }
 
-    /** 按像素量滚动；正数朝内容顶部，保留连续滚轮的实际量。 */
+    /** 向阻尼目标累积像素量；正数朝内容顶部，返回目标是否接受位移。 */
     public boolean scrollByPixels(double amount) {
-        int previous = offset;
-        setOffset(offset - (int) Math.round(amount));
-        return offset != previous;
+        double previous = targetOffset;
+        targetOffset = Math.clamp(targetOffset - amount, 0.0, maxOffset());
+        return targetOffset != previous;
     }
 
     /**
@@ -158,15 +189,24 @@ public final class UiScrollView implements UiInteractionSession.Target {
 
     /** 以最小位移露出目标；超高目标覆盖视口时保持位置，避免反复对齐两边。 */
     public void ensureVisible(UiRect contentRect) {
-        int next = offset;
+        setOffset(visibleOffset(contentRect, offset));
+    }
+
+    /** 从待完成目标计算最小滚入位置，保留当前实际位置并逐帧趋近。 */
+    public void ensureVisibleSmoothly(UiRect contentRect) {
+        targetOffset = visibleOffset(contentRect, targetOffset);
+    }
+
+    private int visibleOffset(UiRect contentRect, double current) {
+        double next = current;
         if (contentRect.height() > effectiveHeight()) {
             if (contentRect.bottom() < next + effectiveHeight()) next = contentRect.bottom() - effectiveHeight();
             else if (contentRect.y() > next) next = contentRect.y();
         } else if (contentRect.y() < next) next = contentRect.y();
         else if (contentRect.bottom() > next + effectiveHeight()) next = contentRect.bottom() - effectiveHeight();
-        if (next > offset) next = (int) Math.ceil(next / (double) policy.alignment()) * policy.alignment();
-        else if (next < offset) next = (int) Math.floor(next / (double) policy.alignment()) * policy.alignment();
-        setOffset(next);
+        if (next > current) next = Math.ceil(next / policy.alignment()) * policy.alignment();
+        else if (next < current) next = Math.floor(next / policy.alignment()) * policy.alignment();
+        return alignedOffset(next);
     }
 
     /** GUI 点转内容点；纯换算不检查视口，捕获拖动可传越界点。 */
@@ -266,6 +306,7 @@ public final class UiScrollView implements UiInteractionSession.Target {
         double y = context.pointerY();
         int button = context.button();
         if (button != 0 || !hitScrollbar(x, y)) return false;
+        setOffset(offset);
         // 点在滑块之外（轨道空白）时先把滑块中心对到指针：否则拖动时滑块带着一个很大的抓取偏移，跟不上手。
         if (policy.centerOnPress() || y < thumbTop() || y >= thumbTop() + thumbHeight()) {
             int travel = thumbTravel();
@@ -316,6 +357,14 @@ public final class UiScrollView implements UiInteractionSession.Target {
 
     @Override
     public void interactionEnded(UiInteractionSession.EndReason reason) {
+        session = null;
+    }
+
+    /** 退出所属内容时停在当前可见位置，恢复后建立新的时间基准。 */
+    @Override
+    public void scopeExited(UiInteractionSession.EndReason reason) {
+        endInteraction(reason);
+        setOffset(offset);
     }
 
     /** 在宿主坐标绘制轨道与滑块，几何与主题 painter 均由共同入口管理。 */
@@ -328,7 +377,9 @@ public final class UiScrollView implements UiInteractionSession.Target {
     // ---------- 内部几何 ----------
 
     private void clampOffset() {
-        setOffset(offset);
+        animatedOffset = Math.clamp(animatedOffset, 0.0, maxOffset());
+        targetOffset = Math.clamp(targetOffset, 0.0, maxOffset());
+        offset = alignedOffset(animatedOffset);
     }
 
     // 滚动条始终贴着视口右边界；视口窄于滚动条时退化为整个视口宽。

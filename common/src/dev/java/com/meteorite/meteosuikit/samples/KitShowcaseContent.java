@@ -9,6 +9,7 @@ import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.input.UiFocusTarget;
 import com.meteorite.meteosuikit.api.input.UiInputContext;
 import com.meteorite.meteosuikit.api.input.UiInputTarget;
+import com.meteorite.meteosuikit.api.input.UiInteractionSession;
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
 import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
@@ -92,11 +93,11 @@ final class KitShowcaseContent implements UiInputTarget, UiLayoutSource {
         models = new KitModelsExample(font, theme);
         modals = new UiModalStack(theme);
         navigation.beginUpdate();
-        nav("showcase.page.controls", () -> page = Page.CONTROLS);
-        nav("showcase.page.inputs", () -> page = Page.INPUTS);
-        nav("showcase.page.surfaces", () -> page = Page.SURFACES);
-        nav("showcase.layers.title", () -> page = Page.LAYERS);
-        nav("showcase.models.title", () -> page = Page.MODELS);
+        nav("showcase.page.controls", () -> selectPage(Page.CONTROLS));
+        nav("showcase.page.inputs", () -> selectPage(Page.INPUTS));
+        nav("showcase.page.surfaces", () -> selectPage(Page.SURFACES));
+        nav("showcase.layers.title", () -> selectPage(Page.LAYERS));
+        nav("showcase.models.title", () -> selectPage(Page.MODELS));
         nav("showcase.theme", nextTheme);
         nav("showcase.modal", this::openModal);
         navigation.endUpdate();
@@ -164,6 +165,34 @@ final class KitShowcaseContent implements UiInputTarget, UiLayoutSource {
     }
 
     void advanceFrame() { modals.tick(); }
+
+    @Override
+    public void advanceFrame(long nowMillis) { pageContent().advanceFrame(nowMillis); }
+
+    @Override
+    public void scopeExited(UiInteractionSession.EndReason reason) {
+        pageContent().scopeExited(reason);
+        controls.scopeExited(reason);
+        slider.scopeExited(reason);
+        navigation.scopeExited(reason);
+        footer.scopeExited(reason);
+    }
+
+    private void selectPage(Page next) {
+        if (page == next) return;
+        scopeExited(UiInteractionSession.EndReason.CANCEL);
+        page = next;
+    }
+
+    private UiInputTarget pageContent() {
+        return switch (page) {
+            case CONTROLS -> scrollExample;
+            case INPUTS -> inputs;
+            case SURFACES -> surfaces;
+            case LAYERS -> layers;
+            case MODELS -> models;
+        };
+    }
 
     private UiControl button(String key, Runnable action) {
         UiControl control = controls.obtain(key);

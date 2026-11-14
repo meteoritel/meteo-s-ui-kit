@@ -43,6 +43,7 @@ com.meteorite.meteosuikit.api.control.UiButtonWidget | METHOD [public, abstract]
 com.meteorite.meteosuikit.api.control.UiButtonWidget | METHOD [public, abstract] setVisible : (boolean)com.meteorite.meteosuikit.api.control.UiStatefulTarget throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiStatefulTarget
 com.meteorite.meteosuikit.api.control.UiButtonWidget | METHOD [public, default] acceptsTextInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.control.UiButtonWidget | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiWidget
+com.meteorite.meteosuikit.api.control.UiButtonWidget | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiButtonWidget | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiButtonWidget | METHOD [public, default] canFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiButtonWidget
 com.meteorite.meteosuikit.api.control.UiButtonWidget | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -74,6 +75,7 @@ com.meteorite.meteosuikit.api.control.UiControl | CONSTRUCTOR [public] <init> : 
 com.meteorite.meteosuikit.api.control.UiControl | CONSTRUCTOR [public] <init> : (com.meteorite.meteosuikit.api.text.UiLabelPresentation)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiControl
 com.meteorite.meteosuikit.api.control.UiControl | METHOD [public, default] acceptsTextInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.control.UiControl | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiWidget
+com.meteorite.meteosuikit.api.control.UiControl | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiControl | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiControl | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiControl | METHOD [public, default] focusChanged : (boolean)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
@@ -130,6 +132,7 @@ com.meteorite.meteosuikit.api.control.UiControl | METHOD [public] style : ()com.
 com.meteorite.meteosuikit.api.control.UiControlGroup | CLASS [public, final]  bounds [] extends java.lang.Object implements com.meteorite.meteosuikit.api.input.UiInputContainer
 com.meteorite.meteosuikit.api.control.UiControlGroup | CONSTRUCTOR [public] <init> : ()void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiControlGroup
 com.meteorite.meteosuikit.api.control.UiControlGroup | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputContainer
+com.meteorite.meteosuikit.api.control.UiControlGroup | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputContainer
 com.meteorite.meteosuikit.api.control.UiControlGroup | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiControlGroup | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputContainer
 com.meteorite.meteosuikit.api.control.UiControlGroup | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputContainer
@@ -163,6 +166,7 @@ com.meteorite.meteosuikit.api.control.UiDocumentLightboxContent | CLASS [public,
 com.meteorite.meteosuikit.api.control.UiDocumentLightboxContent | CONSTRUCTOR [public] <init> : (com.meteorite.meteosuikit.api.text.TextMeasurer,java.util.function.Supplier<? extends com.meteorite.meteosuikit.api.style.UiStyleSource>,net.minecraft.network.chat.Component)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiDocumentLightboxContent
 com.meteorite.meteosuikit.api.control.UiDocumentLightboxContent | METHOD [public, default] acceptsTextInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.control.UiDocumentLightboxContent | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.control.UiDocumentLightboxContent | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiDocumentLightboxContent | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiDocumentLightboxContent | METHOD [public, default] canFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiStatefulTarget
 com.meteorite.meteosuikit.api.control.UiDocumentLightboxContent | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -218,9 +222,9 @@ com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public, default] 
 com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public, default] hasFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public, default] isFocusVisible : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public, default] isFocused : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
-com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public, default] scopeExited : (com.meteorite.meteosuikit.api.input.UiInteractionSession.EndReason)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public] accessibleName : ()net.minecraft.network.chat.Component throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiDocumentView
 com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public] activate : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiDocumentView
+com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiDocumentView
 com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public] bounds : ()com.meteorite.meteosuikit.api.geometry.UiRect throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiDocumentView
 com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public] focusChanged : (boolean)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiDocumentView
 com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public] focusState : ()com.meteorite.meteosuikit.api.input.UiFocusState throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiDocumentView
@@ -238,6 +242,7 @@ com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public] mouseRele
 com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public] mouseScrolled : (com.meteorite.meteosuikit.api.input.UiInputContext,double,double)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiDocumentView
 com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public] offset : ()int throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiDocumentView
 com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public] render : (net.minecraft.client.gui.GuiGraphics,net.minecraft.client.gui.Font,com.meteorite.meteosuikit.api.input.UiPointer)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiDocumentView
+com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public] scopeExited : (com.meteorite.meteosuikit.api.input.UiInteractionSession.EndReason)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiDocumentView
 com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public] setBackground : (com.meteorite.meteosuikit.api.control.UiDocumentView.Background)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiDocumentView
 com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public] setBounds : (int,int,int,int)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiDocumentView
 com.meteorite.meteosuikit.api.control.UiDocumentView | METHOD [public] setContent : (java.util.List<com.meteorite.meteosuikit.api.layout.UiNode>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiDocumentView
@@ -253,6 +258,7 @@ com.meteorite.meteosuikit.api.control.UiFloatingPanel | CLASS [public, final]  b
 com.meteorite.meteosuikit.api.control.UiFloatingPanel | CONSTRUCTOR [public] <init> : (net.minecraft.client.gui.Font,net.minecraft.network.chat.Component)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiFloatingPanel
 com.meteorite.meteosuikit.api.control.UiFloatingPanel | METHOD [public, default] acceptsTextInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.control.UiFloatingPanel | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.control.UiFloatingPanel | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiFloatingPanel | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiFloatingPanel | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiFloatingPanel | METHOD [public, default] focusTargets : ()java.util.List<com.meteorite.meteosuikit.api.input.UiFocusTarget> throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
@@ -293,6 +299,7 @@ com.meteorite.meteosuikit.api.control.UiFloatingPanel.Content | METHOD [public, 
 com.meteorite.meteosuikit.api.control.UiFloatingPanel.Content | METHOD [public, abstract] render : (net.minecraft.client.gui.GuiGraphics,net.minecraft.client.gui.Font,com.meteorite.meteosuikit.api.input.UiPointer)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiFloatingPanel.Content
 com.meteorite.meteosuikit.api.control.UiFloatingPanel.Content | METHOD [public, abstract] setBounds : (int,int,int,int)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiFloatingPanel.Content
 com.meteorite.meteosuikit.api.control.UiFloatingPanel.Content | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.control.UiFloatingPanel.Content | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiFloatingPanel.Content | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiFloatingPanel.Content | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiFloatingPanel.Content | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -333,6 +340,7 @@ com.meteorite.meteosuikit.api.control.UiFormBody | METHOD [public, default] scop
 com.meteorite.meteosuikit.api.control.UiFormBody | METHOD [public] add : (net.minecraft.network.chat.Component,com.meteorite.meteosuikit.api.control.UiWidget,com.meteorite.meteosuikit.api.layout.UiFormLayout.Control,java.util.List<com.meteorite.meteosuikit.api.control.UiControl>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiFormBody
 com.meteorite.meteosuikit.api.control.UiFormBody | METHOD [public] add : (net.minecraft.network.chat.Component,com.meteorite.meteosuikit.api.control.UiWidget,int)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiFormBody
 com.meteorite.meteosuikit.api.control.UiFormBody | METHOD [public] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiFormBody
+com.meteorite.meteosuikit.api.control.UiFormBody | METHOD [public] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiFormBody
 com.meteorite.meteosuikit.api.control.UiFormBody | METHOD [public] bounds : ()com.meteorite.meteosuikit.api.geometry.UiRect throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiFormBody
 com.meteorite.meteosuikit.api.control.UiFormBody | METHOD [public] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiFormBody
 com.meteorite.meteosuikit.api.control.UiFormBody | METHOD [public] hitTest : (double,double)com.meteorite.meteosuikit.api.input.@org.jetbrains.annotations.Nullable UiPointerHit throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiFormBody
@@ -350,6 +358,7 @@ com.meteorite.meteosuikit.api.control.UiFormBody | METHOD [public] setOffset : (
 com.meteorite.meteosuikit.api.control.UiIconLightboxContent | CLASS [public, final]  bounds [] extends java.lang.Object implements com.meteorite.meteosuikit.api.control.UiLightbox.Content
 com.meteorite.meteosuikit.api.control.UiIconLightboxContent | CONSTRUCTOR [public] <init> : (com.meteorite.meteosuikit.api.render.UiIcon,java.util.function.Supplier<? extends com.meteorite.meteosuikit.api.style.UiStyleSource>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiIconLightboxContent
 com.meteorite.meteosuikit.api.control.UiIconLightboxContent | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.control.UiIconLightboxContent | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiIconLightboxContent | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiIconLightboxContent | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiIconLightboxContent | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -378,6 +387,7 @@ com.meteorite.meteosuikit.api.control.UiIconStrip | CLASS [public, final]  bound
 com.meteorite.meteosuikit.api.control.UiIconStrip | CONSTRUCTOR [public] <init> : (net.minecraft.client.gui.Font,com.meteorite.meteosuikit.api.control.UiIconStrip.Orientation)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiIconStrip
 com.meteorite.meteosuikit.api.control.UiIconStrip | METHOD [public, default] acceptsTextInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.control.UiIconStrip | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.control.UiIconStrip | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiIconStrip | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiIconStrip | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiIconStrip | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -431,6 +441,7 @@ com.meteorite.meteosuikit.api.control.UiImageView | CONSTRUCTOR [public] <init> 
 com.meteorite.meteosuikit.api.control.UiImageView | CONSTRUCTOR [public] <init> : (com.meteorite.meteosuikit.api.control.LightboxImage,net.minecraft.network.chat.@org.jetbrains.annotations.Nullable Component)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiImageView
 com.meteorite.meteosuikit.api.control.UiImageView | CONSTRUCTOR [public] <init> : (com.meteorite.meteosuikit.api.control.LightboxImage,net.minecraft.network.chat.@org.jetbrains.annotations.Nullable Component,boolean)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiImageView
 com.meteorite.meteosuikit.api.control.UiImageView | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.control.UiImageView | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiImageView | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiImageView | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiImageView | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -460,6 +471,7 @@ com.meteorite.meteosuikit.api.control.UiLightbox | CONSTRUCTOR [public] <init> :
 com.meteorite.meteosuikit.api.control.UiLightbox | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiLightbox | METHOD [public, default] hasFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiLightbox | METHOD [public] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiLightbox
+com.meteorite.meteosuikit.api.control.UiLightbox | METHOD [public] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiLightbox
 com.meteorite.meteosuikit.api.control.UiLightbox | METHOD [public] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiLightbox
 com.meteorite.meteosuikit.api.control.UiLightbox | METHOD [public] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiLightbox
 com.meteorite.meteosuikit.api.control.UiLightbox | METHOD [public] hitTest : (double,double)com.meteorite.meteosuikit.api.input.@org.jetbrains.annotations.Nullable UiPointerHit throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiLightbox
@@ -508,6 +520,7 @@ com.meteorite.meteosuikit.api.control.UiLightbox.Content | METHOD [public, abstr
 com.meteorite.meteosuikit.api.control.UiLightbox.Content | METHOD [public, abstract] zoomBy : (int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiLightbox.Content
 com.meteorite.meteosuikit.api.control.UiLightbox.Content | METHOD [public, abstract] zoomPercent : ()int throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiLightbox.Content
 com.meteorite.meteosuikit.api.control.UiLightbox.Content | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.control.UiLightbox.Content | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiLightbox.Content | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiLightbox.Content | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiLightbox.Content | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -546,9 +559,9 @@ com.meteorite.meteosuikit.api.control.UiListView | METHOD [public, default] hasF
 com.meteorite.meteosuikit.api.control.UiListView | METHOD [public, default] isFocusVisible : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.control.UiListView | METHOD [public, default] isFocused : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.control.UiListView | METHOD [public, default] keyReleased : (int,int,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
-com.meteorite.meteosuikit.api.control.UiListView | METHOD [public, default] scopeExited : (com.meteorite.meteosuikit.api.input.UiInteractionSession.EndReason)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiListView | METHOD [public] accessibleName : ()net.minecraft.network.chat.Component throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiListView
 com.meteorite.meteosuikit.api.control.UiListView | METHOD [public] activate : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiListView
+com.meteorite.meteosuikit.api.control.UiListView | METHOD [public] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiListView
 com.meteorite.meteosuikit.api.control.UiListView | METHOD [public] bounds : ()com.meteorite.meteosuikit.api.geometry.UiRect throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiListView
 com.meteorite.meteosuikit.api.control.UiListView | METHOD [public] contentHeight : ()int throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiListView
 com.meteorite.meteosuikit.api.control.UiListView | METHOD [public] dragIndexAt : (double)int throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiListView
@@ -570,6 +583,7 @@ com.meteorite.meteosuikit.api.control.UiListView | METHOD [public] mouseScrolled
 com.meteorite.meteosuikit.api.control.UiListView | METHOD [public] render : (net.minecraft.client.gui.GuiGraphics,net.minecraft.client.gui.Font,com.meteorite.meteosuikit.api.input.UiPointer)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiListView
 com.meteorite.meteosuikit.api.control.UiListView | METHOD [public] rowBounds : (int)com.meteorite.meteosuikit.api.geometry.@org.jetbrains.annotations.Nullable UiRect throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiListView
 com.meteorite.meteosuikit.api.control.UiListView | METHOD [public] rowContentHeight : ()int throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiListView
+com.meteorite.meteosuikit.api.control.UiListView | METHOD [public] scopeExited : (com.meteorite.meteosuikit.api.input.UiInteractionSession.EndReason)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiListView
 com.meteorite.meteosuikit.api.control.UiListView | METHOD [public] selectedIndex : ()int throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiListView
 com.meteorite.meteosuikit.api.control.UiListView | METHOD [public] selectedItem : ()T throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiListView
 com.meteorite.meteosuikit.api.control.UiListView | METHOD [public] setActivateOnSingleClick : (boolean)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiListView
@@ -597,6 +611,7 @@ com.meteorite.meteosuikit.api.control.UiModal | CLASS [public, final]  bounds []
 com.meteorite.meteosuikit.api.control.UiModal | FIELD [public, static, final] BUTTON_HEIGHT : int = 16 @ com.meteorite.meteosuikit.api.control.UiModal
 com.meteorite.meteosuikit.api.control.UiModal | FIELD [public, static, final] DEFAULT_WIDTH : int = 220 @ com.meteorite.meteosuikit.api.control.UiModal
 com.meteorite.meteosuikit.api.control.UiModal | FIELD [public, static, final] MIN_WIDTH : int = 120 @ com.meteorite.meteosuikit.api.control.UiModal
+com.meteorite.meteosuikit.api.control.UiModal | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputContainer
 com.meteorite.meteosuikit.api.control.UiModal | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiModal | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputContainer
 com.meteorite.meteosuikit.api.control.UiModal | METHOD [public, default] hasFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputContainer
@@ -651,6 +666,7 @@ com.meteorite.meteosuikit.api.control.UiModalStack | CONSTRUCTOR [public] <init>
 com.meteorite.meteosuikit.api.control.UiModalStack | CONSTRUCTOR [public] <init> : (java.util.function.Supplier<? extends com.meteorite.meteosuikit.api.style.UiStyleSource>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiModalStack
 com.meteorite.meteosuikit.api.control.UiModalStack | FIELD [public, static, final] FADE_TICKS : int = 4 @ com.meteorite.meteosuikit.api.control.UiModalStack
 com.meteorite.meteosuikit.api.control.UiModalStack | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiWidget
+com.meteorite.meteosuikit.api.control.UiModalStack | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiModalStack | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiModalStack | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiModalStack | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiWidget
@@ -693,6 +709,7 @@ com.meteorite.meteosuikit.api.control.UiOverlay | CONSTRUCTOR [public] <init> : 
 com.meteorite.meteosuikit.api.control.UiOverlay | METHOD [public, default] hasFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiOverlay | METHOD [public, default] mouseDragged : (com.meteorite.meteosuikit.api.input.UiInputContext,double,double)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiOverlay | METHOD [public] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiOverlay
+com.meteorite.meteosuikit.api.control.UiOverlay | METHOD [public] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiOverlay
 com.meteorite.meteosuikit.api.control.UiOverlay | METHOD [public] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiOverlay
 com.meteorite.meteosuikit.api.control.UiOverlay | METHOD [public] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiOverlay
 com.meteorite.meteosuikit.api.control.UiOverlay | METHOD [public] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiOverlay
@@ -762,6 +779,7 @@ com.meteorite.meteosuikit.api.control.UiScrollContainer | CONSTRUCTOR [public] <
 com.meteorite.meteosuikit.api.control.UiScrollContainer | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiScrollContainer | METHOD [public, default] mouseDragged : (com.meteorite.meteosuikit.api.input.UiInputContext,double,double)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiScrollContainer | METHOD [public] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollContainer
+com.meteorite.meteosuikit.api.control.UiScrollContainer | METHOD [public] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollContainer
 com.meteorite.meteosuikit.api.control.UiScrollContainer | METHOD [public] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollContainer
 com.meteorite.meteosuikit.api.control.UiScrollContainer | METHOD [public] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollContainer
 com.meteorite.meteosuikit.api.control.UiScrollContainer | METHOD [public] hasFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollContainer
@@ -784,13 +802,14 @@ com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public, default] ha
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public, default] keyPressed : (int,int,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public, default] keyReleased : (int,int,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public, default] mouseScrolled : (com.meteorite.meteosuikit.api.input.UiInputContext,double,double)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
-com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public, default] scopeExited : (com.meteorite.meteosuikit.api.input.UiInteractionSession.EndReason)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] contains : (double,double)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] containsContent : (double,double)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] contentHeight : ()int throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] contentWidth : ()int throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] endInteraction : (com.meteorite.meteosuikit.api.input.UiInteractionSession.EndReason)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] ensureVisible : (com.meteorite.meteosuikit.api.geometry.UiRect)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
+com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] ensureVisibleSmoothly : (com.meteorite.meteosuikit.api.geometry.UiRect)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] hitContentY : (double,double)java.util.OptionalDouble throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] hitScrollbar : (double,double)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] hitTest : (double,double)com.meteorite.meteosuikit.api.input.@org.jetbrains.annotations.Nullable UiPointerHit throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
@@ -808,6 +827,7 @@ com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] pop : (net.
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] push : (net.minecraft.client.gui.GuiGraphics)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] push : (net.minecraft.client.gui.GuiGraphics,com.meteorite.meteosuikit.api.geometry.UiRect)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] renderScrollbar : (net.minecraft.client.gui.GuiGraphics,java.util.function.Supplier<? extends com.meteorite.meteosuikit.api.style.UiStyleSource>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
+com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] scopeExited : (com.meteorite.meteosuikit.api.input.UiInteractionSession.EndReason)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] scrollBy : (double)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] scrollByPixels : (double)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
 com.meteorite.meteosuikit.api.control.UiScrollView | METHOD [public] scrollbarThumb : ()com.meteorite.meteosuikit.api.geometry.UiRect throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScrollView
@@ -854,6 +874,7 @@ com.meteorite.meteosuikit.api.control.UiStatefulTarget | METHOD [public, abstrac
 com.meteorite.meteosuikit.api.control.UiStatefulTarget | METHOD [public, abstract] setVisible : (boolean)com.meteorite.meteosuikit.api.control.UiStatefulTarget throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiStatefulTarget
 com.meteorite.meteosuikit.api.control.UiStatefulTarget | METHOD [public, default] acceptsTextInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.control.UiStatefulTarget | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.control.UiStatefulTarget | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiStatefulTarget | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiStatefulTarget | METHOD [public, default] canFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiStatefulTarget
 com.meteorite.meteosuikit.api.control.UiStatefulTarget | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -887,6 +908,7 @@ com.meteorite.meteosuikit.api.control.UiStatefulWidget | METHOD [public, abstrac
 com.meteorite.meteosuikit.api.control.UiStatefulWidget | METHOD [public, abstract] setVisible : (boolean)com.meteorite.meteosuikit.api.control.UiStatefulTarget throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiStatefulTarget
 com.meteorite.meteosuikit.api.control.UiStatefulWidget | METHOD [public, default] acceptsTextInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.control.UiStatefulWidget | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiWidget
+com.meteorite.meteosuikit.api.control.UiStatefulWidget | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiStatefulWidget | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiStatefulWidget | METHOD [public, default] canFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiStatefulTarget
 com.meteorite.meteosuikit.api.control.UiStatefulWidget | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -917,9 +939,9 @@ com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public, default] hasF
 com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public, default] isFocusVisible : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public, default] isFocused : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public, default] keyReleased : (int,int,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
-com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public, default] scopeExited : (com.meteorite.meteosuikit.api.input.UiInteractionSession.EndReason)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public] accessibleName : ()net.minecraft.network.chat.@org.jetbrains.annotations.Nullable Component throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiTextArea
 com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public] activate : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiTextArea
+com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiTextArea
 com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public] bounds : ()com.meteorite.meteosuikit.api.geometry.UiRect throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiTextArea
 com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public] canFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiTextArea
 com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiTextArea
@@ -938,6 +960,7 @@ com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public] mouseReleased
 com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public] mouseScrolled : (com.meteorite.meteosuikit.api.input.UiInputContext,double,double)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiTextArea
 com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public] moveCursorToStart : ()com.meteorite.meteosuikit.api.control.UiTextArea throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiTextArea
 com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public] render : (net.minecraft.client.gui.GuiGraphics,net.minecraft.client.gui.Font,com.meteorite.meteosuikit.api.input.UiPointer)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiTextArea
+com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public] scopeExited : (com.meteorite.meteosuikit.api.input.UiInteractionSession.EndReason)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiTextArea
 com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public] selectAll : ()com.meteorite.meteosuikit.api.control.UiTextArea throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiTextArea
 com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public] setAccessibleName : (net.minecraft.network.chat.@org.jetbrains.annotations.Nullable Component)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiTextArea
 com.meteorite.meteosuikit.api.control.UiTextArea | METHOD [public] setBounds : (int,int,int,int)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiTextArea
@@ -959,6 +982,7 @@ com.meteorite.meteosuikit.api.control.UiTextInput | CONSTRUCTOR [public] <init> 
 com.meteorite.meteosuikit.api.control.UiTextInput | CONSTRUCTOR [public] <init> : (net.minecraft.client.gui.Font,net.minecraft.network.chat.Component)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiTextInput
 com.meteorite.meteosuikit.api.control.UiTextInput | METHOD [public, default] acceptsTextInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.text.UiTextValue
 com.meteorite.meteosuikit.api.control.UiTextInput | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiWidget
+com.meteorite.meteosuikit.api.control.UiTextInput | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiTextInput | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiTextInput | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiStatefulWidget
 com.meteorite.meteosuikit.api.control.UiTextInput | METHOD [public, default] focusTargets : ()java.util.List<com.meteorite.meteosuikit.api.input.UiFocusTarget> throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
@@ -1039,6 +1063,7 @@ com.meteorite.meteosuikit.api.control.UiWidget | METHOD [public, abstract] bound
 com.meteorite.meteosuikit.api.control.UiWidget | METHOD [public, abstract] render : (net.minecraft.client.gui.GuiGraphics,net.minecraft.client.gui.Font,com.meteorite.meteosuikit.api.input.UiPointer)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiWidget
 com.meteorite.meteosuikit.api.control.UiWidget | METHOD [public, abstract] setBounds : (int,int,int,int)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiWidget
 com.meteorite.meteosuikit.api.control.UiWidget | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiWidget
+com.meteorite.meteosuikit.api.control.UiWidget | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiWidget | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiWidget | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.control.UiWidget | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiWidget
@@ -1135,6 +1160,7 @@ com.meteorite.meteosuikit.api.input.UiChildren | METHOD [public, default] blocks
 com.meteorite.meteosuikit.api.input.UiChildren | METHOD [public, default] mouseDragged : (com.meteorite.meteosuikit.api.input.UiInputContext,double,double)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.input.UiChildren | METHOD [public] add : (int,T)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiChildren
 com.meteorite.meteosuikit.api.input.UiChildren | METHOD [public] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiChildren
+com.meteorite.meteosuikit.api.input.UiChildren | METHOD [public] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiChildren
 com.meteorite.meteosuikit.api.input.UiChildren | METHOD [public] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiChildren
 com.meteorite.meteosuikit.api.input.UiChildren | METHOD [public] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiChildren
 com.meteorite.meteosuikit.api.input.UiChildren | METHOD [public] get : (int)T throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiChildren
@@ -1193,6 +1219,7 @@ com.meteorite.meteosuikit.api.input.UiFocusTarget | METHOD [public, abstract] bo
 com.meteorite.meteosuikit.api.input.UiFocusTarget | METHOD [public, abstract] focusState : ()com.meteorite.meteosuikit.api.input.UiFocusState throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.input.UiFocusTarget | METHOD [public, default] acceptsTextInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.input.UiFocusTarget | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.input.UiFocusTarget | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.input.UiFocusTarget | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.input.UiFocusTarget | METHOD [public, default] canFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.input.UiFocusTarget | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -1229,6 +1256,7 @@ com.meteorite.meteosuikit.api.input.UiInputBridge | METHOD [public] mouseScrolle
 com.meteorite.meteosuikit.api.input.UiInputContainer | INTERFACE [public, abstract]  bounds [] extends none implements com.meteorite.meteosuikit.api.input.UiInputTarget,com.meteorite.meteosuikit.api.layout.UiLayoutSource
 com.meteorite.meteosuikit.api.input.UiInputContainer | METHOD [public, abstract] inputChildren : ()com.meteorite.meteosuikit.api.input.UiChildren<? extends com.meteorite.meteosuikit.api.input.UiInputTarget> throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputContainer
 com.meteorite.meteosuikit.api.input.UiInputContainer | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputContainer
+com.meteorite.meteosuikit.api.input.UiInputContainer | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputContainer
 com.meteorite.meteosuikit.api.input.UiInputContainer | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.input.UiInputContainer | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputContainer
 com.meteorite.meteosuikit.api.input.UiInputContainer | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputContainer
@@ -1301,6 +1329,7 @@ com.meteorite.meteosuikit.api.input.UiInputScope | METHOD [public] setHistory : 
 com.meteorite.meteosuikit.api.input.UiInputScope | METHOD [public] setNavigationBack : (java.lang.@org.jetbrains.annotations.Nullable Runnable)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputScope
 com.meteorite.meteosuikit.api.input.UiInputTarget | INTERFACE [public, abstract]  bounds [] extends none implements
 com.meteorite.meteosuikit.api.input.UiInputTarget | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.input.UiInputTarget | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.input.UiInputTarget | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.input.UiInputTarget | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.input.UiInputTarget | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -1347,6 +1376,7 @@ com.meteorite.meteosuikit.api.input.UiInteractionSession.Source | METHOD [public
 com.meteorite.meteosuikit.api.input.UiInteractionSession.Target | INTERFACE [public, abstract, static]  bounds [] extends none implements com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.input.UiInteractionSession.Target | METHOD [public, abstract] interactionEnded : (com.meteorite.meteosuikit.api.input.UiInteractionSession.EndReason)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInteractionSession.Target
 com.meteorite.meteosuikit.api.input.UiInteractionSession.Target | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.input.UiInteractionSession.Target | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.input.UiInteractionSession.Target | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.input.UiInteractionSession.Target | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.input.UiInteractionSession.Target | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -1452,6 +1482,7 @@ com.meteorite.meteosuikit.api.layout.UiDocument | CLASS [public, final]  bounds 
 com.meteorite.meteosuikit.api.layout.UiDocument | CONSTRUCTOR [public] <init> : (com.meteorite.meteosuikit.api.text.TextMeasurer,boolean)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.layout.UiDocument
 com.meteorite.meteosuikit.api.layout.UiDocument | CONSTRUCTOR [public] <init> : (com.meteorite.meteosuikit.api.text.TextMeasurer,com.meteorite.meteosuikit.api.geometry.UiTransform,int,boolean)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.layout.UiDocument
 com.meteorite.meteosuikit.api.layout.UiDocument | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.layout.UiDocument | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.layout.UiDocument | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.layout.UiDocument | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.layout.UiDocument | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -1882,6 +1913,7 @@ com.meteorite.meteosuikit.api.number.UiCyclicRange | CLASS [public, final]  boun
 com.meteorite.meteosuikit.api.number.UiCyclicRange | CONSTRUCTOR [public] <init> : (double)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.number.UiCyclicRange
 com.meteorite.meteosuikit.api.number.UiCyclicRange | METHOD [public, default] acceptsTextInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.number.UiCyclicRange | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.number.UiCyclicRange | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.number.UiCyclicRange | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.number.UiCyclicRange | METHOD [public, default] canFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiStatefulTarget
 com.meteorite.meteosuikit.api.number.UiCyclicRange | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -1995,6 +2027,7 @@ com.meteorite.meteosuikit.api.number.UiLinkedValues.Accessor | METHOD [public, a
 com.meteorite.meteosuikit.api.number.UiLinkedValues.Accessor | METHOD [public, abstract] write : (double)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.number.UiLinkedValues.Accessor
 com.meteorite.meteosuikit.api.number.UiNumberField | CLASS [public, final]  bounds [] extends java.lang.Object implements com.meteorite.meteosuikit.api.control.UiWidget
 com.meteorite.meteosuikit.api.number.UiNumberField | CONSTRUCTOR [public] <init> : (com.meteorite.meteosuikit.api.number.UiScalarSlider,com.meteorite.meteosuikit.api.text.UiSingleLineEditor,java.util.function.Function<java.lang.String,java.lang.@org.jetbrains.annotations.Nullable Double>,java.util.function.Function<java.lang.Double,java.lang.String>,java.lang.Runnable,java.lang.Runnable,java.lang.@org.jetbrains.annotations.Nullable Double,java.lang.@org.jetbrains.annotations.Nullable Runnable,com.meteorite.meteosuikit.api.number.UiNumberField.Metrics)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.number.UiNumberField
+com.meteorite.meteosuikit.api.number.UiNumberField | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.number.UiNumberField | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.number.UiNumberField | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiWidget
 com.meteorite.meteosuikit.api.number.UiNumberField | METHOD [public, default] hasFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -2081,6 +2114,7 @@ com.meteorite.meteosuikit.api.number.UiRangeSlider | CONSTRUCTOR [public] <init>
 com.meteorite.meteosuikit.api.number.UiRangeSlider | CONSTRUCTOR [public] <init> : (com.meteorite.meteosuikit.api.number.UiNumberPolicy,com.meteorite.meteosuikit.api.number.UiSliderWindow,com.meteorite.meteosuikit.api.number.UiRangeValue)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.number.UiRangeSlider
 com.meteorite.meteosuikit.api.number.UiRangeSlider | METHOD [public, default] acceptsTextInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.number.UiRangeSlider | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.number.UiRangeSlider | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.number.UiRangeSlider | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.number.UiRangeSlider | METHOD [public, default] canFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiStatefulTarget
 com.meteorite.meteosuikit.api.number.UiRangeSlider | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -2168,6 +2202,7 @@ com.meteorite.meteosuikit.api.number.UiScalarSlider | CONSTRUCTOR [public] <init
 com.meteorite.meteosuikit.api.number.UiScalarSlider | CONSTRUCTOR [public] <init> : (com.meteorite.meteosuikit.api.number.UiNumberPolicy,com.meteorite.meteosuikit.api.number.UiSliderWindow)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.number.UiScalarSlider
 com.meteorite.meteosuikit.api.number.UiScalarSlider | METHOD [public, default] acceptsTextInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.number.UiScalarSlider | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.number.UiScalarSlider | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.number.UiScalarSlider | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.number.UiScalarSlider | METHOD [public, default] canFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiStatefulTarget
 com.meteorite.meteosuikit.api.number.UiScalarSlider | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -3249,6 +3284,7 @@ com.meteorite.meteosuikit.api.text.UiSingleLineEditor | METHOD [public, abstract
 com.meteorite.meteosuikit.api.text.UiSingleLineEditor | METHOD [public, abstract] value : ()java.lang.String throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.text.UiTextValue
 com.meteorite.meteosuikit.api.text.UiSingleLineEditor | METHOD [public, default] acceptsTextInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.text.UiTextValue
 com.meteorite.meteosuikit.api.text.UiSingleLineEditor | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiWidget
+com.meteorite.meteosuikit.api.text.UiSingleLineEditor | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.text.UiSingleLineEditor | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.text.UiSingleLineEditor | METHOD [public, default] canFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.text.UiSingleLineEditor | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -3283,6 +3319,7 @@ com.meteorite.meteosuikit.api.text.UiTextAcceptance | METHOD [public] silently :
 com.meteorite.meteosuikit.api.text.UiTextEditSession | CLASS [public, final]  bounds [] extends java.lang.Object implements com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.text.UiTextEditSession | CONSTRUCTOR [public] <init> : (com.meteorite.meteosuikit.api.text.UiTextEditSession.Model,int)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.text.UiTextEditSession
 com.meteorite.meteosuikit.api.text.UiTextEditSession | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.text.UiTextEditSession | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.text.UiTextEditSession | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.text.UiTextEditSession | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.text.UiTextEditSession | METHOD [public, default] focusRevision : ()long throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
@@ -3345,6 +3382,7 @@ com.meteorite.meteosuikit.api.text.UiTextValue | METHOD [public, abstract] setVa
 com.meteorite.meteosuikit.api.text.UiTextValue | METHOD [public, abstract] value : ()java.lang.String throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.text.UiTextValue
 com.meteorite.meteosuikit.api.text.UiTextValue | METHOD [public, default] acceptsTextInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.text.UiTextValue
 com.meteorite.meteosuikit.api.text.UiTextValue | METHOD [public, default] addFocusTargets : (java.util.function.Consumer<com.meteorite.meteosuikit.api.input.UiFocusTarget>)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
+com.meteorite.meteosuikit.api.text.UiTextValue | METHOD [public, default] advanceFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.text.UiTextValue | METHOD [public, default] blocksInput : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget
 com.meteorite.meteosuikit.api.text.UiTextValue | METHOD [public, default] canFocus : ()boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiFocusTarget
 com.meteorite.meteosuikit.api.text.UiTextValue | METHOD [public, default] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputTarget

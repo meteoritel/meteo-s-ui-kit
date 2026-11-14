@@ -60,4 +60,6 @@ public final class UiOverlay implements UiInputTarget, UiLayoutSource {
     @Override public boolean charTyped(char value, int modifiers) { return content.charTyped(value, modifiers); }
     /** 切域后只结束本层生命周期。 */
     @Override public void scopeExited(UiInteractionSession.EndReason reason) { content.scopeExited(reason); }
+    /** 帧时间沿实际覆盖内容传递。 */
+    @Override public void advanceFrame(long nowMillis) { content.advanceFrame(nowMillis); }
 }

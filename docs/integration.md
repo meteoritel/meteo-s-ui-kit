@@ -34,6 +34,12 @@ dev 序列允许源码、二进制与行为破坏，每个新 dev 坐标附迁�
 
 ## 主题、状态与滚动内容
 
+`UiScreen` 在宿主 `advanceUiFrame`、准备、布局和选域后，以 `Util.getMillis()` 推进活动 scope 的实际内容树，再解析命中和绘制。`UiChildren` / `UiInputContainer` 自动转发；私有组合包装器转发 `advanceFrame(long)` 与 `scopeExited`。同一滚动视图只由实际所有者推进。组合原版容器或独立绘制的宿主，在相同准备顺序后调用 `activeScope.content().advanceFrame(nowMillis)`。
+
+`UiScrollView` 统一持有实际偏移和阻尼目标；`scrollBy` 向目标提交方向整步，`scrollByPixels` 保留实际像素与小数累积，返回目标是否改变。`setOffset` / `ensureVisible` 立即定位并结清旧目标，`ensureVisibleSmoothly` 从待完成目标计算滚入位置。查询保持只读，重复布局保留目标，范围缩短同时钳制实际与目标。拖动接管、隐藏、禁用和切域停止旧动画。列表、正文、表单及多行输入沿成员树复用这一机制，详情见 [dev.16 → dev.17](migrations/dev.16-to-dev.17.md)。
+
+`UiTextInput` 使用原版 `EditBox` 编辑模型和既有局部历史；私有单行视图共享文字、选区、光标与指针的水平窗口。正文和提示显式关闭阴影，文字及选区读取当前主题。语言资源更新后重建视觉顺序和字体度量，resize 保留编辑草稿并调整窗口。
+
 `UiThemeContext` 持有当前主题与根发布版本。主题化控件接收 `Supplier<? extends UiStyleSource>`；根稳定持有 `context::current`，固定主题传固定 Supplier。控件缓存按实际样式身份、样式 revision 与角色失效；`UiThemePublication` 在手势结束后发布最后请求。主题切换保留控件实例及其编辑、焦点和会话状态。
 
 `UiTextScheme` 提供共同文字语义及浅/暗底预设。`UiSurfaceStyle.withText(scheme)` 只映射正文、标签与弱化文字；业务专属语义和结构色由宿主配方维护。

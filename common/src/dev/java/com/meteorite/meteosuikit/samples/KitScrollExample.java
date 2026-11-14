@@ -6,6 +6,7 @@ import com.meteorite.meteosuikit.api.control.UiScrollView;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.input.UiInputContext;
 import com.meteorite.meteosuikit.api.input.UiInputTarget;
+import com.meteorite.meteosuikit.api.input.UiInteractionSession;
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
 import com.meteorite.meteosuikit.api.style.UiStyleSource;
@@ -51,6 +52,19 @@ final class KitScrollExample implements UiInputTarget {
         int width = Math.min(320, Math.max(120, box.width() / 3));
         int inset = Math.min(width, Math.max(0, box.width() - 8));
         inner.setViewport(box.right() - inset - 2, outer.toScreenY(40), inset, height);
+    }
+
+    @Override
+    public void advanceFrame(long nowMillis) {
+        outer.advanceFrame(nowMillis);
+        synchronize();
+        inner.advanceFrame(nowMillis);
+    }
+
+    @Override
+    public void scopeExited(UiInteractionSession.EndReason reason) {
+        outer.scopeExited(reason);
+        inner.scopeExited(reason);
     }
 
     void render(GuiGraphics graphics, Font font) {

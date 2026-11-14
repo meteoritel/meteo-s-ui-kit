@@ -50,6 +50,15 @@ public final class UiDocumentView implements UiStatefulWidget, UiLayoutSource, U
         actions = new DocumentActions(document);
         scroll.setStep(measurer.lineHeight() * 2);
     }
+    /** 正文先准备范围，再推进同源滚动几何。 */
+    @Override public void advanceFrame(long nowMillis) {
+        if (!isVisible() || !isEnabled()) return;
+        layoutDocument();
+        scroll.advanceFrame(nowMillis);
+    }
+    /** 退出正文时取消动作与待完成滚动。 */
+    @Override public void scopeExited(UiInteractionSession.EndReason reason) { endInteraction(reason); }
+
     /** 业务背景保持在文档呈现接缝，阅读机制由控件持有。 */
     public void setBackground(Background background) { this.background = background; }
     /** 稳定内容重复提交保留位置；内容身份变化由宿主选择恢复偏移。 */
@@ -167,7 +176,7 @@ public final class UiDocumentView implements UiStatefulWidget, UiLayoutSource, U
     /** {@inheritDoc} */
     @Override public void interactionEnded(UiInteractionSession.EndReason reason) { actions.cancel(); session = null; }
     private void endInteraction(UiInteractionSession.EndReason reason) {
-        scroll.endInteraction(reason);
+        scroll.scopeExited(reason);
         if (session != null) session.end(this, reason);
         actions.cancel();
     }

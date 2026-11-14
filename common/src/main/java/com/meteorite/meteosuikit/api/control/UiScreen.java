@@ -16,6 +16,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.GuiGraphics;
 import org.jetbrains.annotations.NotNull;
 import net.minecraft.locale.Language;
+import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -90,6 +91,7 @@ public abstract class UiScreen extends Screen implements UiLayoutSource {
         prepareUi();
         layoutUi();
         refreshUiState();
+        inputScope().content().advanceFrame(Util.getMillis());
         UiViewport viewport = viewport();
         graphics.pose().pushPose();
         graphics.pose().scale((float) viewport.scale(), (float) viewport.scale(), 1);

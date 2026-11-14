@@ -14,6 +14,9 @@ public interface UiInputContainer extends UiInputTarget, UiLayoutSource {
     /** 实际成员按绘制顺序存放，容器稳定持有同一集合。 */
     UiChildren<? extends UiInputTarget> inputChildren();
 
+    /** 帧推进与输入共用实际成员树。 */
+    @Override default void advanceFrame(long nowMillis) { inputChildren().advanceFrame(nowMillis); }
+
     /** 默认贡献同一成员树的几何，自绘容器可追加自身投影。 */
     @Override default List<UiLayoutNode> layoutNodes() { return inputChildren().layoutNodes(); }
 

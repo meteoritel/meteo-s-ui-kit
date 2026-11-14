@@ -17,6 +17,7 @@ import com.meteorite.meteosuikit.api.render.UiRenderLayers;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.style.UiStyleSource;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.Util;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
@@ -96,6 +97,7 @@ public final class KitContainerExample extends AbstractContainerScreen<Inventory
     /** 原版绘制槽位，覆盖层活动时只绘制底页静态内容。 */
     @Override public void render(@NotNull GuiGraphics graphics, int x, int y, float delta) {
         layoutKit(); select(); modals.tick();
+        layers.activeScope().content().advanceFrame(Util.getMillis());
         boolean blocked = overlayActive();
         super.render(graphics, blocked ? -1000 : x, blocked ? -1000 : y, delta);
         if (!blocked) renderTooltip(graphics, x, y);
