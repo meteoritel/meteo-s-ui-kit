@@ -25,6 +25,7 @@ public final class UiIconLightboxContent implements UiLightbox.Content {
     private final Supplier<? extends UiStyleSource> theme;
     private final LightboxViewport view;
     private @Nullable UiInteractionSession session;
+    private boolean panLocked;
 
     /** 图标保持原实例；主题在每次绘制时读取，内容不接管图标资源的释放。 */
     public UiIconLightboxContent(UiIcon icon, Supplier<? extends UiStyleSource> theme) {
@@ -53,7 +54,7 @@ public final class UiIconLightboxContent implements UiLightbox.Content {
     /** {@inheritDoc} */
     @Override public boolean zoomBy(int direction) { return view.zoomBy(direction); }
     /** 只有本内容持有指针会话时接收平移。 */
-    @Override public boolean panBy(double x, double y) { return session != null && session.owns(this) && view.panBy(x, y); }
+    @Override public boolean panBy(double x, double y) { return !panLocked && session != null && session.owns(this) && view.panBy(x, y); }
 
     /** {@inheritDoc} */
     @Override public boolean mousePressed(UiInputContext context) {
@@ -70,7 +71,8 @@ public final class UiIconLightboxContent implements UiLightbox.Content {
         return context.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && session != null && session.owns(this);
     }
     /** {@inheritDoc} */
-    @Override public boolean mouseDragged(UiInputContext context, double x, double y) { return panBy(x, y); }
+    @Override public boolean mouseDragged(UiInputContext context, double x, double y) { return panLocked || panBy(x, y); }
+    @Override public void setPanLocked(boolean panLocked) { this.panLocked = panLocked; }
     /** 结束后清除借用的会话引用，捕获所有权始终由作用域维护。 */
     @Override public void interactionEnded(UiInteractionSession.EndReason reason) { session = null; }
     /** {@inheritDoc} */

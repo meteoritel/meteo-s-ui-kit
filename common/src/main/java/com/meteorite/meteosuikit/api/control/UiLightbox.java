@@ -105,6 +105,12 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
         default Component zoomReadout(int percent) {
             return Component.literal(percent + "%");
         }
+
+        /** 拖拽锁定按钮当前未锁定时显示的状态文案。 */
+        default Component panLock() { return Component.literal("Lock pan"); }
+
+        /** 拖拽锁定按钮当前已锁定时显示的状态文案。 */
+        default Component panUnlock() { return Component.literal("Unlock pan"); }
     }
 
     /**
@@ -164,6 +170,14 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
          * 适应窗口（复位）。
          */
         void fit();
+
+        /**
+         * 设置鼠标拖拽锁定状态；自定义内容覆盖此方法后应消费锁定期间的拖动，且不改变平移。
+         *
+         * @param panLocked 是否锁定视口拖拽
+         */
+        default void setPanLocked(boolean panLocked) {
+        }
 
         /**
          * 拖动平移，参数为屏幕像素增量。
@@ -231,6 +245,9 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
     private long themeRevision = -1;
     private UiStyleSource appliedTheme;
     private boolean maskClickCloses;
+    /** 内容视口是否锁定平移；锁定后仍保留点击与滚轮缩放。 */
+    private boolean panLocked;
+    private boolean panLockControlVisible;
     private boolean dirty = true;
     /**
      * 需要一次 fit：首次布局与换内容后为真，resize 不做 fit（保留用户缩放）。
@@ -305,6 +322,7 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
     public void setContent(Content content) {
         inputScope.interaction().end(UiInteractionSession.EndReason.UNMOUNTED);
         this.content = Objects.requireNonNull(content);
+        this.content.setPanLocked(panLocked);
         this.displayedZoom = Integer.MIN_VALUE;
         this.needFit = true;
         this.dirty = true;
@@ -385,6 +403,28 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
      */
     public void setMaskClickCloses(boolean maskClickCloses) {
         this.maskClickCloses = maskClickCloses;
+    }
+
+    /**
+     * 设置内容视口的拖拽锁定状态。锁定后鼠标拖拽会被灯箱消费但不会改变内容位置，
+     * 便于宿主在需要稳定阅读或优先点击内容动作时关闭平移；缩放和复位仍可用。
+     */
+    public void setPanLocked(boolean panLocked) {
+        this.panLocked = panLocked;
+        content.setPanLocked(panLocked);
+        dirty = true;
+    }
+
+    /** @return 内容视口当前是否锁定鼠标拖拽平移。 */
+    public boolean isPanLocked() {
+        return panLocked;
+    }
+
+    /** 显示或隐藏灯箱工具栏中的拖拽锁定按钮。 */
+    public void setPanLockControlVisible(boolean visible) {
+        if (panLockControlVisible == visible) return;
+        panLockControlVisible = visible;
+        dirty = true;
     }
 
     public UiRect viewport() {
@@ -475,8 +515,12 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
         int y = panelY + panelHeight - BAR_HEIGHT + 3;
         int right = panelX + panelWidth;
         int positionX = panelX + (BUTTON + BUTTON_GAP) * 2 + 4;
-        int zoomX = right - (BUTTON * 3 + BUTTON_GAP * 2) - 6 - zoomTextWidth;
-        if (surface != null) zoomX = right - 84 + (42 - zoomTextWidth) / 2;
+        int controlCount = panLockControlVisible ? 4 : 3;
+        int zoomX = right - (BUTTON * controlCount + BUTTON_GAP * (controlCount - 1)) - 6 - zoomTextWidth;
+        if (surface != null) {
+            int readoutRight = panLockControlVisible ? 86 : 42;
+            zoomX = right - readoutRight - (42 + zoomTextWidth) / 2;
+        }
         boolean withGallery = gallery != null && gallery.total() > 1;
         int positionWidth = withGallery ? font.width(positionText) : 0;
         boolean showReadouts = zoomX >= (withGallery ? positionX + positionWidth + BUTTON_GAP : panelX);
@@ -530,9 +574,17 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
             UiControl fit = place(font, "fit", Component.literal("↺"), labels.fit(),
                     right - BUTTON, barY);
             UiControl zoomIn = place(font, "zoom_in", Component.literal("+"), labels.zoomIn(),
-                    surface == null ? right - BUTTON * 2 - BUTTON_GAP : right - 38, barY);
+                    surface == null ? right - BUTTON * 2 - BUTTON_GAP
+                            : right - (panLockControlVisible ? 60 : 38), barY);
             UiControl zoomOut = place(font, "zoom_out", Component.literal("−"), labels.zoomOut(),
-                    surface == null ? right - BUTTON * 3 - BUTTON_GAP * 2 : right - 104, barY);
+                    surface == null ? right - BUTTON * (panLockControlVisible ? 4 : 3)
+                            - BUTTON_GAP * (panLockControlVisible ? 3 : 2)
+                            : right - (panLockControlVisible ? 82 : 104), barY);
+            UiControl panLock = panLockControlVisible
+                    ? place(font, "pan_lock", Component.literal("↔"),
+                    panLocked ? labels.panUnlock() : labels.panLock(),
+                    surface == null ? right - 52 : right - 38, barY)
+                    : null;
             // Tab 顺序 = 视觉顺序：关闭在右上角，其余按控制栏从左到右。
             focusOrder.clear();
             focusOrder.add(close);
@@ -540,6 +592,7 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
             if (next != null) focusOrder.add(next);
             focusOrder.add(zoomOut);
             focusOrder.add(zoomIn);
+            if (panLock != null) focusOrder.add(panLock);
             focusOrder.add(fit);
             controls.endUpdate();
             inputScope.invalidateFocus();
@@ -576,7 +629,8 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
     private UiControl place(Font font, String key, Component symbol, Component name, int x, int y) {
         UiControl control = controls.obtain(key);
         control.setBounds(x, y, BUTTON, BUTTON);
-        UiIcon icon = icons.get(key);
+        String iconKey = key.equals("pan_lock") && panLocked ? "pan_unlock" : key;
+        UiIcon icon = icons.get(iconKey);
         control.configure(font, icon == null ? symbol : Component.empty(), textColor, icon, List.of(name), () -> {
             switch (key) {
                 case "close" -> onClose.run();
@@ -584,6 +638,10 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
                 case "next" -> navigate(1);
                 case "zoom_in" -> content.zoomBy(1);
                 case "zoom_out" -> content.zoomBy(-1);
+                case "pan_lock" -> {
+                    setPanLocked(!panLocked);
+                    dirty = true;
+                }
                 case "fit" -> content.fit();
                 default -> {
                 }
@@ -658,7 +716,7 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
 
     public boolean mouseDragged(UiInputContext context, double dragX, double dragY) {
         layoutIfPossible();
-        return content.panBy(dragX, dragY);
+        return panLocked || content.panBy(dragX, dragY);
     }
 
     public boolean mouseReleased(UiInputContext context) {

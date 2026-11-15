@@ -43,6 +43,7 @@ public final class UiImageView implements UiLightbox.Content {
      */
     private final boolean allowUpscale;
     private boolean available;
+    private boolean panLocked;
     private @Nullable UiInteractionSession session;
     /**
      * 缺图时的重查计时：约每 20 帧重查一次，避免逐帧 IO，又能在资源补齐后自愈。
@@ -111,7 +112,7 @@ public final class UiImageView implements UiLightbox.Content {
 
     @Override
     public boolean panBy(double screenDx, double screenDy) {
-        return session != null && session.owns(this) && view.panBy(screenDx, screenDy);
+        return !panLocked && session != null && session.owns(this) && view.panBy(screenDx, screenDy);
     }
 
     @Override
@@ -136,7 +137,12 @@ public final class UiImageView implements UiLightbox.Content {
 
     @Override
     public boolean mouseDragged(UiInputContext context, double dragX, double dragY) {
-        return panBy(dragX, dragY);
+        return panLocked || panBy(dragX, dragY);
+    }
+
+    @Override
+    public void setPanLocked(boolean panLocked) {
+        this.panLocked = panLocked;
     }
 
     @Override

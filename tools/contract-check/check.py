@@ -124,6 +124,7 @@ public final class KitArchitectureCheck {
         UiInputScope lightScope=new UiInputScope(lightbox);router.select(lightScope);lightScope.refreshFocus();lightbox.zoomBy(2);int zoom=lightbox.zoomPercent();lightbox.setViewport(new UiRect(0,0,100,65));check(lightbox.zoomPercent()==zoom,"resize preserves manual zoom");
         lightbox.setContent(List.of(row("small",runs::incrementAndGet)));lightbox.fit();check(lightbox.zoomPercent()<=100,"fit never enlarges short text");
         router.mousePressed(at(lightScope,3,3));lightbox.setEnabled(false);router.mouseReleased(at(lightScope,3,3));check(runs.get()==2,"disabled lightbox cancels action");
+        lightbox.setEnabled(true);router.mousePressed(at(lightScope,3,3));lightbox.setPanLocked(true);router.mouseDragged(at(lightScope,20,3),17,0);router.mouseReleased(at(lightScope,20,3));check(runs.get()==2,"locked lightbox drag cancels content action");
         view.setContent(List.of(new UiNode.Frame(new UiNode.FrameSpec(40,5,-1,new UiTransform()),List.of(row("framed long action text",runs::incrementAndGet)))));
         view.setOffset(0);
         var frameNode=view.layoutNodes().getFirst().children().getFirst();

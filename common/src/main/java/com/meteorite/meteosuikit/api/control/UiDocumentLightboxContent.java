@@ -32,6 +32,7 @@ public final class UiDocumentLightboxContent implements UiLightbox.Content, UiSt
     private UiDocumentView.Background background = (graphics, target, selected) -> {};
     private @Nullable Supplier<List<UiNode>> contentSource;
     private boolean dragging;
+    private boolean panLocked;
     private boolean fitting = true;
     private @Nullable UiInteractionSession session;
 
@@ -139,7 +140,7 @@ public final class UiDocumentLightboxContent implements UiLightbox.Content, UiSt
     }
 
     @Override public boolean panBy(double screenDx, double screenDy) {
-        if (!canFocus() || !dragging) return false;
+        if (!canFocus() || !dragging || panLocked) return false;
         fitting = false;
         document.transform().panBy(screenDx, screenDy);
         clampPan();
@@ -158,8 +159,9 @@ public final class UiDocumentLightboxContent implements UiLightbox.Content, UiSt
     /** {@inheritDoc} */
     @Override public boolean mouseDragged(UiInputContext context, double dx, double dy) {
         if (actions.hasPress()) actions.cancel();
-        return panBy(dx, dy);
+        return panLocked || panBy(dx, dy);
     }
+    @Override public void setPanLocked(boolean panLocked) { this.panLocked = panLocked; }
     /** {@inheritDoc} */
     @Override public boolean mouseReleased(UiInputContext context) {
         if (!canFocus() || context.button() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return false;
