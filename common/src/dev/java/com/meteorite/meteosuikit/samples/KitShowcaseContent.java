@@ -51,6 +51,7 @@ final class KitShowcaseContent implements UiInputTarget, UiLayoutSource {
     private final List<UiControl> buttons;
     private final UiControlGroup navigation = new UiControlGroup();
     private final UiControlGroup footer = new UiControlGroup();
+    private final UiControl backButton;
     private final Supplier<? extends UiStyleSource> theme;
     private final KitInputsExample inputs;
     private final KitModelsExample models;
@@ -103,13 +104,14 @@ final class KitShowcaseContent implements UiInputTarget, UiLayoutSource {
         nav("showcase.modal", this::openModal);
         navigation.endUpdate();
         footer.beginUpdate();
-        footer.obtain("back").configure(font, text("back"), null, List.of(), back::run);
+        backButton = footer.obtain("back");
+        backButton.configure(font, text("back"), null, List.of(), back::run);
         footer.endUpdate();
         controls.beginUpdate();
-        button("increment", () -> clicks++);
+        UiControl increment = button("increment", () -> clicks++);
         button("disabled", () -> clicks++).setEnabled(false);
         button("reset", this::reset);
-        KitSkinSamples.customize(controls.controls().getFirst());
+        KitSkinSamples.customize(increment);
         controls.endUpdate();
         buttons = controls.controls();
         slider.setLabel(text("scalar"));
@@ -232,7 +234,7 @@ final class KitShowcaseContent implements UiInputTarget, UiLayoutSource {
         for (int i = 0; i < navigation.size(); i++) {
             navigation.controls().get(i).setBounds(WorkbenchLayout.INSET + i * (navWidth + NAV_GAP), NAV_TOP, navWidth, WorkbenchLayout.CONTROL_HEIGHT);
         }
-        WorkbenchLayout.placeFooterBack(footer.controls().getFirst(), height);
+        WorkbenchLayout.placeFooterBack(backButton, height);
         bounds = new UiRect(WorkbenchLayout.INSET, CONTENT_TOP, contentWidth,
                 Math.max(0, WorkbenchLayout.contentBottom(height) - CONTENT_TOP));
         inputs.setBounds(bounds.x(), bounds.y(), bounds.width(), bounds.height());

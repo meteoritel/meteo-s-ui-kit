@@ -7,6 +7,10 @@
 - 普通页面：[KitMinimalScreen](../common/src/dev/java/com/meteorite/meteosuikit/samples/KitMinimalScreen.java) 继承 `UiThemedScreen`，只提供内容、作用域与布局；完整页面见 [KitShowcaseScreen](../common/src/dev/java/com/meteorite/meteosuikit/samples/KitShowcaseScreen.java)。
 - 原版容器：[KitContainerExample](../common/src/dev/java/com/meteorite/meteosuikit/samples/KitContainerExample.java) 保留 `AbstractContainerScreen` 与 Menu / Slot，由 Host 提供当前作用域、恒等 viewport、准备与布局钩子。init 调用 `bridge.refresh()`，render 在父类前调用 `bridge.beginFrame(Util.getMillis())`，removed 调用 `bridge.close()`。
 
+固定按钮由页面稳定持有具名 `UiControl` 引用，显式设置主题与焦点能力，配置动作后将实际控件注册到输入树。布局、业务可用性和特殊皮肤通过该引用更新；成员集合供绘制、命中和导航共用。操作行可按用途保存布局列表，同一列表同时决定几何分配与实际摆放。
+
+动态内容使用 `UiControlGroup` 按稳定键复用。`obtain(Object)` 接受枚举、资源标识等业务身份并返回实际控件；更新区间内未再取得的成员在结束更新时移除，之后以同键加入会创建新实例。`controls()` 返回绘制层序，已有成员保持首次创建顺序，改变 `obtain` 调用顺序只复用实例。业务身份通过稳定键和控件引用表达，均匀排布可遍历布局列表；横纵分配与换行几何分别由 `UiLinearLayout` 和 `UiFlowLayout` 提供。
+
 容器事件覆写使用同一种回退方式：
 
 ```java
