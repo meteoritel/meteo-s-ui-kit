@@ -7,5 +7,5 @@ dependencies {
     }
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
-    modImplementation "com.meteorite.meteosuikit:meteos-ui-kit-fabric-1.21.1:${version}"
+    modImplementation "com.meteorite.meteosuikit:meteos-ui-kit-fabric-${minecraft_version}:${kitConsumptionVersion}"
 }

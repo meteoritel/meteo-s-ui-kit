@@ -4,11 +4,13 @@ plugins {
 }
 def libraryProperties = new Properties()
 file('../../gradle.properties').withInputStream { libraryProperties.load(it) }
+def consumptionVersion = providers.gradleProperty('meteos_ui_kit_version').getOrElse(libraryProperties.getProperty('version'))
 subprojects {
     apply plugin: 'java'
     version = libraryProperties.getProperty('version')
     libraryProperties.each { name, value -> ext.set(name.toString(), value) }
-    java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+    ext.kitConsumptionVersion = consumptionVersion
+    java.toolchain.languageVersion = JavaLanguageVersion.of(java_version)
     repositories {
         exclusiveContent {
             forRepository { maven {
@@ -28,7 +30,7 @@ subprojects {
             if (classpath.files.any { entry -> ['common', 'fabric', 'neoforge'].any { module -> entry.canonicalFile.toPath().startsWith(libraryRoot.resolve(module + '/build')) } }) {
                 throw new GradleException('产物消费 classpath 混入库工程输出')
             }
-            logger.lifecycle("${project.path} 编译坐标 com.meteorite.meteosuikit:meteos-ui-kit-${project.name}-1.21.1:${project.version}")
+            logger.lifecycle("${project.path} 编译坐标 com.meteorite.meteosuikit:meteos-ui-kit-${project.name}-${minecraft_version}:${kitConsumptionVersion}")
         }
     }
 }

@@ -1,17 +1,12 @@
 package com.meteorite.meteosuikit.api.input;
 
 import com.meteorite.meteosuikit.api.geometry.UiRect;
-import com.meteorite.meteosuikit.api.render.UiFlatText;
-import com.meteorite.meteosuikit.api.render.UiTooltipPanel;
-import com.meteorite.meteosuikit.api.style.UiSurfaceStyle;
-import com.meteorite.meteosuikit.api.style.UiTooltipSkin;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import java.util.ArrayList;
 import java.util.List;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
 
 /** 一次无副作用命中的归属链；局部坐标与实际叶子一起保留，供绘制和焦点政策共用。 */
 public record UiPointerHit(List<UiInputTarget> owners, double x, double y,
@@ -95,33 +90,6 @@ public record UiPointerHit(List<UiInputTarget> owners, double x, double y,
     public UiPointerHit withPresentation(@Nullable Tooltip painter) {
         return new UiPointerHit(owners, x, y, focus, tooltip, rows, painter);
     }
-    /** 普通文字和富内容的共同呈现出口；调用方先检查作用域门禁。 */
-    public void renderTooltip(GuiGraphics graphics, Font font, UiSurfaceStyle style, int pointerX, int pointerY) {
-        renderTooltip(graphics, font, UiTooltipSkin.minecraft(style), pointerX, pointerY);
-    }
-
-    /** 普通和富内容在原版 GUI 空间呈现；指针来自当前轴对齐二维 pose，Z 层级保持原样。 */
-    public void renderTooltip(GuiGraphics graphics, Font font, UiTooltipSkin skin, int pointerX, int pointerY) {
-        if (presentation == null && (tooltip == null || tooltip.tooltip().isEmpty())) return;
-        Matrix4f matrix = graphics.pose().last().pose();
-        float scaleX = matrix.m00(), scaleY = matrix.m11();
-        int guiX = Math.round(scaleX * pointerX + matrix.m30());
-        int guiY = Math.round(scaleY * pointerY + matrix.m31());
-        graphics.flush();
-        graphics.pose().pushPose();
-        try {
-            graphics.pose().translate(-matrix.m30() / scaleX, -matrix.m31() / scaleY, 0);
-            graphics.pose().scale(1 / scaleX, 1 / scaleY, 1);
-            if (presentation != null) presentation.render(graphics, font, guiX, guiY);
-            else UiFlatText.componentTooltip(graphics, font,
-                    new UiRect(0, 0, graphics.guiWidth(), graphics.guiHeight()), tooltip.tooltip(),
-                    UiTooltipPanel.DEFAULT_MAX_WIDTH, guiX, guiY, skin);
-        } finally {
-            try { graphics.flush(); }
-            finally { graphics.pose().popPose(); }
-        }
-    }
-
     /** 按输入优先级查询子目标，不消费事件；容器需先检查自己的裁剪。 */
     public static @Nullable UiPointerHit first(double x, double y, UiInputTarget... targets) {
         for (UiInputTarget target : targets) {

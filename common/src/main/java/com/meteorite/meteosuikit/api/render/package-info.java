@@ -5,6 +5,7 @@
  * library 表示受支持的公开库契约，具体用途与所有权见对应类型 JavaDoc。
  * 公开返回链随用途说明，嵌套公开契约随顶层类型维护。</p>
  * <ul>
+ *   <li>{@code UiTooltipPresenter}: library；用途：普通与富提示的 GUI 坐标换算和单次层级呈现</li>
  *   <li>{@code UiDotGrid}: library</li>
  *   <li>{@code UiFrameCapture}: library；用途：后续完成帧的原尺寸 PNG 与异步采样结果</li>
  *   <li>{@code UiFlatText}: library</li>

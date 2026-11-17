@@ -61,6 +61,14 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
     private static final int TEXT_GAP = 2;
     private static final int BUTTON = 16;
     private static final int BUTTON_GAP = 2;
+    private static final int BAR_TEXT_INSET = 3;
+    private static final int READOUT_GAP = 6;
+    private UiControl fitControl;
+    private UiControl zoomInControl;
+    private UiControl zoomOutControl;
+    private UiControl panLockControl;
+    private UiControl previousControl;
+    private UiControl nextControl;
     /**
      * 默认遮罩色：与既有浮层一致的半透明黑。
      */
@@ -101,16 +109,15 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
         Component position(int index, int total);
 
         // 缩放读数格式；默认沿用既有画面（"100%"），宿主可覆盖以本地化读数。
-        // 以 default 方法新增：既有 Labels 实现无需改动即可编译。
         default Component zoomReadout(int percent) {
             return Component.literal(percent + "%");
         }
 
         /** 拖拽锁定按钮当前未锁定时显示的状态文案。 */
-        default Component panLock() { return Component.literal("Lock pan"); }
+        Component panLock();
 
         /** 拖拽锁定按钮当前已锁定时显示的状态文案。 */
-        default Component panUnlock() { return Component.literal("Unlock pan"); }
+        Component panUnlock();
     }
 
     /**
@@ -512,23 +519,41 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
     }
 
     private void layoutBar(Font font) {
-        int y = panelY + panelHeight - BAR_HEIGHT + 3;
-        int right = panelX + panelWidth;
-        int positionX = panelX + (BUTTON + BUTTON_GAP) * 2 + 4;
-        int controlCount = panLockControlVisible ? 4 : 3;
-        int zoomX = right - (BUTTON * controlCount + BUTTON_GAP * (controlCount - 1)) - 6 - zoomTextWidth;
-        if (surface != null) {
-            int readoutRight = panLockControlVisible ? 86 : 42;
-            zoomX = right - readoutRight - (42 + zoomTextWidth) / 2;
+        int y = panelY + panelHeight - BAR_HEIGHT + BAR_TEXT_INSET;
+        int cursor = panelX + panelWidth;
+        cursor = placeBarControl(fitControl, cursor, y);
+        if (panLockControl != null) cursor = placeBarControl(panLockControl, cursor, y);
+        cursor = placeBarControl(zoomInControl, cursor, y);
+        boolean inlineReadout = surface != null
+                && cursor - zoomTextWidth - READOUT_GAP * 2 - BUTTON >= panelX;
+        int zoomX = cursor - zoomTextWidth - READOUT_GAP;
+        if (inlineReadout) cursor = zoomX - READOUT_GAP;
+        cursor = placeBarControl(zoomOutControl, cursor, y);
+        if (!inlineReadout) zoomX = cursor - zoomTextWidth - READOUT_GAP;
+        int positionX = panelX;
+        boolean withGallery = previousControl != null;
+        if (withGallery) {
+            previousControl.setBounds(panelX, y, BUTTON, BUTTON);
+            nextControl.setBounds(panelX + BUTTON + BUTTON_GAP, y, BUTTON, BUTTON);
+            boolean navigationFits = nextControl.bounds().right() + BUTTON_GAP <= cursor;
+            previousControl.setVisible(navigationFits);
+            nextControl.setVisible(navigationFits);
+            if (navigationFits) positionX = nextControl.bounds().right() + BUTTON_GAP * 2;
         }
-        boolean withGallery = gallery != null && gallery.total() > 1;
-        int positionWidth = withGallery ? font.width(positionText) : 0;
-        boolean showReadouts = zoomX >= (withGallery ? positionX + positionWidth + BUTTON_GAP : panelX);
+        int positionWidth = withGallery && previousControl.isVisible() ? font.width(positionText) : 0;
+        boolean showReadouts = zoomX >= positionX + positionWidth + (positionWidth > 0 ? BUTTON_GAP : 0);
         positionRect = new UiRect(positionX, y, showReadouts ? positionWidth : 0, font.lineHeight);
         zoomRect = new UiRect(zoomX, y, showReadouts ? zoomTextWidth : 0, font.lineHeight);
         int hintWidth = barHint == null ? 0 : font.width(barHint);
         hintRect = new UiRect(panelX, y,
                 showReadouts && !withGallery && hintWidth + BUTTON_GAP < zoomX - panelX ? hintWidth : 0, font.lineHeight);
+    }
+
+    private int placeBarControl(UiControl control, int right, int y) {
+        int x = right - BUTTON;
+        control.setBounds(x, y, BUTTON, BUTTON);
+        control.setVisible(x >= panelX);
+        return x - BUTTON_GAP;
     }
 
     // ---------- 布局 ----------
@@ -559,7 +584,7 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
         content.setViewport(viewport);
         applyDeferredFit();
 
-        int barY = panelY + panelHeight - BAR_HEIGHT + 3;
+        int barY = panelY + panelHeight - BAR_HEIGHT + BAR_TEXT_INSET;
         int right = panelX + panelWidth;
         boolean withGallery = gallery != null && gallery.total() > 1;
         controls.beginUpdate();
@@ -571,20 +596,18 @@ public final class UiLightbox implements UiInputTarget, UiLayoutSource {
             UiControl next = withGallery
                     ? place(font, "next", Component.literal("▶"), labels.next(),
                     panelX + BUTTON + BUTTON_GAP, barY) : null;
-            UiControl fit = place(font, "fit", Component.literal("↺"), labels.fit(),
-                    right - BUTTON, barY);
-            UiControl zoomIn = place(font, "zoom_in", Component.literal("+"), labels.zoomIn(),
-                    surface == null ? right - BUTTON * 2 - BUTTON_GAP
-                            : right - (panLockControlVisible ? 60 : 38), barY);
-            UiControl zoomOut = place(font, "zoom_out", Component.literal("−"), labels.zoomOut(),
-                    surface == null ? right - BUTTON * (panLockControlVisible ? 4 : 3)
-                            - BUTTON_GAP * (panLockControlVisible ? 3 : 2)
-                            : right - (panLockControlVisible ? 82 : 104), barY);
+            UiControl fit = place(font, "fit", Component.literal("↺"), labels.fit(), right - BUTTON, barY);
+            UiControl zoomIn = place(font, "zoom_in", Component.literal("+"), labels.zoomIn(), 0, barY);
+            UiControl zoomOut = place(font, "zoom_out", Component.literal("−"), labels.zoomOut(), 0, barY);
             UiControl panLock = panLockControlVisible
                     ? place(font, "pan_lock", Component.literal("↔"),
-                    panLocked ? labels.panUnlock() : labels.panLock(),
-                    surface == null ? right - 52 : right - 38, barY)
-                    : null;
+                    panLocked ? labels.panUnlock() : labels.panLock(), 0, barY) : null;
+            fitControl = fit;
+            zoomInControl = zoomIn;
+            zoomOutControl = zoomOut;
+            panLockControl = panLock;
+            previousControl = previous;
+            nextControl = next;
             // Tab 顺序 = 视觉顺序：关闭在右上角，其余按控制栏从左到右。
             focusOrder.clear();
             focusOrder.add(close);

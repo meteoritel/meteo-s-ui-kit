@@ -185,7 +185,7 @@ def check(root: Path, kit_path: str = KIT_PATH, kit_package: str = KIT_PACKAGE,
                     if package == api_package + ".geometry" and target.startswith((api_package + ".input.",
                             api_package + ".control.", api_package + ".render.", internal_package + ".")):
                         result.findings.append(Finding(relative, "geometry 只持有几何，不引用输入或绘制实现", target, line.number))
-                    forbidden = (("input", "control"), ("layout", "control"), ("style", "number"))
+                    forbidden = (("input", "control"), ("input", "render"), ("input", "style"), ("layout", "control"), ("style", "number"))
                     for owner, dependency in forbidden:
                         if package == api_package + "." + owner and target.startswith(api_package + "." + dependency + "."):
                             result.findings.append(Finding(relative, owner + " 不反向引用 " + dependency, target, line.number))

@@ -6,14 +6,14 @@ plugins {
 tasks.register('checkRepository', Exec) {
     group = 'verification'
     workingDir rootProject.projectDir
-    commandLine 'python', '-B', rootProject.file('tools/check-all.py')
+    commandLine providers.gradleProperty('repository_python').getOrElse('python'), '-B', rootProject.file('tools/run-check.py'), rootProject.file('tools/check-all.py')
 }
 tasks.register('checkPackaging', Exec) {
     group = 'verification'
     dependsOn ':common:assemble', ':fabric:assemble', ':neoforge:assemble'
     mustRunAfter tasks.named('checkRepository')
     workingDir rootProject.projectDir
-    commandLine 'python', '-B', rootProject.file('tools/check-packaging.py')
+    commandLine providers.gradleProperty('repository_python').getOrElse('python'), '-B', rootProject.file('tools/run-check.py'), rootProject.file('tools/check-packaging.py')
 }
 subprojects {
     plugins.withId('java') {

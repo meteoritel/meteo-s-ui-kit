@@ -210,5 +210,7 @@
   "gui.meteos_ui_kit.samples.showcase.form.name": "名称",
   "gui.meteos_ui_kit.samples.showcase.form.reset": "重置",
   "gui.meteos_ui_kit.samples.showcase.form.notes": "备注",
-  "gui.meteos_ui_kit.samples.showcase.form.description": "Tab 会显示当前字段。缩窄窗口可观察自绘说明与行尾动作换行，草稿始终由原编辑器持有。"
+  "gui.meteos_ui_kit.samples.showcase.form.description": "Tab 会显示当前字段。缩窄窗口可观察自绘说明与行尾动作换行，草稿始终由原编辑器持有。",
+  "gui.meteos_ui_kit.samples.showcase.image.pan_lock": "锁定拖拽",
+  "gui.meteos_ui_kit.samples.showcase.image.pan_unlock": "解锁拖拽"
 }

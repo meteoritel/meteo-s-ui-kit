@@ -14,7 +14,7 @@ properties = dict(line.split('=', 1) for line in (root / 'gradle.properties').re
                   if '=' in line and not line.startswith('#'))
 version = properties['version']
 for module in ('common', 'fabric', 'neoforge'):
-    artifact = f'meteos-ui-kit-{module}-1.21.1'
+    artifact = f'meteos-ui-kit-{module}-{properties["minecraft_version"]}'
     folder = Path(args.repository) / 'com/meteorite/meteosuikit' / artifact / version
     stem = f'{artifact}-{version}'
     metadata = json.loads((folder / f'{stem}.module').read_text())

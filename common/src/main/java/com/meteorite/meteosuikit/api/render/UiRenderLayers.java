@@ -15,8 +15,8 @@ public final class UiRenderLayers {
     public static final int FOREGROUND = LAYER_STEP * 2;
     /** 侧板位于普通控件前景之上。 */
     public static final int SIDE_PANEL = FOREGROUND + LAYER_STEP;
-    /** 同一作用域内共用的提示层。 */
-    public static final int TOOLTIP = FOREGROUND * 2 + LAYER_STEP;
+    /** 原版 tooltip 的局部深度；默认覆盖原版槽位物品，并保持在下一层模态遮罩之下。 */
+    public static final int TOOLTIP = 400;
     /** 相邻模态作用域的间距，容纳各自的局部提示层。 */
     public static final int MODAL_STEP = 600;
     /** 页面与首层模态之间的遮罩。 */
@@ -79,11 +79,4 @@ public final class UiRenderLayers {
         model(graphics, bounds, local -> draw(local, CONTENT - VANILLA_ITEM_OFFSET, () -> painter.accept(local)));
     }
 
-    /**
-     * 在渲染线程释放客户端共享模型工作区，下次绘制按需重建；不关闭任何 PreviewScenes 或宿主 executor。
-     * 宿主在模型/世界资源世代失效和客户端终止时调用；UiScreen 卸载也可提前释放。
-     */
-    public static void releaseModels() {
-        UiModelSurface.release();
-    }
 }

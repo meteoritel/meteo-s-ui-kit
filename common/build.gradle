@@ -72,21 +72,28 @@ tasks.register('exportUiKitInterface', JavaExec) {
 }
 tasks.named('check') { dependsOn tasks.named('exportUiKitInterface') }
 
-// 行为用例走真实公开入口，临时 Java 输入不进入发布源集。
+// 非发布源集；用例与运行器只参与行为门禁。
+sourceSets {
+    contractTest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+}
 tasks.register('checkUiKitBehavior', Exec) {
     group = 'verification'
     description = '验证公开主题、输入、阅读及资源隔离契约。'
-    dependsOn tasks.named('classes'), tasks.named('compileUiKitInterfaceTool')
+    dependsOn tasks.named('contractTestClasses'), tasks.named('compileUiKitInterfaceTool')
     def runtimeClasspath = layout.buildDirectory.file('contract-check/classpath.txt')
     def launcher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) }
     doFirst {
         def target = runtimeClasspath.get().asFile
         target.parentFile.mkdirs()
-        target.setText((files(interfaceToolClasses) + sourceSets.main.output + sourceSets.main.compileClasspath
+        target.setText((files(interfaceToolClasses) + sourceSets.contractTest.runtimeClasspath
                 + fileTree(layout.buildDirectory.dir('moddev/artifacts')) { include '*minecraft-resources-aka-client-extra.jar' }).asPath, 'UTF-8')
-        commandLine 'python', '-B', rootProject.file('tools/contract-check/check.py'),
-                '--classpath-file', target.absolutePath,
-                '--java-home', launcher.get().metadata.installationPath.asFile.absolutePath
+        def arguments = [providers.gradleProperty('repository_python').getOrElse('python'), '-B', rootProject.file('tools/run-check.py'), rootProject.file('tools/contract-check/check.py'),
+                '--classpath-file', target.absolutePath, '--java-home', launcher.get().metadata.installationPath.asFile.absolutePath]
+        if (providers.gradleProperty('kitContract').isPresent()) arguments += ['--contract', providers.gradleProperty('kitContract').get()]
+        commandLine arguments
     }
 }
 tasks.named('check') { dependsOn tasks.named('checkUiKitBehavior') }

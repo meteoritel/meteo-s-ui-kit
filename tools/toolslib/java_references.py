@@ -99,7 +99,7 @@ class TypeIndex:
             return True
         if source.module == target.module and target.source_set == "main":
             return True
-        if source.source_set in {"dev", "probe"}:
+        if source.source_set in {"dev", "probe", "contractTest"}:
             return (target.module == "common" and target.source_set == "dev") or (
                 source.module == target.module and source.source_set == target.source_set)
         return source.source_set == "tool" and target.source_set == "tool"

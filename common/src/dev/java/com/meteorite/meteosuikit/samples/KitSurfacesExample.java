@@ -98,6 +98,8 @@ final class KitSurfacesExample implements UiWidget, UiLayoutSource {
         canvas = KitDocumentLightboxContent.create(font, theme);
         activeContent = image;
         lightbox = new UiLightbox(new UiLightbox.Labels() {
+            @Override public Component panLock() { return label("image.pan_lock"); }
+            @Override public Component panUnlock() { return label("image.pan_unlock"); }
             @Override public Component close() { return label("image.close"); }
             @Override public Component zoomIn() { return label("image.in"); }
             @Override public Component zoomOut() { return label("image.out"); }

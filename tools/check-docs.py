@@ -76,6 +76,12 @@ def check(root: Path) -> CheckResult:
                 if not link_exists(doc.parent, clean):
                     violations.append((rel, line_no, "悬空链接", target))
 
+    migration_index = root / 'docs/migrations/README.md'
+    indexed = migration_index.read_text(encoding='utf-8') if migration_index.is_file() else ''
+    for migration in (root / 'docs/migrations').glob('dev.*.md'):
+        if migration.name not in indexed:
+            violations.append(('docs/migrations/README.md', 1, '迁移索引缺少入口', migration.name))
+
     return CheckResult(
         [Finding(rel, kind, detail, line) for rel, line, kind, detail in violations],
         [f"扫描文档：{len(docs)} 个，相对链接：{link_total} 条"],

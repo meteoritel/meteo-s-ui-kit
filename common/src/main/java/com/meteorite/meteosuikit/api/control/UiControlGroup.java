@@ -1,5 +1,6 @@
 package com.meteorite.meteosuikit.api.control;
 
+import com.meteorite.meteosuikit.api.render.UiTooltipPresenter;
 import java.util.function.Supplier;
 
 import java.util.function.Consumer;
@@ -191,7 +192,7 @@ public final class UiControlGroup implements UiInputContainer {
      */
     public void renderTooltip(GuiGraphics graphics, Font font, UiPointer pointer) {
         if (!pointer.allowsTooltip() || pointer.hit() == null) return;
-        pointer.hit().renderTooltip(graphics, font, theme.get().tooltipSkin(), (int) pointer.x(), (int) pointer.y());
+        UiTooltipPresenter.render(graphics, font, pointer.hit(), theme.get().tooltipSkin(), (int) pointer.x(), (int) pointer.y());
     }
 
 }

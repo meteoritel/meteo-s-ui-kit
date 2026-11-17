@@ -5,15 +5,14 @@ import java.util.function.Supplier;
 import com.meteorite.meteosuikit.api.control.UiControlGroup;
 import com.meteorite.meteosuikit.api.control.UiModal;
 import com.meteorite.meteosuikit.api.control.UiModalStack;
-import com.meteorite.meteosuikit.api.input.UiInputContext;
-import com.meteorite.meteosuikit.api.input.UiInputBridge;
+import com.meteorite.meteosuikit.api.control.UiScreenBridge;
+import com.meteorite.meteosuikit.api.geometry.UiViewport;
 import com.meteorite.meteosuikit.api.input.UiInputRouter;
 import com.meteorite.meteosuikit.api.input.UiInputScope;
 import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
 import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
 import com.meteorite.meteosuikit.api.render.UiLayer;
 import com.meteorite.meteosuikit.api.render.UiLayers;
-import com.meteorite.meteosuikit.api.render.UiRenderLayers;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.style.UiStyleSource;
 import net.minecraft.client.gui.GuiGraphics;
@@ -31,7 +30,13 @@ public final class KitContainerExample extends AbstractContainerScreen<Inventory
     private final Runnable back;
     private final Supplier<? extends UiStyleSource> theme;
     private final UiInputRouter input = new UiInputRouter();
-    private final UiInputBridge bridge = new UiInputBridge(input);
+    private final UiScreenBridge bridge = new UiScreenBridge(input, new UiScreenBridge.Host() {
+        @Override public UiInputScope inputScope() { return layers.activeScope(); }
+        @Override public UiViewport viewport() { return new UiViewport(1, width, height, new UiRect(0, 0, width, height)); }
+        @Override public void prepareUi() { modals.prepareUi(); }
+        @Override public void layoutUi() { layoutKit(); layers.setOverlays(modals.layers()); }
+        @Override public void advanceUiFrame() { modals.tick(); }
+    });
     private final UiControlGroup controls = new UiControlGroup();
     private final UiModalStack modals;
     private final UiInputScope base = new UiInputScope(controls);
@@ -46,7 +51,7 @@ public final class KitContainerExample extends AbstractContainerScreen<Inventory
         theme = () -> selectedTheme;
         modals = new UiModalStack(theme);
         base.setEscape(this::onClose);
-        modals.setOnScopeChanged(this::select);
+        modals.setOnScopeChanged(() -> { if (mounted) bridge.refresh(); });
     }
     /** resize 保持控件和路由器实例，更新几何后重新提交焦点索引。 */
     @Override protected void init() {
@@ -62,22 +67,13 @@ public final class KitContainerExample extends AbstractContainerScreen<Inventory
             controls.render(graphics, renderFont, pointer);
             controls.renderTooltip(graphics, renderFont, pointer);
         }, () -> controls.controls().stream().flatMap(control -> control.layoutNodes().stream()).toList()));
-        layoutKit();
-        select();
+        bridge.refresh();
     }
     private void layoutKit() {
-        modals.prepareUi();
         int toolbarY = Math.max(0, topPos - 24);
         for (int i = 0; i < controls.size(); i++) controls.controls().get(i).setBounds(leftPos + i * 88, toolbarY, 84, 20);
         modals.setBounds(0, 0, width, height);
         modals.refreshLayout();
-    }
-    private void select() {
-        if (!mounted || layers == null) return;
-        layers.setOverlays(modals.layers());
-        UiInputScope scope = layers.activeScope();
-        scope.refreshFocus();
-        input.select(scope);
     }
     private void openOverlay() {
         modals.push(UiModal.create(theme, font).title(text("overlay"))
@@ -90,14 +86,9 @@ public final class KitContainerExample extends AbstractContainerScreen<Inventory
                 .cancel(Component.translatable(KitShowcaseContent.UI + "back")));
     }
     private boolean overlayActive() { return layers.activeScope() != base; }
-    private UiInputContext pointer(double x, double y, int button) {
-        layoutKit(); select();
-        return UiInputContext.of(layers.activeScope(), x, y, button, hasShiftDown(), hasControlDown(), hasAltDown());
-    }
     /** 原版绘制槽位，覆盖层活动时只绘制底页静态内容。 */
     @Override public void render(@NotNull GuiGraphics graphics, int x, int y, float delta) {
-        layoutKit(); select(); modals.tick();
-        layers.activeScope().content().advanceFrame(Util.getMillis());
+        bridge.beginFrame(Util.getMillis());
         boolean blocked = overlayActive();
         super.render(graphics, blocked ? -1000 : x, blocked ? -1000 : y, delta);
         if (!blocked) renderTooltip(graphics, x, y);
@@ -108,62 +99,40 @@ public final class KitContainerExample extends AbstractContainerScreen<Inventory
         theme.get().drawInset(graphics, new UiRect(leftPos, topPos, imageWidth, imageHeight));
         for (var slot : menu.slots) theme.get().drawInset(graphics, new UiRect(leftPos + slot.x - 1, topPos + slot.y - 1, 18, 18));
     }
-    /** kit 消费或覆盖层阻断的按下，其迟到释放仍由 kit 接住。 */
+    /** {@inheritDoc} */
     @Override public boolean mouseClicked(double x, double y, int button) {
-        UiInputContext context = pointer(x, y, button);
-        boolean consumed = bridge.mousePressed(context);
-        select();
-        return consumed || super.mouseClicked(x, y, button);
+        return bridge.mousePressed(x, y, button) || super.mouseClicked(x, y, button);
     }
-    /** 捕获拖出视口时仍回到原所有者，不进入原版槽位派发。 */
+    /** {@inheritDoc} */
     @Override public boolean mouseDragged(double x, double y, int button, double dx, double dy) {
-        UiInputContext context = pointer(x, y, button);
-        boolean consumed = bridge.mouseDragged(context, dx, dy);
-        select();
-        return consumed || super.mouseDragged(x, y, button, dx, dy);
+        return bridge.mouseDragged(x, y, button, dx, dy) || super.mouseDragged(x, y, button, dx, dy);
     }
-    /** 原版只接收由它处理按下的释放；切域后的旧 kit 释放不会穿透。 */
+    /** {@inheritDoc} */
     @Override public boolean mouseReleased(double x, double y, int button) {
-        UiInputContext context = pointer(x, y, button);
-        boolean consumed = bridge.mouseReleased(context);
-        select();
-        return consumed || super.mouseReleased(x, y, button);
+        return bridge.mouseReleased(x, y, button) || super.mouseReleased(x, y, button);
     }
     /** {@inheritDoc} */
     @Override public boolean mouseScrolled(double x, double y, double sx, double sy) {
-        UiInputContext context = pointer(x, y, -1);
-        boolean consumed = bridge.mouseScrolled(context, sx, sy);
-        select();
-        return consumed || super.mouseScrolled(x, y, sx, sy);
+        return bridge.mouseScrolled(x, y, sx, sy) || super.mouseScrolled(x, y, sx, sy);
     }
-    /** 输入优先交给 kit；覆盖域拦住丢弃、热键换槽与原版关闭键。 */
+    /** {@inheritDoc} */
     @Override public boolean keyPressed(int key, int scan, int modifiers) {
-        layoutKit(); select();
-        boolean consumed = bridge.keyPressed(key, scan, modifiers);
-        select();
-        return consumed || super.keyPressed(key, scan, modifiers);
+        return bridge.keyPressed(key, scan, modifiers) || super.keyPressed(key, scan, modifiers);
     }
     /** {@inheritDoc} */
     @Override public boolean keyReleased(int key, int scan, int modifiers) {
-        layoutKit(); select();
-        boolean consumed = bridge.keyReleased(key, scan, modifiers);
-        select();
-        return consumed || super.keyReleased(key, scan, modifiers);
+        return bridge.keyReleased(key, scan, modifiers) || super.keyReleased(key, scan, modifiers);
     }
     /** {@inheritDoc} */
     @Override public boolean charTyped(char value, int modifiers) {
-        layoutKit(); select();
-        boolean consumed = bridge.charTyped(value, modifiers);
-        select();
-        return consumed || super.charTyped(value, modifiers);
+        return bridge.charTyped(value, modifiers) || super.charTyped(value, modifiers);
     }
     /** {@inheritDoc} */
     @Override public List<UiLayoutNode> layoutNodes() { return layers == null ? List.of() : layers.layoutNodes(); }
-    /** 卸载结束捕获并释放共享工作区；Menu 生命周期仍由原版父类处理。 */
+    /** 卸载结束本根捕获和弹窗；Menu 生命周期仍由原版父类处理。 */
     @Override public void removed() {
         mounted = false;
         bridge.close(); modals.clear();
-        UiRenderLayers.releaseModels();
         super.removed();
     }
     /** {@inheritDoc} */

@@ -1,0 +1,45 @@
+package com.meteorite.meteosuikit.contract;
+
+import com.meteorite.meteosuikit.api.control.UiScreenBridge;
+import com.meteorite.meteosuikit.api.geometry.UiRect;
+import com.meteorite.meteosuikit.api.geometry.UiViewport;
+import com.meteorite.meteosuikit.api.input.UiInputRouter;
+import com.meteorite.meteosuikit.api.input.UiInputScope;
+import com.meteorite.meteosuikit.api.input.UiInputTarget;
+import java.util.ArrayList;
+import java.util.List;
+import org.lwjgl.glfw.GLFW;
+
+final class RootContract extends ContractSupport {
+    static void run() {
+        List<String> calls = new ArrayList<>();
+        UiInputTarget target = new UiInputTarget() {
+            @Override public void advanceFrame(long time) { calls.add("content:" + time); }
+            @Override public boolean keyPressed(int key, int scan, int mods) { calls.add("key"); return false; }
+        };
+        UiInputScope scope = new UiInputScope(target);
+        UiInputRouter router = new UiInputRouter();
+        UiScreenBridge bridge = new UiScreenBridge(router, new UiScreenBridge.Host() {
+            @Override public UiInputScope inputScope() { return scope; }
+            @Override public UiViewport viewport() { return new UiViewport(1, 320, 240, new UiRect(0, 0, 320, 240)); }
+            @Override public void prepareUi() { calls.add("prepare"); }
+            @Override public void layoutUi() { calls.add("layout"); }
+            @Override public void advanceUiFrame() { calls.add("frame"); }
+            @Override public void invalidateUiResources() { calls.add("invalidate"); }
+        });
+        bridge.beginFrame(42);
+        check(calls.equals(List.of("invalidate", "frame", "prepare", "layout", "content:42")), "frame ordering");
+        calls.clear();
+        check(!bridge.keyPressed(GLFW.GLFW_KEY_A, 0, 0), "unconsumed key falls back");
+        check(calls.equals(List.of("prepare", "layout", "key", "prepare", "layout")), "events prepare before and after without frame advancement");
+        scope.setNavigationBack(bridge::close);
+        calls.clear();
+        check(bridge.keyPressed(GLFW.GLFW_KEY_BACKSPACE, 0, 0), "closing bridge stops fallback");
+        check(router.active() == null && calls.equals(List.of("prepare", "layout", "key")), "closing callback does not reactivate root");
+        bridge.beginFrame(43);
+        check(router.active() == scope, "same bridge can mount again");
+        bridge.close();
+        ClosingScreen screen = new ClosingScreen();
+        check(screen.keyPressed(GLFW.GLFW_KEY_ESCAPE, 0, 0) && !screen.hasActiveScope(), "inherited Adapter retains close semantics");
+    }
+}

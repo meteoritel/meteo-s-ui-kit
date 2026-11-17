@@ -3,7 +3,7 @@ package com.meteorite.meteosuikit.api.control;
 import com.meteorite.meteosuikit.api.input.UiInputContext;
 import com.meteorite.meteosuikit.api.input.UiInputRouter;
 import com.meteorite.meteosuikit.api.input.UiInputScope;
-import com.meteorite.meteosuikit.api.render.UiRenderLayers;
+import com.meteorite.meteosuikit.internal.control.UiRootSession;
 import com.meteorite.meteosuikit.api.geometry.UiViewport;
 import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
 import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
@@ -11,11 +11,9 @@ import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.mojang.blaze3d.platform.Window;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BooleanSupplier;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.GuiGraphics;
 import org.jetbrains.annotations.NotNull;
-import net.minecraft.locale.Language;
 import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
 
@@ -25,14 +23,20 @@ import net.minecraft.network.chat.Component;
  */
 public abstract class UiScreen extends Screen implements UiLayoutSource {
     private final UiInputRouter input = new UiInputRouter();
-    private Language resources;
-    private long lifecycle;
+    private final UiRootSession session = new UiRootSession(input, new UiScreenBridge.Host() {
+        @Override public UiInputScope inputScope() { return UiScreen.this.inputScope(); }
+        @Override public UiViewport viewport() { return UiScreen.this.viewport(); }
+        @Override public void prepareUi() { UiScreen.this.prepareUi(); }
+        @Override public void layoutUi() { UiScreen.this.layoutUi(); }
+        @Override public void advanceUiFrame() { UiScreen.this.advanceUiFrame(); }
+        @Override public void invalidateUiResources() { UiScreen.this.invalidateUiResources(); }
+    });
 
     /** 创建原版屏幕，标题由宿主本地化。 */
     protected UiScreen(Component title) { super(title); }
-    /** 最小内容宽度；默认自然 GUI 空间。 */
+    /** 最小画布宽度；不足时根统一缩放，默认保留自然 GUI 空间。 */
     protected int minimumUiWidth() { return 1; }
-    /** 最小内容高度；默认自然 GUI 空间。 */
+    /** 最小画布高度；与宽度共同确定 framebuffer 像素倍率。 */
     protected int minimumUiHeight() { return 1; }
     /** 始终按原版当前尺寸计算，首次 init 与 resize 无需等待绘制。 */
     public final UiViewport viewport() {
@@ -81,17 +85,7 @@ public abstract class UiScreen extends Screen implements UiLayoutSource {
     protected abstract void renderUi(GuiGraphics graphics, int x, int y, float delta);
     /** 原版绘制入口统一准备，子类无需记忆调用顺序。 */
     @Override public final void render(@NotNull GuiGraphics graphics, int x, int y, float delta) {
-        Language current = Language.getInstance();
-        if (resources != current) {
-            UiRenderLayers.releaseModels();
-            invalidateUiResources();
-            resources = current;
-        }
-        advanceUiFrame();
-        prepareUi();
-        layoutUi();
-        refreshUiState();
-        inputScope().content().advanceFrame(Util.getMillis());
+        session.beginFrame(Util.getMillis());
         UiViewport viewport = viewport();
         graphics.pose().pushPose();
         graphics.pose().scale((float) viewport.scale(), (float) viewport.scale(), 1);
@@ -99,75 +93,45 @@ public abstract class UiScreen extends Screen implements UiLayoutSource {
         finally { graphics.pose().popPose(); }
     }
     /** 结构或覆盖面回调后立即应用宿主的选择，旧事件由路由版本失效。 */
-    protected final void refreshUiState() { selectScope(); }
+    protected final void refreshUiState() { session.selectScope(); }
     /** 原版资源重载后使根拥有的资源和文本缓存失效。 */
     protected void invalidateUiResources() { }
     /** removed 时释放根拥有的资源；可重复调用。 */
     protected void releaseUiResources() { }
-    private UiInputScope selectScope() {
-        UiInputScope scope = inputScope();
-        scope.refreshFocus();
-        input.select(scope);
-        return scope;
-    }
-    private boolean dispatchInput(BooleanSupplier action) {
-        long version = lifecycle;
-        boolean consumed = action.getAsBoolean();
-        if (lifecycle != version) return consumed;
-        prepareUi();
-        layoutUi();
-        refreshUiState();
-        return consumed;
-    }
-    private UiInputContext pointer(double x, double y, int button) {
-        prepareUi();
-        layoutUi();
-        UiViewport viewport = viewport();
-        return UiInputContext.of(selectScope(), viewport.toLogical(x), viewport.toLogical(y), button,
-                hasShiftDown(), hasControlDown(), hasAltDown());
-    }
     @Override public boolean mouseClicked(double x, double y, int button) {
-        UiInputContext context = pointer(x, y, button);
-        return dispatchInput(() -> input.mousePressed(context));
+        UiInputContext context = session.pointer(x, y, button);
+        return session.dispatch(() -> input.mousePressed(context));
     }
     @Override public boolean mouseReleased(double x, double y, int button) {
-        UiInputContext context = pointer(x, y, button);
-        return dispatchInput(() -> input.mouseReleased(context));
+        UiInputContext context = session.pointer(x, y, button);
+        return session.dispatch(() -> input.mouseReleased(context));
     }
     @Override public boolean mouseDragged(double x, double y, int button, double dx, double dy) {
-        UiInputContext context = pointer(x, y, button);
+        UiInputContext context = session.pointer(x, y, button);
         UiViewport viewport = viewport();
-        return dispatchInput(() -> input.mouseDragged(context, viewport.toLogical(dx), viewport.toLogical(dy)));
+        return session.dispatch(() -> input.mouseDragged(context, viewport.toLogical(dx), viewport.toLogical(dy)));
     }
     @Override public boolean mouseScrolled(double x, double y, double sx, double sy) {
-        UiInputContext context = pointer(x, y, -1);
-        return dispatchInput(() -> input.mouseScrolled(context, sx, sy));
+        UiInputContext context = session.pointer(x, y, -1);
+        return session.dispatch(() -> input.mouseScrolled(context, sx, sy));
     }
     @Override public boolean keyPressed(int key, int scan, int modifiers) {
-        prepareUi();
-        layoutUi();
-        selectScope();
-        return dispatchInput(() -> input.keyPressed(key, scan, modifiers));
+        session.prepare();
+        return session.dispatch(() -> input.keyPressed(key, scan, modifiers));
     }
     @Override public boolean keyReleased(int key, int scan, int modifiers) {
-        prepareUi();
-        layoutUi();
-        selectScope();
-        return dispatchInput(() -> input.keyReleased(key, scan, modifiers));
+        session.prepare();
+        return session.dispatch(() -> input.keyReleased(key, scan, modifiers));
     }
     @Override public boolean charTyped(char value, int modifiers) {
-        prepareUi();
-        layoutUi();
-        selectScope();
-        return dispatchInput(() -> input.charTyped(value, modifiers));
+        session.prepare();
+        return session.dispatch(() -> input.charTyped(value, modifiers));
     }
     @Override public void removed() {
-        lifecycle++;
+        session.close();
         input.close();
         try { releaseUiResources(); }
         finally {
-            UiRenderLayers.releaseModels();
-            resources = null;
             super.removed();
         }
     }

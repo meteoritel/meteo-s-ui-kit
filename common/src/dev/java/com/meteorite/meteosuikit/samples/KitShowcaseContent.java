@@ -1,5 +1,6 @@
 package com.meteorite.meteosuikit.samples;
 
+import com.meteorite.meteosuikit.api.render.UiTooltipPresenter;
 import java.util.function.Supplier;
 
 import com.meteorite.meteosuikit.api.control.UiControl;
@@ -282,7 +283,7 @@ final class KitShowcaseContent implements UiInputTarget, UiLayoutSource {
         footer.render(graphics, font, pointer);
         // 提示画在页脚与弹层之后；弹层开启时由弹层自己出提示
         if (page == Page.CONTROLS && pointer.allowsTooltip() && pointer.hit() != null) {
-            pointer.hit().renderTooltip(graphics, font, theme.get().tooltipSkin(), (int) pointer.x(), (int) pointer.y());
+            UiTooltipPresenter.render(graphics, font, pointer.hit(), theme.get().tooltipSkin(), (int) pointer.x(), (int) pointer.y());
         }
     }
 

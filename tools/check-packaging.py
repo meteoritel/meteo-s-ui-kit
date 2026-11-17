@@ -3,6 +3,7 @@ from pathlib import Path
 from zipfile import ZipFile
 import json
 import sys
+import tomllib
 
 from toolslib.checks import CheckResult, Finding, run
 
@@ -14,13 +15,13 @@ def check(root: Path) -> CheckResult:
     findings = []
     prefix = 'com/meteorite/meteosuikit/'
     for module in ('common', 'fabric', 'neoforge'):
-        stem = f"meteos-ui-kit-{module}-1.21.1-{properties['version']}"
+        stem = f"meteos-ui-kit-{module}-{properties['minecraft_version']}-{properties['version']}"
         for suffix in ('', '-sources', '-javadoc'):
             path = root / module / 'build/libs' / f'{stem}{suffix}.jar'
             with ZipFile(path) as jar:
                 names = set(jar.namelist())
                 for name in names:
-                    if '/samples/' in name or name.startswith('assets/meteos_ui_kit_samples/'):
+                    if '/samples/' in name or '/contract/' in name or name.startswith('assets/meteos_ui_kit_samples/'):
                         findings.append(Finding(str(path), '开发内容泄漏', name))
                 if not any(name.startswith('LICENSE.txt') for name in names):
                     findings.append(Finding(str(path), '许可', '缺少 MIT 许可附件'))
@@ -33,6 +34,26 @@ def check(root: Path) -> CheckResult:
                     metadata = json.loads(jar.read('fabric.mod.json'))
                     if metadata['id'] != 'meteos_ui_kit' or metadata['version'] != properties['version']:
                         findings.append(Finding(str(path), 'Fabric 身份', str(metadata)))
+                if module != 'common':
+                    resource = 'fabric.mod.json' if module == 'fabric' else 'META-INF/neoforge.mods.toml'
+                    text = jar.read(resource).decode('utf-8')
+                    if '${' in text:
+                        findings.append(Finding(str(path), '资源占位符未展开', resource))
+                    if module == 'fabric':
+                        data = json.loads(text)
+                        expected = {'fabricloader': '>=' + properties['fabric_loader_version'],
+                                    'minecraft': properties['minecraft_version'], 'java': '>=' + properties['java_version']}
+                        if any(data['depends'].get(key) != value for key, value in expected.items()):
+                            findings.append(Finding(str(path), 'Fabric 版本元数据', str(data['depends'])))
+                    else:
+                        data = tomllib.loads(text)
+                        mods = data['mods'][0]
+                        ranges = {entry['modId']: entry['versionRange'] for entry in data['dependencies'][properties['mod_id']]}
+                        if (data['loaderVersion'] != properties['neoforge_loader_version_range']
+                                or mods['modId'] != properties['mod_id'] or mods['version'] != properties['version']
+                                or ranges.get('minecraft') != properties['minecraft_version_range']
+                                or ranges.get('neoforge') != '[' + properties['neoforge_version'] + ',)'):
+                            findings.append(Finding(str(path), 'NeoForge 版本元数据', str(ranges)))
                 if module != 'common':
                     mixins = json.loads(jar.read('meteos_ui_kit.mixins.json'))
                     if mixins.get('mixins') or mixins.get('client') != ['DisplayPreviewAccessor']:

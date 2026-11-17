@@ -6,6 +6,7 @@
  * library 表示受支持的公开库契约，具体用途与所有权见对应类型 JavaDoc。
  * 公开返回链随用途说明，嵌套公开契约随顶层类型维护。</p>
  * <ul>
+ *   <li>{@code UiScreenBridge}: library；用途：原版容器组合根的准备、帧与输入接入</li>
  *   <li>{@code LightboxImage}: library；用途：灯箱要展示的一张图：稳定 ID、贴图区域（原始宽高显式给出）与可本地化标题/描述；公开库用途</li>
  *   <li>{@code UiCarousel}: library</li>
  *   <li>{@code UiControl}: library</li>

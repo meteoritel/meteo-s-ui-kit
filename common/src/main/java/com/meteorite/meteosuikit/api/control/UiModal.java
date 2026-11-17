@@ -1,5 +1,6 @@
 package com.meteorite.meteosuikit.api.control;
 
+import com.meteorite.meteosuikit.api.render.UiTooltipPresenter;
 import java.util.function.Supplier;
 
 import com.meteorite.meteosuikit.api.input.UiAction;
@@ -566,7 +567,7 @@ public final class UiModal implements UiWidget, UiInputContainer {
             }
         }
         if (pointer.allowsTooltip() && pointer.hit() != null) {
-            pointer.hit().renderTooltip(graphics, font, theme.get().tooltipSkin(), (int) pointer.x(), (int) pointer.y());
+            UiTooltipPresenter.render(graphics, font, pointer.hit(), theme.get().tooltipSkin(), (int) pointer.x(), (int) pointer.y());
         }
     }
 

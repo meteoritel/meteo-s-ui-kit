@@ -1,6 +1,24 @@
 # 接入与资源所有权
 
-普通页面使用 `UiScreen` 或 `UiThemedScreen`，原版容器组合唯一的 router 与 `UiInputBridge`。输入前准备、布局和选域，返回未消费时才回退原版父类。
+普通页面使用 `UiScreen` 或 `UiThemedScreen`，原版容器稳定组合唯一的 router 与 `UiScreenBridge`。共同根实现负责准备、布局、刷新焦点、选域和事件后刷新；bridge 返回 false 时回退原版父类。
+
+## 最小接入
+
+- 普通页面：[KitMinimalScreen](../common/src/dev/java/com/meteorite/meteosuikit/samples/KitMinimalScreen.java) 继承 `UiThemedScreen`，只提供内容、作用域与布局；完整页面见 [KitShowcaseScreen](../common/src/dev/java/com/meteorite/meteosuikit/samples/KitShowcaseScreen.java)。
+- 原版容器：[KitContainerExample](../common/src/dev/java/com/meteorite/meteosuikit/samples/KitContainerExample.java) 保留 `AbstractContainerScreen` 与 Menu / Slot，由 Host 提供当前作用域、恒等 viewport、准备与布局钩子。init 调用 `bridge.refresh()`，render 在父类前调用 `bridge.beginFrame(Util.getMillis())`，removed 调用 `bridge.close()`。
+
+容器事件覆写使用同一种回退方式：
+
+```java
+@Override public boolean mouseClicked(double x, double y, int button) {
+    return bridge.mousePressed(x, y, button) || super.mouseClicked(x, y, button);
+}
+```
+
+拖动、释放、滚轮、按键和字符沿样例转发给同一个 bridge。其返回值包含消费、覆盖阻断和迟到释放配对；宿主无需另建配对表。bridge 只处理 kit 内容，原版槽位继续由父类驱动。
+
+## 坐标、提示与资源
+
 
 `UiInputScope.setNavigationBack` 绑定当前页面的回退动作：第四个鼠标键按下时执行，或在内容未消费 Backspace 时执行。回退先取消持续交互与旧指针按压，再调用宿主动作；侧键的拖动和释放由根配对消费，切换作用域后仍接住释放。未绑定动作时沿既有输入规则派发，顶层作用域只查询自己的动作。
 
@@ -8,19 +26,19 @@
 
 固定画布在 `UiScreen` 声明最小尺寸，由根统一缩放绘制、输入与布局快照。根按实际 framebuffer 选择能容纳画布的整数物理像素倍率，原版 GUI 倍率为放大上限；不足 `1×` 时连续缩小以保留访问能力。无需缩小时保留原版 GUI 尺寸及取整语义。宿主迁移见 [dev.8 → dev.9](migrations/dev.8-to-dev.9.md)。
 
-`UiPointerHit.renderTooltip` 接收当前轴对齐二维 pose 内的指针，在原版 GUI 空间呈现普通与富提示，保留当前 Z 层和主题。富提示回调收到 GUI 坐标，直接调用原版 Tooltip 即可；作用域门禁仍由调用方检查。逻辑内容裁剪使用 `UiRenderLayers.enableScissor/disableScissor` 在 `finally` 中配对；提示在内容裁剪退出后呈现。
+`UiTooltipPresenter.render` 接收当前轴对齐二维 pose 内的指针，在原版 GUI 空间呈现普通与富提示，保留当前作用域基线和主题。普通提示整体在该基线加 400，默认覆盖原版槽位物品，并保持在下一层模态遮罩之下。富提示回调收到 GUI 坐标，直接调用原版 Tooltip 自带的 400；presenter 不额外抬层。宿主调用 presenter 时使用当前作用域基线。作用域门禁仍由调用方检查。逻辑内容裁剪使用 `UiRenderLayers.enableScissor/disableScissor` 在 `finally` 中配对；提示在内容裁剪退出后呈现。
 
 自绘内容从实际输入成员贡献稳定身份和裁剪几何；按需帧末 PNG 通过 `UiFrameCapture` 异步采集。布局与采样生命周期见 [dev.7 → dev.8](migrations/dev.7-to-dev.8.md)。
 
-宿主稳定持有主题 Context、输入根、业务内容与场景所有者。`PreviewPlatforms.geometry()` 在库客户端初始化完成后提供默认平台能力；宿主仍注入 executor、时钟、诊断和预算，并关闭自己的 `PreviewScenes`。
+宿主稳定持有主题 Context、输入根、业务内容与场景所有者。`PreviewPlatforms.geometry()` 的安装时机为 Fabric 客户端初始化、NeoForge client setup 的 `enqueueWork`。宿主在首次 Screen 或之后读取平台能力；宿主仍注入 executor、时钟、诊断和预算，并关闭自己的 `PreviewScenes`。
 
-库平台入口安装默认 Geometry，并接入共享客户端生命周期对模型工作区的世代观察及终止释放。Display accessor 与 client Mixin 配置使用 common 共享源码和资源，各端保留自己的 block 渲染路径与事件相位。根卸载仍释放自己的资源。业务资源世代、缓存、线程池与文案继续归宿主。
+库平台入口安装默认 Geometry，并接入共享客户端生命周期对模型工作区的世代观察及终止释放。Display accessor 与 client Mixin 配置使用 common 共享源码和资源，各端保留自己的 block 渲染路径与事件相位。模型共享 GPU 工作区由 kit 的客户端世代观察与终止事件独占释放；关闭屏幕只释放根自己的资源。根收到 `invalidateUiResources` 时刷新其文字和业务缓存；业务场景、线程池与文案继续归宿主。
 
 有效公开面以 JavaDoc、`tools/ui-kit-interface/api.txt` 与 `package-info.java` 为准；宿主只引用 api。基础能力不反向依赖 preview，common 不导入加载器类型。
 
 ## 固定版本消费
 
-在用户级 Gradle 属性配置 `meteos_ui_kit_maven_dir`，项目 `gradle.properties` 配置 `meteos_ui_kit_version`。仓库用 exclusiveContent 限定 group `com.meteorite.meteosuikit`；缺少本机属性时给出配置错误。
+在用户级 Gradle 属性配置 `meteos_ui_kit_maven_dir`，消费者项目的 `gradle.properties` 配置 `meteos_ui_kit_version` 并由其构建脚本读取。kit 自身的发布坐标由 `version` 决定；独立 consumer-check 默认消费该值，可用 `-Pmeteos_ui_kit_version=<精确版本>` 覆盖。仓库用 exclusiveContent 限定 group `com.meteorite.meteosuikit`；缺少本机属性时给出配置错误。
 
 - common：compileOnly `meteos-ui-kit-common-1.21.1`。
 - Fabric：modImplementation + include `meteos-ui-kit-fabric-1.21.1`。
@@ -30,11 +48,11 @@ group 为 `com.meteorite.meteosuikit`，编译和内嵌选择项目配置的精�
 
 dev 序列允许源码、二进制与行为破坏，每个新 dev 坐标附迁移说明且不可覆盖。消费者的编译、内嵌和运行元数据锁定同一 dev：Fabric 依赖使用精确版本字符串，NeoForge 依赖和 jarJar 使用 `[版本]`，jarJar 同时 prefer 该版本。升级时成套替换宿主与库，避免旧宿主的宽区间接受新 dev。
 
-正式 0.x 版本在同 minor 内维持源码、二进制与行为兼容；破坏性修改提升 minor 并提供迁移说明。正式版运行范围按该兼容承诺选择。dev 迁移见 [dev.4 → dev.7](migrations/dev.4-to-dev.7.md)，发布与消费命令见 [工具入口](../tools/README.md)。
+正式 0.x 版本在同 minor 内维持源码、二进制与行为兼容；破坏性修改提升 minor 并提供迁移说明。正式版运行范围按该兼容承诺选择。dev 迁移见 [迁移索引](migrations/README.md)，发布与消费命令见 [工具入口](../tools/README.md)。
 
 ## 主题、状态与滚动内容
 
-`UiScreen` 在宿主 `advanceUiFrame`、准备、布局和选域后，以 `Util.getMillis()` 推进活动 scope 的实际内容树，再解析命中和绘制。`UiChildren` / `UiInputContainer` 自动转发；私有组合包装器转发 `advanceFrame(long)` 与 `scopeExited`。同一滚动视图只由实际所有者推进。组合原版容器或独立绘制的宿主，在相同准备顺序后调用 `activeScope.content().advanceFrame(nowMillis)`。
+`UiScreen` 在宿主 `advanceUiFrame`、准备、布局和选域后，以 `Util.getMillis()` 推进活动 scope 的实际内容树，再解析命中和绘制。`UiChildren` / `UiInputContainer` 自动转发；私有组合包装器转发 `advanceFrame(long)` 与 `scopeExited`。同一滚动视图只由实际所有者推进。组合原版容器通过 `UiScreenBridge.beginFrame(nowMillis)` 复用同一管线；事件准备只派发输入，动画只在帧入口推进。
 
 `UiScrollView` 统一持有实际偏移和阻尼目标；`scrollBy` 向目标提交方向整步，`scrollByPixels` 保留实际像素与小数累积，返回目标是否改变。`setOffset` / `ensureVisible` 立即定位并结清旧目标，`ensureVisibleSmoothly` 从待完成目标计算滚入位置。查询保持只读，重复布局保留目标，范围缩短同时钳制实际与目标。拖动接管、隐藏、禁用和切域停止旧动画。列表、正文、表单及多行输入沿成员树复用这一机制，详情见 [dev.16 → dev.17](migrations/dev.16-to-dev.17.md)。
 
@@ -62,7 +80,9 @@ dev 序列允许源码、二进制与行为破坏，每个新 dev 坐标附迁�
 
 页内使用 `UiDocumentView`，其 bounds 是正文内矩形，业务边框在外部绘制；通过 offset 读写阅读位置。灯箱使用 `UiDocumentLightboxContent`，独立持有文档和变换，可从稳定内容 Supplier 读取业务节点。两者统一持有动作导航、鼠标与键盘配对激活及失效取消，Frame 背景和正文使用同一裁剪。业务 Background 回调只解释 payload 和选中提示，在文档内容坐标绘制。语言或字体资源变化时调用阅读入口的布局失效方法。
 
-灯箱 fit 不放大小内容并左上对齐；手动缩放后 resize 保留档位并钳制平移，fit 状态 resize 重新适配。关闭灯箱丢弃自己的阅读变换，页内 offset 由其控件保留。
+文档灯箱 fit 不放大小内容并左上对齐；手动缩放后 resize 保留档位并钳制平移，fit 状态 resize 重新适配。关闭灯箱丢弃自己的阅读变换，页内 offset 由其控件保留。
+
+灯箱全部按钮文案由 `UiLightbox.Labels` 提供，含 `panLock/panUnlock`。surface、icons、文字和提示保持独立配置，控制栏在窄窗优先保留关闭和 fit，空间不足时隐藏读数及次要控件。
 
 灯箱内容实现 `UiFocusTarget` 或贡献子焦点目标时，`UiLightbox` 将其加入同一作用域的 Tab 序列。内容持焦时先接收普通按键与字符，配对释放和退出通知沿内容传递；Escape 仍由灯箱关闭入口处理。
 

@@ -210,5 +210,7 @@
   "gui.meteos_ui_kit.samples.showcase.form.name": "Name",
   "gui.meteos_ui_kit.samples.showcase.form.reset": "Reset",
   "gui.meteos_ui_kit.samples.showcase.form.notes": "Notes",
-  "gui.meteos_ui_kit.samples.showcase.form.description": "Tab reveals each field. Resize to wrap this custom content and trailing action; text drafts remain in their original editors."
+  "gui.meteos_ui_kit.samples.showcase.form.description": "Tab reveals each field. Resize to wrap this custom content and trailing action; text drafts remain in their original editors.",
+  "gui.meteos_ui_kit.samples.showcase.image.pan_lock": "Lock pan",
+  "gui.meteos_ui_kit.samples.showcase.image.pan_unlock": "Unlock pan"
 }

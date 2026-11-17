@@ -45,7 +45,7 @@ public final class UiModelSurface {
         shared.render(graphics, box, painter);
     }
 
-    /** 屏幕卸载时释放共享 GPU 与顶点缓冲；下一次绘制按需创建。 */
+    /** 客户端资源世代失效或终止时在渲染线程释放共享 GPU 与顶点缓冲；下次绘制按需创建。 */
     public static void release() {
         if (shared == null) return;
         if (shared.target != null) shared.target.destroyBuffers();

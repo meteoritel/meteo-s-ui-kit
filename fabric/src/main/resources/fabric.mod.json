@@ -5,9 +5,9 @@
   "name": "${mod_name}",
   "description": "${description}",
   "authors": ["${mod_author}"],
-  "license": "MIT",
+  "license": "${license}",
   "environment": "*",
   "entrypoints": {"client": ["com.meteorite.meteosuikit.fabric.client.FabricUiKitClient"]},
   "mixins": ["meteos_ui_kit.mixins.json", "meteos_ui_kit.frame.mixins.json"],
-  "depends": {"fabricloader": ">=0.16.9", "fabric-api": "*", "minecraft": "1.21.1", "java": ">=21"}
+  "depends": {"fabricloader": ">=${fabric_loader_version}", "fabric-api": "*", "minecraft": "${minecraft_version}", "java": ">=${java_version}"}
 }
