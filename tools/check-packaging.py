@@ -34,6 +34,15 @@ def check(root: Path) -> CheckResult:
                     metadata = json.loads(jar.read('fabric.mod.json'))
                     if metadata['id'] != 'meteos_ui_kit' or metadata['version'] != properties['version']:
                         findings.append(Finding(str(path), 'Fabric 身份', str(metadata)))
+                    for declaration in metadata.get('mixins', []):
+                        config = declaration if isinstance(declaration, str) else declaration['config']
+                        mixin_package = json.loads(jar.read(config)).get('package')
+                        if not mixin_package:
+                            continue
+                        for entry in metadata.get('entrypoints', {}).get('client', []):
+                            value = entry if isinstance(entry, str) else entry['value']
+                            if value.split('::', 1)[0].startswith(mixin_package + '.'):
+                                findings.append(Finding(str(path), 'Fabric 客户端入口位于 Mixin 包', f'{value} ({config})'))
                 if module != 'common':
                     resource = 'fabric.mod.json' if module == 'fabric' else 'META-INF/neoforge.mods.toml'
                     text = jar.read(resource).decode('utf-8')

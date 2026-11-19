@@ -1,4 +1,4 @@
-package com.meteorite.meteosuikit.fabric.client;
+package com.meteorite.meteosuikit.fabric.client.mixin;
 
 import com.meteorite.meteosuikit.internal.client.UiFrameCaptureState;
 import net.minecraft.client.renderer.GameRenderer;
