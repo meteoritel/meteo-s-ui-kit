@@ -3,6 +3,7 @@ package com.meteorite.meteosuikit.api.input;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * kit 与原版父类之间的输入回退桥接，在 GUI 线程由组合接入的根持有。
@@ -21,10 +22,15 @@ public final class UiInputBridge {
         this.router = Objects.requireNonNull(router, "router");
     }
 
+    /** 根是否仍持有该鼠标键的按下，用于在屏幕前置事件中接住配对操作。 */
+    public boolean hasMousePress(int button) {
+        return claimedButtons.contains(button);
+    }
+
     /** 派发按下；消费或阻断后接住该鼠标键的配对拖动与释放。 */
     public boolean mousePressed(UiInputContext context) {
         long version = lifecycle;
-        boolean blocked = blocksInput();
+        boolean blocked = blocksInput(context.scope());
         claimedButtons.remove(context.button());
         boolean consumed = router.mousePressed(context);
         boolean handled = stopsFallback(blocked, consumed, version);
@@ -35,7 +41,7 @@ public final class UiInputBridge {
     /** 捕获拖动交给 router；已接住的按下即使切域也不回退父类。 */
     public boolean mouseDragged(UiInputContext context, double dragX, double dragY) {
         long version = lifecycle;
-        boolean blocked = blocksInput() || claimedButtons.contains(context.button());
+        boolean blocked = blocksInput(context.scope()) || hasMousePress(context.button());
         boolean consumed = router.mouseDragged(context, dragX, dragY);
         return stopsFallback(blocked, consumed, version);
     }
@@ -44,7 +50,7 @@ public final class UiInputBridge {
     public boolean mouseReleased(UiInputContext context) {
         long version = lifecycle;
         boolean claimed = claimedButtons.remove(context.button());
-        boolean blocked = blocksInput() || claimed;
+        boolean blocked = blocksInput(context.scope()) || claimed;
         boolean consumed = router.mouseReleased(context);
         return stopsFallback(blocked, consumed, version);
     }
@@ -52,7 +58,7 @@ public final class UiInputBridge {
     /** 滚轮只派发一次；派发前后任一活动域阻断时停止回退。 */
     public boolean mouseScrolled(UiInputContext context, double scrollX, double scrollY) {
         long version = lifecycle;
-        boolean blocked = blocksInput();
+        boolean blocked = blocksInput(context.scope());
         boolean consumed = router.mouseScrolled(context, scrollX, scrollY);
         return stopsFallback(blocked, consumed, version);
     }
@@ -96,7 +102,10 @@ public final class UiInputBridge {
     }
 
     private boolean blocksInput() {
-        UiInputScope scope = router.active();
+        return blocksInput(router.active());
+    }
+
+    private static boolean blocksInput(@Nullable UiInputScope scope) {
         return scope != null && scope.content().blocksInput();
     }
 

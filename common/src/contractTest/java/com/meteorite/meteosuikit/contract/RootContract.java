@@ -38,8 +38,14 @@ final class RootContract extends ContractSupport {
         check(router.active() == null && calls.equals(List.of("prepare", "layout", "key")), "closing callback does not reactivate root");
         bridge.beginFrame(43);
         check(router.active() == scope, "same bridge can mount again");
-        bridge.close();
         ClosingScreen screen = new ClosingScreen();
+        bridge.attach(screen);
+        bridge.attach(screen);
+        bridge.close();
+        bridge.attach(new ClosingScreen());
+        bridge.close();
+        bridge.attach(screen);
+        bridge.close();
         check(screen.keyPressed(GLFW.GLFW_KEY_ESCAPE, 0, 0) && !screen.hasActiveScope(), "inherited Adapter retains close semantics");
     }
 }

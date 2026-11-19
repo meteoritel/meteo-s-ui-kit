@@ -67,6 +67,7 @@ public final class KitContainerExample extends AbstractContainerScreen<Inventory
             controls.render(graphics, renderFont, pointer);
             controls.renderTooltip(graphics, renderFont, pointer);
         }, () -> controls.controls().stream().flatMap(control -> control.layoutNodes().stream()).toList()));
+        bridge.attach(this);
         bridge.refresh();
     }
     private void layoutKit() {

@@ -270,6 +270,23 @@ final class InputContract extends ContractSupport {
         check(text.value().equals("x") && backs.get()==beforeUndo+1, "side button navigates without undoing text");
         router.close();
     }
+    static void modalPointerOwnership() {
+        UiInputRouter router = new UiInputRouter();
+        UiInputBridge bridge = new UiInputBridge(router);
+        UiInputScope base = new UiInputScope(new UiInputTarget() {});
+        UiInputScope modal = new UiOverlay(new UiInputTarget() {}).inputScope();
+        router.select(modal);
+        UiInputContext original = at(modal, 3, 3);
+        router.select(base);
+        check(bridge.mousePressed(original), "a press admitted by a modal stays consumed after preparation closes it");
+        UiInputContext lower = at(base, 3, 3);
+        check(bridge.mouseDragged(lower, 2, 0), "late modal drag stays consumed");
+        check(bridge.mouseReleased(lower), "late modal release stays consumed");
+        check(!bridge.mouseReleased(lower) && !bridge.mousePressed(lower), "ordinary input can fall back again");
+        check(bridge.mouseScrolled(original, 0, 1), "a modal scroll cannot fall back after a scope change");
+        bridge.close();
+    }
+
     static void navigationLifecycle() {
         ClosingScreen screen = new ClosingScreen();
         check(screen.keyPressed(GLFW.GLFW_KEY_BACKSPACE,0,0), "screen consumes empty-history close action");
@@ -288,5 +305,5 @@ final class InputContract extends ContractSupport {
         check(!history.canGoBack(value -> value<4) && !history.back(value -> true,restored::add), "invalid history is exhausted");
         history.push(6);history.clear();check(!history.canGoBack(value -> true), "clear removes navigation history");
     }
-    static void run() { input();routing();memberTree();formBody();reentrantFocus();navigation();navigationLifecycle();navigationHistory(); }
+    static void run() { input();routing();memberTree();formBody();reentrantFocus();navigation();modalPointerOwnership();navigationLifecycle();navigationHistory(); }
 }

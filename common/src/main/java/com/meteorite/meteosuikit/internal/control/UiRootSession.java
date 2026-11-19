@@ -8,6 +8,7 @@ import com.meteorite.meteosuikit.api.input.UiInputScope;
 import java.util.function.BooleanSupplier;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.locale.Language;
+import org.jetbrains.annotations.Nullable;
 import com.meteorite.meteosuikit.internal.client.UiKitClientLifecycle;
 
 /** 继承与组合根共用的准备顺序和卸载世代；输入所有权仍由实际 router 持有。 */
@@ -49,9 +50,17 @@ public final class UiRootSession {
     }
 
     public UiInputContext pointer(double x, double y, int button) {
+        return pointer(x, y, button, null);
+    }
+
+    UiInputScope inputScope() { return host.inputScope(); }
+
+    UiViewport viewport() { return host.viewport(); }
+
+    UiInputContext pointer(double x, double y, int button, @Nullable UiInputScope origin) {
         prepare();
-        UiViewport viewport = host.viewport();
-        return UiInputContext.of(host.inputScope(), viewport.toLogical(x), viewport.toLogical(y), button,
+        UiViewport viewport = viewport();
+        return UiInputContext.of(origin == null ? inputScope() : origin, viewport.toLogical(x), viewport.toLogical(y), button,
                 Screen.hasShiftDown(), Screen.hasControlDown(), Screen.hasAltDown());
     }
 

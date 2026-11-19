@@ -785,6 +785,7 @@ com.meteorite.meteosuikit.api.control.UiScreen | METHOD [public] mouseScrolled :
 com.meteorite.meteosuikit.api.control.UiScreen | METHOD [public] removed : ()void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScreen
 com.meteorite.meteosuikit.api.control.UiScreenBridge | CLASS [public, final]  bounds [] extends java.lang.Object implements java.lang.AutoCloseable
 com.meteorite.meteosuikit.api.control.UiScreenBridge | CONSTRUCTOR [public] <init> : (com.meteorite.meteosuikit.api.input.UiInputRouter,com.meteorite.meteosuikit.api.control.UiScreenBridge.Host)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScreenBridge
+com.meteorite.meteosuikit.api.control.UiScreenBridge | METHOD [public] attach : (net.minecraft.client.gui.screens.Screen)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScreenBridge
 com.meteorite.meteosuikit.api.control.UiScreenBridge | METHOD [public] beginFrame : (long)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScreenBridge
 com.meteorite.meteosuikit.api.control.UiScreenBridge | METHOD [public] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScreenBridge
 com.meteorite.meteosuikit.api.control.UiScreenBridge | METHOD [public] close : ()void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.control.UiScreenBridge
@@ -1276,6 +1277,7 @@ com.meteorite.meteosuikit.api.input.UiInputBridge | CLASS [public, final]  bound
 com.meteorite.meteosuikit.api.input.UiInputBridge | CONSTRUCTOR [public] <init> : (com.meteorite.meteosuikit.api.input.UiInputRouter)void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputBridge
 com.meteorite.meteosuikit.api.input.UiInputBridge | METHOD [public] charTyped : (char,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputBridge
 com.meteorite.meteosuikit.api.input.UiInputBridge | METHOD [public] close : ()void throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputBridge
+com.meteorite.meteosuikit.api.input.UiInputBridge | METHOD [public] hasMousePress : (int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputBridge
 com.meteorite.meteosuikit.api.input.UiInputBridge | METHOD [public] keyPressed : (int,int,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputBridge
 com.meteorite.meteosuikit.api.input.UiInputBridge | METHOD [public] keyReleased : (int,int,int)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputBridge
 com.meteorite.meteosuikit.api.input.UiInputBridge | METHOD [public] mouseDragged : (com.meteorite.meteosuikit.api.input.UiInputContext,double,double)boolean throws  varargs=false bounds=[] @ com.meteorite.meteosuikit.api.input.UiInputBridge

@@ -5,7 +5,7 @@
 ## 最小接入
 
 - 普通页面：[KitMinimalScreen](../common/src/dev/java/com/meteorite/meteosuikit/samples/KitMinimalScreen.java) 继承 `UiThemedScreen`，只提供内容、作用域与布局；完整页面见 [KitShowcaseScreen](../common/src/dev/java/com/meteorite/meteosuikit/samples/KitShowcaseScreen.java)。
-- 原版容器：[KitContainerExample](../common/src/dev/java/com/meteorite/meteosuikit/samples/KitContainerExample.java) 保留 `AbstractContainerScreen` 与 Menu / Slot，由 Host 提供当前作用域、恒等 viewport、准备与布局钩子。init 调用 `bridge.refresh()`，render 在父类前调用 `bridge.beginFrame(Util.getMillis())`，removed 调用 `bridge.close()`。
+- 原版容器：[KitContainerExample](../common/src/dev/java/com/meteorite/meteosuikit/samples/KitContainerExample.java) 保留 `AbstractContainerScreen` 与 Menu / Slot，由 Host 提供当前作用域、恒等 viewport、准备与布局钩子。init 调用 `bridge.attach(this)` 和 `bridge.refresh()`，render 在父类前调用 `bridge.beginFrame(Util.getMillis())`，removed 调用 `bridge.close()`。
 
 固定按钮由页面稳定持有具名 `UiControl` 引用，显式设置主题与焦点能力，配置动作后将实际控件注册到输入树。布局、业务可用性和特殊皮肤通过该引用更新；成员集合供绘制、命中和导航共用。操作行可按用途保存布局列表，同一列表同时决定几何分配与实际摆放。
 
@@ -20,6 +20,8 @@
 ```
 
 拖动、释放、滚轮、按键和字符沿样例转发给同一个 bridge。其返回值包含消费、覆盖阻断和迟到释放配对；宿主无需另建配对表。bridge 只处理 kit 内容，原版槽位继续由父类驱动。
+
+挂载后，阻断下层的作用域在平台前置事件中优先接收鼠标，根持有的按下继续接收配对拖动和释放。Fabric 的拖动通过原版屏幕入口进入同一 bridge。宿主对第三方覆层的展示和业务命中使用自己的活动覆盖层状态。
 
 ## 坐标、提示与资源
 

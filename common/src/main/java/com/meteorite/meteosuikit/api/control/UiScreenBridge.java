@@ -2,10 +2,11 @@ package com.meteorite.meteosuikit.api.control;
 
 import com.meteorite.meteosuikit.api.geometry.UiViewport;
 import com.meteorite.meteosuikit.api.input.UiInputBridge;
-import com.meteorite.meteosuikit.api.input.UiInputContext;
 import com.meteorite.meteosuikit.api.input.UiInputRouter;
 import com.meteorite.meteosuikit.api.input.UiInputScope;
 import com.meteorite.meteosuikit.internal.control.UiRootSession;
+import com.meteorite.meteosuikit.internal.control.UiScreenMouse;
+import net.minecraft.client.gui.screens.Screen;
 
 /**
  * 原版 Screen 的组合入口：集中准备、布局、选域、坐标转换及事件后刷新。
@@ -28,16 +29,22 @@ public final class UiScreenBridge implements AutoCloseable {
         default void invalidateUiResources() { }
     }
 
-    private final Host host;
     private final UiInputBridge input;
     private final UiRootSession session;
+    private final UiScreenMouse mouse;
 
     /** 组合本根唯一的 router 和宿主钩子，不创建额外输入状态树。 */
     public UiScreenBridge(UiInputRouter router, Host host) {
-        this.host = host;
         input = new UiInputBridge(router);
         session = new UiRootSession(router, host);
+        mouse = new UiScreenMouse(session, input);
     }
+
+    /**
+     * 在宿主 init 中绑定本屏幕，以便在平台前置事件中接收模态鼠标与已接住的配对操作。
+     * 同一屏幕的 resize 可重复绑定，卸载时调用 {@link #close()}。
+     */
+    public void attach(Screen screen) { mouse.attach(screen); }
 
     /** 绘制前调用一次，时间与内容树的 advanceFrame 使用同一毫秒时钟。 */
     public void beginFrame(long nowMillis) { session.beginFrame(nowMillis); }
@@ -45,24 +52,19 @@ public final class UiScreenBridge implements AutoCloseable {
     public void refresh() { session.prepare(); }
     /** 派发按下；消费、覆盖阻断和迟到配对均停止父类回退。 */
     public boolean mousePressed(double x, double y, int button) {
-        UiInputContext context = session.pointer(x, y, button);
-        return session.dispatch(() -> input.mousePressed(context));
+        return mouse.pressed(x, y, button);
     }
     /** 捕获拖动沿原所有者派发；位置和增量使用相同视口比例。 */
     public boolean mouseDragged(double x, double y, int button, double dx, double dy) {
-        UiInputContext context = session.pointer(x, y, button);
-        UiViewport viewport = host.viewport();
-        return session.dispatch(() -> input.mouseDragged(context, viewport.toLogical(dx), viewport.toLogical(dy)));
+        return mouse.dragged(x, y, button, dx, dy);
     }
     /** 派发配对释放；切域后仍阻断已接住的原按下。 */
     public boolean mouseReleased(double x, double y, int button) {
-        UiInputContext context = session.pointer(x, y, button);
-        return session.dispatch(() -> input.mouseReleased(context));
+        return mouse.released(x, y, button);
     }
     /** 滚轮派发一次，保留原版双轴滚动值。 */
     public boolean mouseScrolled(double x, double y, double sx, double sy) {
-        UiInputContext context = session.pointer(x, y, -1);
-        return session.dispatch(() -> input.mouseScrolled(context, sx, sy));
+        return mouse.scrolled(x, y, sx, sy);
     }
     /** 准备后派发按键；完成时重新选择实际活动域。 */
     public boolean keyPressed(int key, int scan, int modifiers) {
@@ -80,5 +82,9 @@ public final class UiScreenBridge implements AutoCloseable {
         return session.dispatch(() -> input.charTyped(value, modifiers));
     }
     /** 先使旧事件完成失效，再关闭配对和 router；同一实例可重新挂载。 */
-    @Override public void close() { session.close(); input.close(); }
+    @Override public void close() {
+        mouse.detach();
+        session.close();
+        input.close();
+    }
 }
