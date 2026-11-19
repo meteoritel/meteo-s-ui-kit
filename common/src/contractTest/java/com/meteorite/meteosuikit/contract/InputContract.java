@@ -159,6 +159,37 @@ final class InputContract extends ContractSupport {
         body.setBounds(0,0,0,0);check(body.layoutNodes().stream().allMatch(node->node.visibleRect().width()==0),"zero width is clipped");
         body.remove(last);check(body.offset()==0,"shortened body clamps offset");router.close();
     }
+    private static void replaceMembers() {
+        MetricFont font = new MetricFont();
+        AtomicInteger actions = new AtomicInteger();
+        UiControl oldPage = new UiControl();
+        UiControl sibling = new UiControl();
+        UiControl newPage = new UiControl();
+        for (UiControl control : List.of(oldPage, sibling, newPage)) {
+            control.configure(font, Component.literal("action"), null, List.of(), actions::incrementAndGet);
+            control.setFocusable(true);
+        }
+        oldPage.setBounds(0, 0, 20, 20);
+        newPage.setBounds(0, 0, 20, 20);
+        sibling.setBounds(30, 0, 20, 20);
+        UiChildren<UiInputTarget> page = new UiChildren<>();
+        page.add(oldPage);
+        UiChildren<UiInputTarget> root = new UiChildren<>();
+        root.addAll(List.of(page, sibling));
+        UiInputRouter router = new UiInputRouter();
+        UiInputScope scope = new UiInputScope(root);
+        router.select(scope);
+        scope.refreshFocus();
+        router.mousePressed(at(scope, 5, 5));
+        router.replaceChildren(scope, page, List.of(newPage));
+        router.mouseReleased(at(scope, 5, 5));
+        check(actions.get() == 0 && !oldPage.isFocused(), "removed page does not receive late release");
+        router.mousePressed(at(scope, 35, 5));
+        router.replaceChildren(scope, page, List.of(oldPage));
+        router.mouseReleased(at(scope, 35, 5));
+        check(actions.get() == 1 && sibling.isFocused(), "retained sibling preserves its press and focus");
+        router.close();
+    }
     static void reentrantFocus() {
         UiInputRouter router = new UiInputRouter();
         UiInputScope[] returning = new UiInputScope[1];
@@ -305,5 +336,5 @@ final class InputContract extends ContractSupport {
         check(!history.canGoBack(value -> value<4) && !history.back(value -> true,restored::add), "invalid history is exhausted");
         history.push(6);history.clear();check(!history.canGoBack(value -> true), "clear removes navigation history");
     }
-    static void run() { input();routing();memberTree();formBody();reentrantFocus();navigation();modalPointerOwnership();navigationLifecycle();navigationHistory(); }
+    static void run() { input();routing();memberTree();formBody();replaceMembers();reentrantFocus();navigation();modalPointerOwnership();navigationLifecycle();navigationHistory(); }
 }

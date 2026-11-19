@@ -1,15 +1,22 @@
 package com.meteorite.meteosuikit.contract;
 
 import com.meteorite.meteosuikit.api.control.UiButtonWidget;
+import com.meteorite.meteosuikit.api.control.UiControl;
+import com.meteorite.meteosuikit.api.control.UiWidgetRow;
 import com.meteorite.meteosuikit.api.control.UiListView;
 import com.meteorite.meteosuikit.api.control.UiModal;
 import com.meteorite.meteosuikit.api.control.UiModalStack;
 import com.meteorite.meteosuikit.api.geometry.UiTransform;
+import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.input.UiAction;
 import com.meteorite.meteosuikit.api.input.UiChildren;
 import com.meteorite.meteosuikit.api.input.UiInputTarget;
+import com.meteorite.meteosuikit.api.input.UiInputRouter;
+import com.meteorite.meteosuikit.api.input.UiInputScope;
 import com.meteorite.meteosuikit.api.layout.UiDocument;
+import com.meteorite.meteosuikit.api.layout.UiGridMetrics;
 import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
+import com.meteorite.meteosuikit.api.layout.UiLinearLayout;
 import com.meteorite.meteosuikit.api.layout.UiNode;
 import com.meteorite.meteosuikit.api.render.UiIcon;
 import java.util.List;
@@ -84,5 +91,56 @@ final class GeometryContract extends ContractSupport {
         list.setVisible(true);list.setBounds(0,0,0,0);check(list.layoutNodes().getFirst().children().isEmpty(),"zero-sized list has no visible rows");
         list.setItems(List.of());check(list.layoutNodes().getFirst().children().isEmpty(),"empty list keeps root");
     }
-    static void run() { layout();listGeometry();modalViewport(); }
+    private static void widgetRow() {
+        UiControl first = new UiControl();
+        UiControl second = new UiControl();
+        first.setLayoutKey("first");
+        second.setLayoutKey("second");
+        first.setFocusable(true);
+        second.setFocusable(true);
+        MetricFont font = new MetricFont();
+        first.configure(font, Component.literal("first"), null, List.of(), () -> { });
+        second.configure(font, Component.literal("second"), null, List.of(), () -> { });
+        UiWidgetRow footer = new UiWidgetRow(4, UiWidgetRow.Alignment.CENTER);
+        footer.add(first, UiLinearLayout.Child.remain(0, 30));
+        footer.add(second, UiLinearLayout.Child.remain(0, 30));
+        footer.setBounds(10, 5, 101, 20);
+        check(first.bounds().equals(new UiRect(28, 5, 30, 20)), "limited footer centers its actual members");
+        check(footer.hitTest(65, 8).owns(second), "row selects the same member it places");
+        check(footer.layoutNodes().getFirst().rect().equals(first.bounds()), "row snapshot uses placed bounds");
+        UiInputScope scope = new UiInputScope(footer);
+        new UiInputRouter().select(scope);
+        scope.refreshFocus();
+        check(scope.focus().focusOn(second), "row registers actual focus target");
+        footer.setBounds(10, 5, 57, 20);
+        scope.refreshFocus();
+        check(first.bounds().width() == 26 && second.isFocused(), "odd width preserves focus and shared allocation");
+        first.setVisible(false);
+        footer.setBounds(10, 5, 57, 20);
+        check(second.bounds().equals(new UiRect(23, 5, 30, 20)), "hidden member releases row space");
+        UiWidgetRow search = new UiWidgetRow(4, UiWidgetRow.Alignment.START);
+        first.setVisible(true);
+        search.add(first, UiLinearLayout.Child.remain());
+        search.add(second, UiLinearLayout.Child.fixed(24));
+        search.setBounds(0, 0, 80, 20);
+        check(first.bounds().width() == 52 && second.bounds().x() == 56, "fixed button leaves remainder to search");
+        search.setBounds(0, 0, 0, 0);
+        check(first.bounds().width() == 0 && search.hitTest(4, 0) == null, "empty row has no hit");
+    }
+
+    private static void visibleGridCells() {
+        UiGridMetrics grid = new UiGridMetrics(2, 15, 10, 3, 4);
+        check(grid.visibleCells(9, 6, 5).equals(new UiGridMetrics.VisibleCells(0, 4)),
+                "viewport intersects part of two rows");
+        check(grid.visibleCells(10, 4, 5).equals(new UiGridMetrics.VisibleCells(2, 2)),
+                "viewport confined to the gap has no visible cells");
+        check(grid.visibleCells(27, 10, 5).equals(new UiGridMetrics.VisibleCells(4, 5)),
+                "clipped final row excludes its empty cell");
+        check(grid.visibleCells(14, 0, 5).equals(new UiGridMetrics.VisibleCells(2, 2)),
+                "zero-height viewport has no visible cells");
+        check(grid.indexAt(16, 15, 5) == -1 && grid.indexAt(18, 15, 5) == 3,
+                "hit and display use the same row and column geometry");
+    }
+
+    static void run() { layout(); listGeometry(); modalViewport(); widgetRow(); visibleGridCells(); }
 }

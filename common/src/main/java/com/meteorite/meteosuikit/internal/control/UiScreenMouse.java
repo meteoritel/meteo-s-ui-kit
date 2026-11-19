@@ -61,10 +61,9 @@ public final class UiScreenMouse {
     }
 
     public boolean dragged(double x, double y, int button, double dx, double dy) {
-        return dispatch(x, y, button, context -> {
-            UiViewport viewport = session.viewport();
-            return input.mouseDragged(context, viewport.toLogical(dx), viewport.toLogical(dy));
-        });
+        var pointer = session.preparePointer(x, y, button, modalScope());
+        UiViewport viewport = pointer.viewport();
+        return session.dispatch(() -> input.mouseDragged(pointer.context(), viewport.toLogical(dx), viewport.toLogical(dy)));
     }
 
     public boolean released(double x, double y, int button) {
@@ -77,7 +76,7 @@ public final class UiScreenMouse {
 
     private boolean dispatch(double x, double y, int button, Predicate<UiInputContext> event) {
         // 准备可能关闭灯箱，已属于灯箱的事件仍须携带原作用域。
-        UiInputContext context = session.pointer(x, y, button, modalScope());
+        UiInputContext context = session.preparePointer(x, y, button, modalScope()).context();
         return session.dispatch(() -> event.test(context));
     }
 

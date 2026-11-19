@@ -19,6 +19,7 @@
  *   <li>{@code UiProgressBar}: library</li>
  *   <li>{@code UiScrollView}: library</li>
  *   <li>{@code UiWidget}: library</li>
+ *   <li>{@code UiWidgetRow}: library；用途：让真实控件共享一行布局、绘制与输入</li>
  *   <li>{@code UiWidgetShell}: library</li>
  *   <li>{@code UiStatefulWidget}: library</li>
  *   <li>{@code UiDocumentView}: library</li>

@@ -13,6 +13,8 @@ import com.meteorite.meteosuikit.internal.client.UiKitClientLifecycle;
 
 /** 继承与组合根共用的准备顺序和卸载世代；输入所有权仍由实际 router 持有。 */
 public final class UiRootSession {
+    public record Pointer(UiInputContext context, UiViewport viewport) { }
+
     private final UiInputRouter router;
     private final UiScreenBridge.Host host;
     private Language resources;
@@ -50,18 +52,19 @@ public final class UiRootSession {
     }
 
     public UiInputContext pointer(double x, double y, int button) {
-        return pointer(x, y, button, null);
+        return preparePointer(x, y, button, null).context();
     }
 
     UiInputScope inputScope() { return host.inputScope(); }
 
     UiViewport viewport() { return host.viewport(); }
 
-    UiInputContext pointer(double x, double y, int button, @Nullable UiInputScope origin) {
+    public Pointer preparePointer(double x, double y, int button, @Nullable UiInputScope origin) {
         prepare();
         UiViewport viewport = viewport();
-        return UiInputContext.of(origin == null ? inputScope() : origin, viewport.toLogical(x), viewport.toLogical(y), button,
-                Screen.hasShiftDown(), Screen.hasControlDown(), Screen.hasAltDown());
+        UiInputContext context = UiInputContext.of(origin == null ? inputScope() : origin, viewport.toLogical(x),
+                viewport.toLogical(y), button, Screen.hasShiftDown(), Screen.hasControlDown(), Screen.hasAltDown());
+        return new Pointer(context, viewport);
     }
 
     public boolean dispatch(BooleanSupplier action) {

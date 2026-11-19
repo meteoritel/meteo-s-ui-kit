@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,6 +44,15 @@ public final class UiChildren<T extends UiInputTarget> extends AbstractList<T> i
     @Override public T remove(int index) { T previous = members.remove(index); tabOrder.remove(previous); navigation = null; revision++; modCount++; return previous; }
     /** 替换成员，保持该位置的绘制与导航顺序。 */
     @Override public T set(int index, T target) { T previous = members.set(index, target); if (previous != target) { tabOrder.remove(previous); navigation = null; revision++; } return previous; }
+
+    void replaceMembers(List<T> replacement, Set<T> retained) {
+        members.clear();
+        members.addAll(replacement);
+        tabOrder.keySet().retainAll(retained);
+        navigation = null;
+        revision++;
+        modCount++;
+    }
     /** 导航优先级独立于遮挡；相同优先级保持声明顺序，默认优先级为零。 */
     public void setTabOrder(T target, int order) {
         if (tabOrder.getOrDefault(target, 0) == order) return;

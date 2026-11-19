@@ -23,13 +23,12 @@ public abstract class UiThemedScreen extends UiScreen {
     /** 屏幕背景与子控件共同读取的稳定来源。 */
     protected final Supplier<? extends UiStyleSource> theme() { return theme; }
 
-    /** 原版世界背景后绘制主题窗口；宿主可覆写整段背景画法。 */
+    @Override protected void renderGuiBackground(GuiGraphics graphics, int x, int y, float delta) {
+        renderBackground(graphics, x, y, delta);
+    }
+
+    /** 原版背景之后以逻辑坐标绘制主题窗口。 */
     protected void renderThemedBackground(GuiGraphics graphics, int x, int y, float delta) {
-        graphics.pose().pushPose();
-        float inverse = (float) (1 / viewport().scale());
-        graphics.pose().scale(inverse, inverse, 1);
-        try { renderBackground(graphics, (int) (x * viewport().scale()), (int) (y * viewport().scale()), delta); }
-        finally { graphics.pose().popPose(); }
         theme.get().drawWindow(graphics, new UiRect(0, 0, viewport().logicalWidth(), viewport().logicalHeight()));
     }
 

@@ -7,10 +7,10 @@ import org.joml.Matrix4f;
 import java.util.function.Consumer;
 import com.meteorite.meteosuikit.api.input.UiFocusTarget;
 
-import com.meteorite.meteosuikit.api.control.UiControlGroup;
 import com.meteorite.meteosuikit.api.control.UiControl;
 import com.meteorite.meteosuikit.api.control.UiListView;
 import com.meteorite.meteosuikit.api.control.UiWidget;
+import com.meteorite.meteosuikit.api.control.UiWidgetRow;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.input.UiChildren;
 import com.meteorite.meteosuikit.api.input.UiInputContainer;
@@ -42,8 +42,7 @@ final class KitModelsExample implements UiWidget, UiInputContainer, UiLayoutSour
     }
     private Node root = new Node("root", List.of(new Node("first", List.of()), new Node("second", List.of())));
     private final UiChildren<UiInputTarget> children = new UiChildren<>();
-    private final UiControlGroup actions = new UiControlGroup();
-    private final UiLinearLayout toolbar = new UiLinearLayout(UiLinearLayout.Axis.HORIZONTAL, 4, 0);
+    private final UiWidgetRow toolbar = new UiWidgetRow(4, UiWidgetRow.Alignment.START);
     private final KitTextModelExample text;
     private final UiListView<UiTreeProjection.Entry<Node>> tree;
     private final UiTreeEditor<Node> editor;
@@ -80,27 +79,32 @@ final class KitModelsExample implements UiWidget, UiInputContainer, UiLayoutSour
             var entry = tree.selectedItem();
             if (entry != null) editor.select(entry.path());
         });
-        actions.setTheme(theme);
-        actions.beginUpdate();
-        actions.obtain("move").configure(font, label("move"), null, List.of(), this::moveFirst);
-        actions.obtain("fold").configure(font, label("fold"), null, List.of(),
-                () -> editor.setCollapsed(UiTreePath.ROOT, !view.collapsed().contains(UiTreePath.ROOT)));
-        actions.obtain("save").configure(font, label("save"), null, List.of(), this::saveView);
+        toolbar.add(button(font, theme, "move", this::moveFirst), UiLinearLayout.Child.remain());
+        toolbar.add(button(font, theme, "fold",
+                () -> editor.setCollapsed(UiTreePath.ROOT, !view.collapsed().contains(UiTreePath.ROOT))),
+                UiLinearLayout.Child.remain());
+        toolbar.add(button(font, theme, "save", this::saveView), UiLinearLayout.Child.remain());
         UiControl restore = new UiControl();
         restore.setTheme(theme, UiControlRole.SECONDARY);
         restore.setFocusable(true);
         restore.configure(font, label("restore"), null, List.of(), () -> editor.setViewState(savedView));
         restoreView = new KitControlExample(restore);
-        actions.obtain("form").configure(font, label("form"), null, List.of(),
-                () -> Minecraft.getInstance().setScreen(new KitFormExampleScreen(Minecraft.getInstance().screen)));
-        actions.obtain("failure").configure(font, label("failure"), null, List.of(), () -> failNextRow = true);
-        actions.endUpdate();
-        toolbar.setChildren(List.of(UiLinearLayout.Child.remain(), UiLinearLayout.Child.remain(),
-                UiLinearLayout.Child.remain(), UiLinearLayout.Child.remain(),
-                UiLinearLayout.Child.remain(), UiLinearLayout.Child.remain()));
-        children.add(actions); children.add(restoreView); children.add(text); children.add(tree);
+        toolbar.add(restoreView, UiLinearLayout.Child.remain());
+        toolbar.add(button(font, theme, "form",
+                () -> Minecraft.getInstance().setScreen(new KitFormExampleScreen(Minecraft.getInstance().screen))),
+                UiLinearLayout.Child.remain());
+        toolbar.add(button(font, theme, "failure", () -> failNextRow = true), UiLinearLayout.Child.fixed(72));
+        children.addAll(List.of(toolbar, text, tree));
         rebuild();
         editor.select(UiTreePath.ROOT);
+    }
+
+    private static UiControl button(Font font, Supplier<? extends UiStyleSource> theme, String name, Runnable action) {
+        UiControl button = new UiControl();
+        button.setTheme(theme, UiControlRole.SECONDARY);
+        button.setFocusable(true);
+        button.configure(font, label(name), null, List.of(), action::run);
+        return button;
     }
 
     private void rebuild() {
@@ -152,18 +156,13 @@ final class KitModelsExample implements UiWidget, UiInputContainer, UiLayoutSour
     @Override public void setBounds(int x, int y, int width, int height) {
         bounds = new UiRect(x, y, width, height);
         toolbar.setBounds(x, y, width, 20);
-        for (int i = 0; i < actions.size(); i++) {
-            UiRect cell = toolbar.bounds(i < 3 ? i : i + 1);
-            actions.controls().get(i).setBounds(cell.x(), cell.y(), cell.width(), cell.height());
-        }
-        UiRect restoreBounds = toolbar.bounds(3);
-        restoreView.setBounds(restoreBounds.x(), restoreBounds.y(), restoreBounds.width(), restoreBounds.height());
         text.setBounds(x, y + 24, width, 20);
         tree.setBounds(x, y + 48, width, Math.max(0, height - 48));
     }
     /** {@inheritDoc} */
     @Override public void render(GuiGraphics graphics, Font font, UiPointer pointer) {
-        actions.render(graphics, font, pointer); restoreView.render(graphics, font, pointer); text.render(graphics, font, pointer);
+        toolbar.render(graphics, font, pointer);
+        text.render(graphics, font, pointer);
         Matrix4f before = new Matrix4f(graphics.pose().last().pose());
         try { tree.render(graphics, font, pointer); }
         catch (RuntimeException failure) {
@@ -175,9 +174,7 @@ final class KitModelsExample implements UiWidget, UiInputContainer, UiLayoutSour
     }
     /** {@inheritDoc} */
     @Override public List<UiLayoutNode> layoutNodes() {
-        var nodes = new ArrayList<UiLayoutNode>();
-        for (var control : actions.controls()) nodes.addAll(control.layoutNodes());
-        nodes.addAll(restoreView.layoutNodes());
+        var nodes = new ArrayList<>(toolbar.layoutNodes());
         nodes.add(new UiLayoutNode(UiLayoutNode.Kind.TEXT_INPUT, text.bounds(), text.accessibleName(), 0,
                 text.bounds().width(), true, true, List.of()));
         nodes.addAll(tree.layoutNodes());

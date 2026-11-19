@@ -2,6 +2,10 @@ package com.meteorite.meteosuikit.api.input;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.Set;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
@@ -33,6 +37,43 @@ public final class UiInputRouter {
      */
     public @Nullable UiInputScope active() {
         return active;
+    }
+
+    /**
+     * 发布同一作用域的实际成员，并结清离开此集合的分支。仍登记的成员保留焦点及会话。
+     */
+    public <T extends UiInputTarget> void replaceChildren(UiInputScope scope, UiChildren<T> children,
+                                                           List<? extends T> next) {
+        List<T> replacement = List.copyOf(next);
+        Set<T> retained = Collections.newSetFromMap(new IdentityHashMap<>());
+        retained.addAll(replacement);
+        if (sameMembers(children, replacement)) return;
+        List<T> removed = children.stream().filter(member -> !retained.contains(member)).toList();
+        children.replaceMembers(replacement, retained);
+        if (scope == active && !removed.isEmpty()) {
+            var session = scope.interaction();
+            var target = session.target();
+            boolean removedCapture = pressedButtons.values().stream().anyMatch(hit ->
+                    target != null && hit.owns(target) && removed.stream().anyMatch(hit::owns));
+            pressedButtons.values().removeIf(hit -> removed.stream().anyMatch(hit::owns));
+            if (target != null && (removedCapture || removed.stream().anyMatch(member -> member == target))) {
+                session.end(target, UiInteractionSession.EndReason.UNMOUNTED);
+            }
+        }
+        for (T member : removed) {
+            if (children.stream().noneMatch(current -> current == member)) {
+                member.scopeExited(UiInteractionSession.EndReason.UNMOUNTED);
+            }
+        }
+        if (scope == active) scope.refreshFocus();
+    }
+
+    private static boolean sameMembers(List<?> current, List<?> next) {
+        if (current.size() != next.size()) return false;
+        for (int index = 0; index < current.size(); index++) {
+            if (current.get(index) != next.get(index)) return false;
+        }
+        return true;
     }
 
     /**

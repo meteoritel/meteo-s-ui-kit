@@ -2,6 +2,7 @@ package com.meteorite.meteosuikit.samples;
 
 import com.meteorite.meteosuikit.api.control.UiControl;
 import com.meteorite.meteosuikit.api.control.UiWidget;
+import com.meteorite.meteosuikit.api.control.UiWidgetRow;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.input.UiPointer;
 import net.minecraft.client.gui.Font;
@@ -20,6 +21,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import java.util.List;
 import com.meteorite.meteosuikit.api.layout.UiFormLayout;
+import com.meteorite.meteosuikit.api.layout.UiLinearLayout;
 
 /** 公共正文能力的独立消费者，验证固定底栏、尾随动作与内部编辑焦点。 */
 final class KitFormExampleScreen extends UiThemedScreen {
@@ -28,6 +30,7 @@ final class KitFormExampleScreen extends UiThemedScreen {
     private final UiChildren<UiInputTarget> children = new UiChildren<>();
     private final UiInputScope scope = new UiInputScope(children);
     private final UiControl done = new UiControl();
+    private final UiWidgetRow footer = new UiWidgetRow(8, UiWidgetRow.Alignment.CENTER);
 
     KitFormExampleScreen(Screen parent) {
         super(label("title"));
@@ -50,20 +53,22 @@ final class KitFormExampleScreen extends UiThemedScreen {
         }
         done.setTheme(theme(), UiControlRole.SECONDARY); done.setFocusable(true);
         done.configure(font, Component.translatable("gui.done"), null, List.of(), this::onClose);
-        children.addAll(List.of(body, done));
+        footer.add(done, UiLinearLayout.Child.remain(0, 100));
+        children.addAll(List.of(body, footer));
         scope.setEscape(this::onClose);
         scope.focus().setListener((previous, current) -> body.reveal(current));
     }
     @Override protected void layoutUi() {
         int formWidth = Math.clamp(width - 24, 0, 380);
         body.setBounds((width - formWidth) / 2, 35, formWidth, Math.max(0, height - 75));
-        done.setBounds((width - 100) / 2, height - 30, 100, 20);
+        footer.setBounds(0, height - 30, width, 20);
     }
     @Override protected UiInputScope inputScope() { return scope; }
     @Override protected void renderThemedUi(GuiGraphics graphics, int x, int y, float delta) {
         graphics.drawCenteredString(font, title, width / 2, 14, theme().get().surfaces().text());
         var pointer = scope.pointer(x, y).resolve(children);
-        body.render(graphics, font, pointer); done.render(graphics, font, pointer);
+        body.render(graphics, font, pointer);
+        footer.render(graphics, font, pointer);
     }
     @Override public void onClose() { Minecraft.getInstance().setScreen(parent); }
     private static final class Description implements UiWidget, UiFormLayout.Control {

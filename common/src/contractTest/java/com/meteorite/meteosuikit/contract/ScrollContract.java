@@ -3,6 +3,7 @@ package com.meteorite.meteosuikit.contract;
 import com.meteorite.meteosuikit.api.control.UiListView;
 import com.meteorite.meteosuikit.api.control.UiModal;
 import com.meteorite.meteosuikit.api.control.UiOverlay;
+import com.meteorite.meteosuikit.api.control.UiScrollContainer;
 import com.meteorite.meteosuikit.api.control.UiScrollView;
 import com.meteorite.meteosuikit.api.geometry.UiRect;
 import com.meteorite.meteosuikit.api.input.UiChildren;
@@ -10,6 +11,8 @@ import com.meteorite.meteosuikit.api.input.UiInputRouter;
 import com.meteorite.meteosuikit.api.input.UiInputScope;
 import com.meteorite.meteosuikit.api.input.UiInputTarget;
 import com.meteorite.meteosuikit.api.input.UiInteractionSession;
+import com.meteorite.meteosuikit.api.input.UiInputContext;
+import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import java.util.List;
 import net.minecraft.network.chat.Component;
 
@@ -58,5 +61,30 @@ final class ScrollContract extends ContractSupport {
         router.select(new UiInputScope(new UiInputTarget() {}));stopped=list.rowBounds(0).y();
         settle(scope.content(),32);check(list.rowBounds(0).y()==stopped,"leaving modal cancels pending scroll");router.close();
     }
-    static void run() { scrollMotion();frameTree(); }
+    private static void scrollContainer() {
+        UiScrollView view = scrollView();
+        view.setStep(8);
+        UiInputTarget content = new UiInputTarget() {
+            @Override public UiPointerHit hitTest(double x, double y) { return UiPointerHit.leaf(this, x, y); }
+            @Override public boolean mouseScrolled(UiInputContext context, double x, double y) {
+                return context.pointerX() < 10;
+            }
+        };
+        UiScrollContainer container = UiScrollContainer.forPixelWheel(view, content);
+        UiInputScope scope = new UiInputScope(container);
+        UiInputRouter router = new UiInputRouter();
+        router.select(scope);
+        container.advanceFrame(0);
+        check(router.mouseScrolled(at(scope, 5, 5), 0, -1), "content consumes wheel first");
+        settle(container, 16);
+        check(view.offset() == 0, "consumed wheel does not move outer viewport");
+        check(router.mouseScrolled(at(scope, 15, 5), 0, -.25), "fractional wheel falls back to viewport");
+        settle(container, 1032);
+        check(view.offset() == 2, "pixel-wheel container preserves fractional step");
+        check(container.hitTest(98, 5).owns(view), "scrollbar wins content overlap");
+        check(container.hitTest(10, 42) == null, "container excludes offscreen content");
+        router.close();
+    }
+
+    static void run() { scrollMotion(); frameTree(); scrollContainer(); }
 }

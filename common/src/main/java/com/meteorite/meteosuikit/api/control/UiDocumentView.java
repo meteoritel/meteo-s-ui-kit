@@ -69,6 +69,9 @@ public final class UiDocumentView implements UiStatefulWidget, UiLayoutSource, U
     public void invalidateLayout() { document.invalidateLayout(); layoutDocument(); }
     /** 当前正文偏移，单位为内容逻辑像素。 */
     public int offset() { return scroll.offset(); }
+
+    /** 设置滚轮的逻辑像素步长，默认按字体行高。 */
+    public void setScrollStep(int pixels) { scroll.setStep(pixels); }
     /** 内容准备后设置阅读位置，按真实高度钳制。 */
     public void setOffset(int value) { layoutDocument(); scroll.setOffset(value); }
     private void layoutDocument() {

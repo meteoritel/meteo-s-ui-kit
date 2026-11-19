@@ -12,7 +12,6 @@ import com.meteorite.meteosuikit.api.input.UiPointer;
 import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.meteorite.meteosuikit.api.layout.UiFormLayout;
 import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
-import com.meteorite.meteosuikit.api.render.UiRenderLayers;
 import com.meteorite.meteosuikit.api.style.UiStyleSource;
 import com.meteorite.meteosuikit.api.text.TextMeasurer;
 import net.minecraft.client.gui.Font;
@@ -43,7 +42,7 @@ public final class UiFormBody implements UiWidget, UiInputContainer {
     private final UiChildren<UiInputTarget> fields = new UiChildren<>();
     private final UiChildren<UiInputTarget> children = new UiChildren<>();
     private final UiScrollView scroll = new UiScrollView();
-    private final UiScrollContainer container = new UiScrollContainer(scroll, fields);
+    private final UiScrollContainer container = new UiScrollContainer(scroll, fields, this::project);
     private final Supplier<? extends UiStyleSource> theme;
     private final TextMeasurer text;
     private final UiFocusFollow focusFollow;
@@ -202,29 +201,22 @@ public final class UiFormBody implements UiWidget, UiInputContainer {
     /** 沿实际容器推进后立即更新字段的屏幕投影。 */
     @Override public void advanceFrame(long nowMillis) {
         ensureLayout();
-        scroll.advanceFrame(nowMillis);
-        project();
-        fields.advanceFrame(nowMillis);
+        container.advanceFrame(nowMillis);
     }
 
     /** 标签、字段和动作共用裁剪；tooltip 由退出裁剪后的根命中绘制。 */
     @Override public void render(GuiGraphics graphics, Font font, UiPointer pointer) {
         ensureLayout(); project();
-        UiRenderLayers.enableScissor(graphics, bounds());
-        try {
+        container.render(graphics, pointer, theme, clipped -> {
             for (int index = 0; index < visibleRows.size(); index++) {
                 Row row = visibleRows.get(index);
                 UiFormLayout.RowGeometry geometry = layout.rows().get(index);
                 if (geometry.labelShown()) graphics.drawString(font, row.label(), bounds().x() + CONTENT_LEFT,
                         scroll.toScreenY(CONTENT_TOP + geometry.y()), theme.get().surfaces().text(), false);
-                UiPointer clipped = pointer.restrict(bounds().contains(pointer.x(), pointer.y()));
                 row.widget().render(graphics, font, clipped);
                 for (UiControl action : row.actions()) action.render(graphics, font, clipped);
             }
-        } finally {
-            UiRenderLayers.disableScissor(graphics);
-        }
-        scroll.renderScrollbar(graphics, theme);
+        });
     }
     /** 快照使用真实字段几何并叠加祖先视口。 */
     @Override public List<UiLayoutNode> layoutNodes() { ensureLayout(); project(); return children.layoutNodes(); }

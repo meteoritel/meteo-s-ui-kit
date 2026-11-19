@@ -10,6 +10,8 @@ import com.meteorite.meteosuikit.api.input.UiPointerHit;
 import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
 import com.meteorite.meteosuikit.api.layout.UiLayoutSource;
 import com.meteorite.meteosuikit.api.render.UiRenderLayers;
+import com.meteorite.meteosuikit.api.render.UiLayer;
+import java.util.function.Supplier;
 import java.util.List;
 import java.util.function.Consumer;
 import net.minecraft.client.gui.GuiGraphics;
@@ -26,6 +28,12 @@ public final class UiOverlay implements UiInputTarget, UiLayoutSource {
     public UiOverlay(UiInputTarget content) { this.content = content; }
     /** 供根选择的唯一覆盖作用域。 */
     public UiInputScope inputScope() { return scope; }
+
+    /** 组装同一输入与布局来源的浮层，遮罩和内容按呈现深度绘制。 */
+    public UiLayer layer(Supplier<UiRect> bounds, int mask, UiLayer.Painter painter) {
+        return new UiLayer(scope, (graphics, font, pointer, depth) ->
+                render(graphics, bounds.get(), depth, mask, () -> painter.render(graphics, font, pointer, depth)), this);
+    }
     /** 活动内容贡献自己的真实布局，覆盖外壳不另建节点。 */
     @Override public List<UiLayoutNode> layoutNodes() {
         return content instanceof UiLayoutSource source ? source.layoutNodes() : List.of();

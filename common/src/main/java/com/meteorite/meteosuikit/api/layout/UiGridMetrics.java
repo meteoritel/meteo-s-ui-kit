@@ -14,6 +14,22 @@ import com.meteorite.meteosuikit.api.geometry.UiRect;
  * @param verticalGap 行间距，必须非负
  */
 public record UiGridMetrics(int columns, int cellWidth, int cellHeight, int horizontalGap, int verticalGap) {
+    /** 与视口相交的候选格索引区间，尾端不包含。 */
+    public record VisibleCells(int from, int to) { }
+
+    /** 以内容纵坐标查询可见行内的格。间隙仍由 indexAt 排除。 */
+    public VisibleCells visibleCells(int offset, int height, int itemCount) {
+        if (itemCount < 0) throw new IllegalArgumentException("Negative item count");
+        long pitch = (long) cellHeight + verticalGap;
+        int start = Math.max(0, offset);
+        long firstRow = start / pitch;
+        if (start % pitch >= cellHeight) firstRow++;
+        int first = (int) Math.min(itemCount, firstRow * columns);
+        if (height <= 0 || first == itemCount) return new VisibleCells(first, first);
+        long lastRow = ((long) start + height - 1) / pitch;
+        int end = (int) Math.min(itemCount, (lastRow + 1) * columns);
+        return new VisibleCells(first, Math.max(first, end));
+    }
     /** 非法配置在创建时抛出 {@link IllegalArgumentException}。 */
     public UiGridMetrics {
         if (columns <= 0 || cellWidth <= 0 || cellHeight <= 0 || horizontalGap < 0 || verticalGap < 0) {

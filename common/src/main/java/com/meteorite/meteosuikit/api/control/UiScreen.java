@@ -14,6 +14,7 @@ import java.util.List;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.GuiGraphics;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
 
@@ -22,6 +23,7 @@ import net.minecraft.network.chat.Component;
  * resize 沿用原版 init，控件由子类稳定持有；removed 结束捕获并释放根拥有的资源，再次打开可重新使用。
  */
 public abstract class UiScreen extends Screen implements UiLayoutSource {
+    private @Nullable UiViewport frameViewport;
     private final UiInputRouter input = new UiInputRouter();
     private final UiRootSession session = new UiRootSession(input, new UiScreenBridge.Host() {
         @Override public UiInputScope inputScope() { return UiScreen.this.inputScope(); }
@@ -40,6 +42,7 @@ public abstract class UiScreen extends Screen implements UiLayoutSource {
     protected int minimumUiHeight() { return 1; }
     /** 始终按原版当前尺寸计算，首次 init 与 resize 无需等待绘制。 */
     public final UiViewport viewport() {
+        if (frameViewport != null) return frameViewport;
         Window window = minecraft.getWindow();
         return UiViewport.fit(window.getWidth(), window.getHeight(), window.getGuiScale(),
                 minimumUiWidth(), minimumUiHeight());
@@ -83,14 +86,25 @@ public abstract class UiScreen extends Screen implements UiLayoutSource {
     protected void layoutUi() { }
     /** 在准备完布局、资源和焦点后绘制内容。 */
     protected abstract void renderUi(GuiGraphics graphics, int x, int y, float delta);
+    /** 在逻辑缩放之前处理需要原版 GUI 坐标的背景。 */
+    protected void renderGuiBackground(GuiGraphics graphics, int x, int y, float delta) { }
     /** 原版绘制入口统一准备，子类无需记忆调用顺序。 */
     @Override public final void render(@NotNull GuiGraphics graphics, int x, int y, float delta) {
-        session.beginFrame(Util.getMillis());
         UiViewport viewport = viewport();
-        graphics.pose().pushPose();
-        graphics.pose().scale((float) viewport.scale(), (float) viewport.scale(), 1);
-        try { renderUi(graphics, (int) viewport.toLogical(x), (int) viewport.toLogical(y), delta); }
-        finally { graphics.pose().popPose(); }
+        frameViewport = viewport;
+        try {
+            session.beginFrame(Util.getMillis());
+            renderGuiBackground(graphics, x, y, delta);
+            graphics.pose().pushPose();
+            try {
+                graphics.pose().scale((float) viewport.scale(), (float) viewport.scale(), 1);
+                renderUi(graphics, (int) viewport.toLogical(x), (int) viewport.toLogical(y), delta);
+            } finally {
+                graphics.pose().popPose();
+            }
+        } finally {
+            frameViewport = null;
+        }
     }
     /** 结构或覆盖面回调后立即应用宿主的选择，旧事件由路由版本失效。 */
     protected final void refreshUiState() { session.selectScope(); }
@@ -107,9 +121,9 @@ public abstract class UiScreen extends Screen implements UiLayoutSource {
         return session.dispatch(() -> input.mouseReleased(context));
     }
     @Override public boolean mouseDragged(double x, double y, int button, double dx, double dy) {
-        UiInputContext context = session.pointer(x, y, button);
-        UiViewport viewport = viewport();
-        return session.dispatch(() -> input.mouseDragged(context, viewport.toLogical(dx), viewport.toLogical(dy)));
+        var pointer = session.preparePointer(x, y, button, null);
+        UiViewport viewport = pointer.viewport();
+        return session.dispatch(() -> input.mouseDragged(pointer.context(), viewport.toLogical(dx), viewport.toLogical(dy)));
     }
     @Override public boolean mouseScrolled(double x, double y, double sx, double sy) {
         UiInputContext context = session.pointer(x, y, -1);
