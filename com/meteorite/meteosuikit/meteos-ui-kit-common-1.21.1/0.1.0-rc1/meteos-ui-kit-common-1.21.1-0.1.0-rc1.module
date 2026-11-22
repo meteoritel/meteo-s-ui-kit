@@ -1,0 +1,100 @@
+{
+    "formatVersion": "1.1",
+    "component": {
+        "group": "com.meteorite.meteosuikit",
+        "module": "meteos-ui-kit-common-1.21.1",
+        "version": "0.1.0-rc1",
+        "attributes": {
+            "org.gradle.status": "release"
+        }
+    },
+    "createdBy": {
+        "gradle": {
+            "version": "8.10"
+        }
+    },
+    "variants": [
+        {
+            "name": "apiElements",
+            "attributes": {
+                "org.gradle.category": "library",
+                "org.gradle.dependency.bundling": "external",
+                "org.gradle.jvm.version": 21,
+                "org.gradle.libraryelements": "jar",
+                "org.gradle.usage": "java-api"
+            },
+            "files": [
+                {
+                    "name": "meteos-ui-kit-common-1.21.1-0.1.0-rc1.jar",
+                    "url": "meteos-ui-kit-common-1.21.1-0.1.0-rc1.jar",
+                    "size": 582350,
+                    "sha512": "8cc4bb3f420b2717dc42f9477d62b7da7bb92c03675440d6d4cbb2f33ffb461ad0642fe2b85d99ade55168259cefd871ae5ff8c6dd5ad9716dfcdd885ab2c508",
+                    "sha256": "4757a19320129c89e6bea9b052b57bdd6f6191f6352aba476bc8507157e12848",
+                    "sha1": "168a09be7a2bd789add3b0b4da8b59bbf45ef5b4",
+                    "md5": "93671e5ba934b8cd109d2a3375995362"
+                }
+            ]
+        },
+        {
+            "name": "runtimeElements",
+            "attributes": {
+                "org.gradle.category": "library",
+                "org.gradle.dependency.bundling": "external",
+                "org.gradle.jvm.version": 21,
+                "org.gradle.libraryelements": "jar",
+                "org.gradle.usage": "java-runtime"
+            },
+            "files": [
+                {
+                    "name": "meteos-ui-kit-common-1.21.1-0.1.0-rc1.jar",
+                    "url": "meteos-ui-kit-common-1.21.1-0.1.0-rc1.jar",
+                    "size": 582350,
+                    "sha512": "8cc4bb3f420b2717dc42f9477d62b7da7bb92c03675440d6d4cbb2f33ffb461ad0642fe2b85d99ade55168259cefd871ae5ff8c6dd5ad9716dfcdd885ab2c508",
+                    "sha256": "4757a19320129c89e6bea9b052b57bdd6f6191f6352aba476bc8507157e12848",
+                    "sha1": "168a09be7a2bd789add3b0b4da8b59bbf45ef5b4",
+                    "md5": "93671e5ba934b8cd109d2a3375995362"
+                }
+            ]
+        },
+        {
+            "name": "sourcesElements",
+            "attributes": {
+                "org.gradle.category": "documentation",
+                "org.gradle.dependency.bundling": "external",
+                "org.gradle.docstype": "sources",
+                "org.gradle.usage": "java-runtime"
+            },
+            "files": [
+                {
+                    "name": "meteos-ui-kit-common-1.21.1-0.1.0-rc1-sources.jar",
+                    "url": "meteos-ui-kit-common-1.21.1-0.1.0-rc1-sources.jar",
+                    "size": 343968,
+                    "sha512": "f589cded95b556badef047739f35442263a83558bffdf9fe817f2ee6d7cf0fee7fb91869032a570fdc0042eb49992748b5c0a3362178d80fd22f56cab7f669a4",
+                    "sha256": "7b7f26acc55a17cfbdffd18514abda8bd4e76f2352a88d56076cd5aaf5f8c28d",
+                    "sha1": "1652db343186413277a4af7f428f573da6a25cfb",
+                    "md5": "b57a447a78a92688a61ae237627774e2"
+                }
+            ]
+        },
+        {
+            "name": "javadocElements",
+            "attributes": {
+                "org.gradle.category": "documentation",
+                "org.gradle.dependency.bundling": "external",
+                "org.gradle.docstype": "javadoc",
+                "org.gradle.usage": "java-runtime"
+            },
+            "files": [
+                {
+                    "name": "meteos-ui-kit-common-1.21.1-0.1.0-rc1-javadoc.jar",
+                    "url": "meteos-ui-kit-common-1.21.1-0.1.0-rc1-javadoc.jar",
+                    "size": 1325832,
+                    "sha512": "8b689f46c18686bc831458f0bbb69a38b2d0f2ee88c2171b62aebacd9f4818cd6b01323bf5683063e92a728196e00405045055567f0d33115bc8d8d27330e412",
+                    "sha256": "289ec0e9d20ce4dd5636f897e71d9d4bd9fac56d4e7bc7fe34919006359311d0",
+                    "sha1": "87927527f67a4ff4faf9095421be46f02fd0ca30",
+                    "md5": "839fa93c597b6fa78c00a3a75c1e82d6"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,100 @@
+{
+    "formatVersion": "1.1",
+    "component": {
+        "group": "com.meteorite.meteosuikit",
+        "module": "meteos-ui-kit-fabric-1.21.1",
+        "version": "0.1.0-rc1",
+        "attributes": {
+            "org.gradle.status": "release"
+        }
+    },
+    "createdBy": {
+        "gradle": {
+            "version": "8.10"
+        }
+    },
+    "variants": [
+        {
+            "name": "apiElements",
+            "attributes": {
+                "org.gradle.category": "library",
+                "org.gradle.dependency.bundling": "external",
+                "org.gradle.jvm.version": 21,
+                "org.gradle.libraryelements": "jar",
+                "org.gradle.usage": "java-api"
+            },
+            "files": [
+                {
+                    "name": "meteos-ui-kit-fabric-1.21.1-0.1.0-rc1.jar",
+                    "url": "meteos-ui-kit-fabric-1.21.1-0.1.0-rc1.jar",
+                    "size": 597875,
+                    "sha512": "730b21bddcf9f3d78a8bbf2e4e3214026c26cf4afb23560c2fef2b843a5868acc28d1a673742e9f7fc3fc0a850df22a577b7701234f005a2601bf2f1596752ab",
+                    "sha256": "f409a6c0e62a6152c82c870d66c42209805e6b5e3236b4661b6921598209f1ca",
+                    "sha1": "7e4eb306a2babe10762531a8324925d2d6c714cf",
+                    "md5": "c610ac4c0b6fd4eefb21785718137b08"
+                }
+            ]
+        },
+        {
+            "name": "runtimeElements",
+            "attributes": {
+                "org.gradle.category": "library",
+                "org.gradle.dependency.bundling": "external",
+                "org.gradle.jvm.version": 21,
+                "org.gradle.libraryelements": "jar",
+                "org.gradle.usage": "java-runtime"
+            },
+            "files": [
+                {
+                    "name": "meteos-ui-kit-fabric-1.21.1-0.1.0-rc1.jar",
+                    "url": "meteos-ui-kit-fabric-1.21.1-0.1.0-rc1.jar",
+                    "size": 597875,
+                    "sha512": "730b21bddcf9f3d78a8bbf2e4e3214026c26cf4afb23560c2fef2b843a5868acc28d1a673742e9f7fc3fc0a850df22a577b7701234f005a2601bf2f1596752ab",
+                    "sha256": "f409a6c0e62a6152c82c870d66c42209805e6b5e3236b4661b6921598209f1ca",
+                    "sha1": "7e4eb306a2babe10762531a8324925d2d6c714cf",
+                    "md5": "c610ac4c0b6fd4eefb21785718137b08"
+                }
+            ]
+        },
+        {
+            "name": "sourcesElements",
+            "attributes": {
+                "org.gradle.category": "documentation",
+                "org.gradle.dependency.bundling": "external",
+                "org.gradle.docstype": "sources",
+                "org.gradle.usage": "java-runtime"
+            },
+            "files": [
+                {
+                    "name": "meteos-ui-kit-fabric-1.21.1-0.1.0-rc1-sources.jar",
+                    "url": "meteos-ui-kit-fabric-1.21.1-0.1.0-rc1-sources.jar",
+                    "size": 365699,
+                    "sha512": "dcac7741a61f6f45da723e4a0af4b0aed37e633efe19541f7e0edf6750b0c69d7fc71cd558ce5734afbde2d49eea92246aa5c55af9424fc57d3a390db85ab318",
+                    "sha256": "566a1917176eed57cb8c0548485c91d83e34a9478cf5eaac699f80cdee45d216",
+                    "sha1": "c76055a72f910efd06a3caced5818b36d60be493",
+                    "md5": "f7212c1468af657d13751b8d57b605d3"
+                }
+            ]
+        },
+        {
+            "name": "javadocElements",
+            "attributes": {
+                "org.gradle.category": "documentation",
+                "org.gradle.dependency.bundling": "external",
+                "org.gradle.docstype": "javadoc",
+                "org.gradle.usage": "java-runtime"
+            },
+            "files": [
+                {
+                    "name": "meteos-ui-kit-fabric-1.21.1-0.1.0-rc1-javadoc.jar",
+                    "url": "meteos-ui-kit-fabric-1.21.1-0.1.0-rc1-javadoc.jar",
+                    "size": 1336422,
+                    "sha512": "a0556d7bf2b6240f3839d68d03c5553e7f0932baca4b509df412b4a3da3c05d2607a4b2dade91af065116bc20196f9ac9e9b398edc6c221b82fa652a21b44573",
+                    "sha256": "5a3f9ab960b578e54804d16a1ed688e1c80804ba43b8594e910c965e74486c34",
+                    "sha1": "5b12da295398dbca32905e0fb88e5225c9fd4330",
+                    "md5": "5cd42459919550e42bc34ab8f8ce14bc"
+                }
+            ]
+        }
+    ]
+}
