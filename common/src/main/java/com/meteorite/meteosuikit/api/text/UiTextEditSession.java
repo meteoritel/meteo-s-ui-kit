@@ -39,11 +39,17 @@ public final class UiTextEditSession implements UiInputTarget {
 
     /** 光标与选择锚点按 UTF-16 位置保存，与原版文本控件的坐标一致。 */
     public record Snapshot(String text, int cursor, int anchor) {
-        /** 文本非空，UTF-16 索引钳制到该快照原文范围内。 */
+        /** 文本非空，UTF-16 索引限制在原文范围内，落在代理对内部时吸附到该码点起点。 */
         public Snapshot {
             Objects.requireNonNull(text);
-            cursor = Math.clamp(cursor, 0, text.length());
-            anchor = Math.clamp(anchor, 0, text.length());
+            cursor = codePointBoundary(text, cursor);
+            anchor = codePointBoundary(text, anchor);
+        }
+
+        private static int codePointBoundary(String text, int position) {
+            int index = Math.clamp(position, 0, text.length());
+            return index > 0 && index < text.length() && Character.isSurrogatePair(text.charAt(index - 1), text.charAt(index))
+                    ? index - 1 : index;
         }
     }
 

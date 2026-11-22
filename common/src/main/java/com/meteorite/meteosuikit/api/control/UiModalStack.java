@@ -190,6 +190,7 @@ public final class UiModalStack implements UiWidget, UiLayoutSource {
     /** 在宿主确定输入域与命中前准备所有呈现中的模态。 */
     public void prepareUi() {
         for (UiModal modal : List.copyOf(modals)) modal.prepareUi();
+        if (modals.stream().anyMatch(UiModal::needsLayout)) relayout();
     }
 
     // 推进淡入动画，每帧调用一次

@@ -8,6 +8,7 @@ import com.meteorite.meteosuikit.api.style.UiMinecraftTheme;
 import com.meteorite.meteosuikit.api.style.UiStyleSource;
 import com.meteorite.meteosuikit.api.style.UiThemeContext;
 import com.meteorite.meteosuikit.api.style.UiThemes;
+import com.meteorite.meteosuikit.api.text.UiTextEditSession;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -36,5 +37,9 @@ final class TextContract extends ContractSupport {
         context.setTheme(recolored);graphics.reset();input.render(graphics,font,UiPointer.at(0,0));check(graphics.texts.getFirst().color()==0xFF123456&&input.value().equals("abcdefghijklmnop"),"theme updates color without losing draft");
         input.setEnabled(false);graphics.reset();input.render(graphics,font,UiPointer.at(0,0));check(graphics.texts.getFirst().color()==recolored.surfaces().disabledText(),"disabled text follows theme");graphics.reset();router.close();
     }
-    static void run() { flatSingleLine(); }
+    static void run() {
+        flatSingleLine();
+        var mixed = new UiTextEditSession.Snapshot("a\uD83D\uDE00\u05D0", 2, 4);
+        check(mixed.cursor() == 1 && mixed.anchor() == 4, "saved UTF-16 selection snaps inside a surrogate pair");
+    }
 }

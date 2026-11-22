@@ -26,29 +26,40 @@ public final class UiRootSession {
         this.host = host;
     }
 
-    public void beginFrame(long nowMillis) {
+    public boolean beginFrame(long nowMillis) {
+        long version = lifecycle;
         Language current = Language.getInstance();
         long generation = UiKitClientLifecycle.generation();
         if (resources != current || resourceGeneration != generation) {
             host.invalidateUiResources();
+            if (version != lifecycle) return false;
             resources = current;
             resourceGeneration = generation;
         }
         host.advanceUiFrame();
-        prepare();
+        if (version != lifecycle || !prepare(version)) return false;
         host.inputScope().content().advanceFrame(nowMillis);
+        return version == lifecycle;
     }
 
     public void prepare() {
+        prepare(lifecycle);
+    }
+
+    private boolean prepare(long version) {
         host.prepareUi();
+        if (version != lifecycle) return false;
         host.layoutUi();
+        if (version != lifecycle) return false;
         selectScope();
+        return version == lifecycle;
     }
 
     public void selectScope() {
+        long version = lifecycle;
         UiInputScope scope = host.inputScope();
         scope.refreshFocus();
-        router.select(scope);
+        if (version == lifecycle) router.select(scope);
     }
 
     public UiInputContext pointer(double x, double y, int button) {

@@ -13,6 +13,7 @@ import com.meteorite.meteosuikit.api.input.UiInputTarget;
 import com.meteorite.meteosuikit.api.input.UiChildren;
 import com.meteorite.meteosuikit.api.input.UiPointer;
 import com.meteorite.meteosuikit.api.input.UiInputScope;
+import com.meteorite.meteosuikit.api.input.UiInteractionSession;
 import com.meteorite.meteosuikit.api.input.UiInputContext;
 import com.meteorite.meteosuikit.api.input.UiHistoryShortcut;
 import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
@@ -86,11 +87,20 @@ public final class UiModal implements UiWidget, UiInputContainer {
 
     private final class ContentInput implements UiInputContainer {
         private final UiChildren<UiWidget> widgets = new UiChildren<>();
+        private @Nullable UiPointerHit press;
         /** 正文的实际控件结构。 */
         @Override public UiChildren<UiWidget> inputChildren() { return widgets; }
         /** 裁剪内才查询正文控件。 */
         @Override public @Nullable UiPointerHit hitTest(double x, double y) {
             return contentRect.contains(x, y) ? UiInputContainer.super.hitTest(x, y) : null;
+        }
+        @Override public boolean mousePressed(UiInputContext context) {
+            press = context.hit();
+            return UiInputContainer.super.mousePressed(context);
+        }
+        @Override public void scopeExited(UiInteractionSession.EndReason reason) {
+            press = null;
+            UiInputContainer.super.scopeExited(reason);
         }
     }
 
@@ -181,8 +191,9 @@ public final class UiModal implements UiWidget, UiInputContainer {
     }
 
     public UiModal message(Component message) {
+        if (!Objects.equals(this.message, message)) appliedTheme = null;
         this.message = message;
-        this.contentHeight = 0;
+        setContentHeight(0);
         return this;
     }
 
@@ -194,9 +205,8 @@ public final class UiModal implements UiWidget, UiInputContainer {
      */
     public UiModal content(ContentRenderer renderer, int height) {
         this.contentRenderer = renderer;
-        this.contentWidget = null;
-        contentInput.widgets.clear();
-        this.contentHeight = Math.max(0, height);
+        setContentHeight(height);
+        replaceContentWidget(null);
         return this;
     }
 
@@ -207,13 +217,41 @@ public final class UiModal implements UiWidget, UiInputContainer {
      * @param height 内容区高度，负值按 0 处理
      */
     public UiModal contentWidget(UiWidget widget, int height) {
-        this.contentWidget = widget;
-        contentInput.widgets.clear();
-        contentInput.widgets.add(widget);
-        inputScope.invalidateFocus();
+        Objects.requireNonNull(widget);
         this.contentRenderer = null;
-        this.contentHeight = Math.max(0, height);
+        setContentHeight(height);
+        replaceContentWidget(widget);
         return this;
+    }
+
+    private void replaceContentWidget(@Nullable UiWidget next) {
+        UiWidget previous = contentWidget;
+        if (previous == next) return;
+        UiInteractionSession session = inputScope.interaction();
+        UiInteractionSession.Target target = session.target();
+        boolean hadFocus = previous != null && previous.hasFocus();
+        boolean endsInteraction = target != null && (target == previous || (session.pointerTarget() == null
+                ? hadFocus : contentInput.press != null && contentInput.press.owns(target)));
+
+        contentWidget = next;
+        contentInput.press = null;
+        contentInput.widgets.clear();
+        if (next != null) contentInput.widgets.add(next);
+        appliedTheme = null;
+        inputScope.invalidateFocus();
+
+        if (endsInteraction) session.end(target, UiInteractionSession.EndReason.UNMOUNTED);
+        if (previous != null && contentWidget != previous) previous.scopeExited(UiInteractionSession.EndReason.UNMOUNTED);
+    }
+
+    private void setContentHeight(int height) {
+        int next = Math.max(0, height);
+        if (contentHeight != next) appliedTheme = null;
+        contentHeight = next;
+    }
+
+    boolean needsLayout() {
+        return appliedTheme == null;
     }
 
     /**
@@ -222,7 +260,9 @@ public final class UiModal implements UiWidget, UiInputContainer {
      * @param width 期望宽度
      */
     public UiModal preferredWidth(int width) {
-        this.preferredWidth = Math.max(MIN_WIDTH, width);
+        int next = Math.max(MIN_WIDTH, width);
+        if (preferredWidth != next) appliedTheme = null;
+        preferredWidth = next;
         return this;
     }
 
@@ -271,6 +311,7 @@ public final class UiModal implements UiWidget, UiInputContainer {
      * 让按钮行与内容同排：内容区向下延伸一行，{@link UiFooterHost} 内容控件把翻页排到按钮左边。
      */
     public UiModal inlineFooter() {
+        if (!this.inlineFooter) appliedTheme = null;
         this.inlineFooter = true;
         return this;
     }
@@ -415,11 +456,13 @@ public final class UiModal implements UiWidget, UiInputContainer {
         appliedThemeRevision = theme.get().revision(); appliedTheme = theme.get();
         appliedFooterHeight = nextFooterHeight;
         appliedButtonWidthSignature = nextButtonWidthSignature;
-        // 与按钮同排时把按钮行也算进内容区高度，由内容控件自己让出右侧
-        int inlineExtra = inlineFooter && contentWidget != null ? nextFooterHeight + theme.get().padding() : 0;
-        this.contentRect = new UiRect(bounds.x() + theme.get().padding(), bounds.y() + theme.get().headerHeight() + theme.get().padding(),
-                Math.max(0, bounds.width() - theme.get().padding() * 2),
-                Math.max(0, bounds.height() - theme.get().headerHeight() - theme.get().padding() * 3 - nextFooterHeight) + inlineExtra);
+        int padding = theme.get().padding();
+        int inset = horizontalInset(bounds.width());
+        int top = Math.min(bounds.bottom(), bounds.y() + theme.get().headerHeight() + padding);
+        int bottom = bounds.bottom() - padding;
+        if (!inlineFooter || contentWidget == null) bottom -= nextFooterHeight + padding;
+        this.contentRect = new UiRect(bounds.x() + inset, top, bounds.width() - inset * 2,
+                Math.max(0, bottom - top));
         if (contentWidget != null) {
             contentWidget.setBounds(contentRect.x(), contentRect.y(), contentRect.width(), contentRect.height());
         }
@@ -444,6 +487,10 @@ public final class UiModal implements UiWidget, UiInputContainer {
         return any ? Math.max(0, bounds.right() - leftmost + INLINE_FOOTER_GAP) : 0;
     }
 
+    private int horizontalInset(int width) {
+        return Math.min(theme.get().padding(), (width - 1) / 2);
+    }
+
     // 可用宽度不足时缩到可用宽度，避免按钮越出弹窗
     private int buttonWidth(UiButtonWidget button, int available) {
         return available < BUTTON_MIN_WIDTH
@@ -453,7 +500,7 @@ public final class UiModal implements UiWidget, UiInputContainer {
 
     // 长标签按实际宽度换行，正文为按钮预留全部行高。
     private int footerHeight(int width) {
-        int available = Math.max(1, width - theme.get().padding() * 2);
+        int available = width - horizontalInset(width) * 2;
         int used = 0;
         int rows = 0;
         for (UiButtonWidget button : buttons) {
@@ -484,7 +531,8 @@ public final class UiModal implements UiWidget, UiInputContainer {
 
     // 每行右对齐，按钮不越过弹窗边缘。
     private void layoutButtons() {
-        int available = Math.max(1, bounds.width() - theme.get().padding() * 2);
+        int inset = horizontalInset(bounds.width());
+        int available = bounds.width() - inset * 2;
         List<List<UiButtonWidget>> rows = new ArrayList<>();
         List<UiButtonWidget> row = new ArrayList<>();
         int used = 0;
@@ -500,11 +548,11 @@ public final class UiModal implements UiWidget, UiInputContainer {
             row.add(button);
         }
         if (!row.isEmpty()) rows.add(row);
-        int y = bounds.bottom() - theme.get().padding() - footerHeight(bounds.width());
+        int y = Math.max(bounds.y(), bounds.bottom() - theme.get().padding() - footerHeight(bounds.width()));
         for (List<UiButtonWidget> line : rows) {
             int total = (line.size() - 1) * BUTTON_SPACING;
             for (UiButtonWidget button : line) total += buttonWidth(button, available);
-            int x = bounds.right() - theme.get().padding() - total;
+            int x = bounds.right() - inset - total;
             for (UiButtonWidget button : line) {
                 int width = buttonWidth(button, available);
                 button.setBounds(x, y, width, BUTTON_HEIGHT);

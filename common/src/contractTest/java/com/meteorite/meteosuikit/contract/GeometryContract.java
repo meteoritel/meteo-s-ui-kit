@@ -13,6 +13,7 @@ import com.meteorite.meteosuikit.api.input.UiChildren;
 import com.meteorite.meteosuikit.api.input.UiInputTarget;
 import com.meteorite.meteosuikit.api.input.UiInputRouter;
 import com.meteorite.meteosuikit.api.input.UiInputScope;
+import com.meteorite.meteosuikit.api.input.UiInteractionSession;
 import com.meteorite.meteosuikit.api.layout.UiDocument;
 import com.meteorite.meteosuikit.api.layout.UiGridMetrics;
 import com.meteorite.meteosuikit.api.layout.UiLayoutNode;
@@ -70,6 +71,53 @@ final class GeometryContract extends ContractSupport {
         stack.setBounds(0,0,100,80);
         check(stack.modals().stream().allMatch(modal -> modal.bounds().right()<=100 && modal.bounds().bottom()<=80),"resize reclamps every modal");
         stack.clear();
+    }
+
+    static void modalContentReplacement() {
+        MetricFont font = new MetricFont();
+        UiModalStack stack = new UiModalStack();
+        stack.setBounds(0, 0, 220, 120);
+        UiControl original = new UiControl();
+        UiControl replacement = new UiControl();
+        original.configure(font, Component.literal("Original"), null, List.of(), () -> {});
+        replacement.configure(font, Component.literal("Replacement"), null, List.of(), () -> {});
+        UiModal modal = UiModal.create(font).contentWidget(original, 80)
+                .confirm(Component.literal("Done"), () -> {});
+        stack.push(modal);
+        UiInputScope scope = modal.inputScope();
+        UiInputRouter router = new UiInputRouter();
+        router.select(scope);
+        UiRect originalBounds = original.bounds();
+        router.mousePressed(at(scope, originalBounds.x() + 1, originalBounds.y() + 1));
+        check(scope.interaction().owns(original), "modal content receives a pointer capture");
+        modal.contentWidget(original, 80);
+        check(scope.interaction().owns(original), "retaining the same content preserves its capture");
+
+        modal.onPrepare(() -> modal.contentWidget(replacement, 80));
+        stack.prepareUi();
+        check(replacement.bounds().equals(originalBounds), "replacement gets layout with a stable modal rectangle");
+        check(scope.interaction().target() == null, "removed modal content releases its capture");
+        router.mouseReleased(at(scope, originalBounds.x() + 1, originalBounds.y() + 1));
+        router.mousePressed(at(scope, originalBounds.x() + 1, originalBounds.y() + 1));
+        check(scope.interaction().owns(replacement), "replacement handles the next press");
+        modal.content((graphics, currentFont, bounds, pointer) -> {}, 80);
+        check(scope.interaction().target() == null, "switching to a renderer ends the old content capture");
+        check(!scope.interaction().end(UiInteractionSession.EndReason.UNMOUNTED), "unmounted capture is ended once");
+
+        modal.contentWidget(replacement, 80);
+        modal.layoutAt(0, 0, 200, 90);
+        int separateFooter = replacement.bounds().height();
+        modal.inlineFooter();
+        modal.layoutAt(0, 0, 200, 90);
+        check(replacement.bounds().height() > separateFooter, "runtime inline footer updates the content budget");
+        modal.layoutAt(0, 0, 200, UiModal.BUTTON_HEIGHT);
+        check(replacement.bounds().height() == 0 && replacement.bounds().bottom() <= modal.bounds().bottom(),
+                "very short inline modal clamps its content rectangle");
+        var button = modal.buttons().getFirst();
+        var center = button.bounds();
+        check(button == modal.inputScope().content().hitTest(center.x() + 1, center.y() + 1).focus(),
+                "footer button remains hittable at minimum height");
+        router.close();
     }
     static void listGeometry() {
         UiListView<String> list = new UiListView<>((g,f,item,index,rect,selected,hovered,focused) -> {});
@@ -142,5 +190,5 @@ final class GeometryContract extends ContractSupport {
                 "hit and display use the same row and column geometry");
     }
 
-    static void run() { layout(); listGeometry(); modalViewport(); widgetRow(); visibleGridCells(); }
+    static void run() { layout(); listGeometry(); modalViewport(); modalContentReplacement(); widgetRow(); visibleGridCells(); }
 }

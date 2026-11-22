@@ -12,6 +12,7 @@ import org.lwjgl.glfw.GLFW;
 
 final class RootContract extends ContractSupport {
     static void run() {
+        closesDuringFrame();
         List<String> calls = new ArrayList<>();
         UiInputTarget target = new UiInputTarget() {
             @Override public void advanceFrame(long time) { calls.add("content:" + time); }
@@ -47,5 +48,42 @@ final class RootContract extends ContractSupport {
         bridge.attach(screen);
         bridge.close();
         check(screen.keyPressed(GLFW.GLFW_KEY_ESCAPE, 0, 0) && !screen.hasActiveScope(), "inherited Adapter retains close semantics");
+    }
+
+    private static void closesDuringFrame() {
+        List<String> phases = List.of("invalidate", "frame", "prepare", "layout", "content");
+        for (String closeIn : phases.subList(0, 4)) {
+            List<String> visited = new ArrayList<>();
+            UiScreenBridge[] bridge = new UiScreenBridge[1];
+            UiInputScope scope = new UiInputScope(new UiInputTarget() {
+                @Override public void advanceFrame(long time) { visited.add("content"); }
+            });
+            UiInputRouter router = new UiInputRouter();
+            bridge[0] = new UiScreenBridge(router, new UiScreenBridge.Host() {
+                private boolean closed;
+
+                private void visit(String phase) {
+                    visited.add(phase);
+                    if (!closed && phase.equals(closeIn)) {
+                        closed = true;
+                        bridge[0].close();
+                    }
+                }
+
+                @Override public UiInputScope inputScope() { return scope; }
+                @Override public UiViewport viewport() { return new UiViewport(1, 320, 240, new UiRect(0, 0, 320, 240)); }
+                @Override public void invalidateUiResources() { visit("invalidate"); }
+                @Override public void advanceUiFrame() { visit("frame"); }
+                @Override public void prepareUi() { visit("prepare"); }
+                @Override public void layoutUi() { visit("layout"); }
+            });
+            bridge[0].beginFrame(0);
+            check(router.active() == null && visited.equals(phases.subList(0, phases.indexOf(closeIn) + 1)),
+                    "closing during " + closeIn + " stops the remaining frame steps");
+            visited.clear();
+            bridge[0].beginFrame(1);
+            check(router.active() == scope && visited.equals(phases), "closing during a frame permits remount");
+            bridge[0].close();
+        }
     }
 }

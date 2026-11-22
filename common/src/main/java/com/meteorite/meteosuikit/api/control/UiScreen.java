@@ -93,7 +93,7 @@ public abstract class UiScreen extends Screen implements UiLayoutSource {
         UiViewport viewport = viewport();
         frameViewport = viewport;
         try {
-            session.beginFrame(Util.getMillis());
+            if (!session.beginFrame(Util.getMillis())) return;
             renderGuiBackground(graphics, x, y, delta);
             graphics.pose().pushPose();
             try {
