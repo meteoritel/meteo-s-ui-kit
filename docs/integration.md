@@ -21,7 +21,9 @@
 
 拖动、释放、滚轮、按键和字符沿样例转发给同一个 bridge。其返回值包含消费、覆盖阻断和迟到释放配对；宿主无需另建配对表。bridge 只处理 kit 内容，原版槽位继续由父类驱动。
 
-挂载后，阻断下层的作用域在平台前置事件中优先接收鼠标，根持有的按下继续接收配对拖动和释放。Fabric 的拖动通过原版屏幕入口进入同一 bridge。宿主对第三方覆层的展示和业务命中使用自己的活动覆盖层状态。
+挂载组合根后，平台前置鼠标事件经 bridge 进入根会话，阻断作用域优先于容器父类接收鼠标。Fabric 的拖动由容器覆写转发。继承根 `UiScreen` 在自己的 Screen 覆写中处理这组事件。两条路径都由根管理配对拖动和释放。宿主对第三方覆层的展示和业务命中使用自己的活动覆盖层状态。
+
+[输入样例](../common/src/dev/java/com/meteorite/meteosuikit/samples/KitInputsExample.java)、[层与模态](../common/src/dev/java/com/meteorite/meteosuikit/samples/KitLayersExample.java)、[主题表面](../common/src/dev/java/com/meteorite/meteosuikit/samples/KitSurfacesExample.java)和[模型与表单](../common/src/dev/java/com/meteorite/meteosuikit/samples/KitModelsExample.java)均可从展示页进入。
 
 ## 坐标、提示与资源
 
@@ -44,11 +46,20 @@
 
 库平台入口安装默认 Geometry，并接入共享客户端生命周期对模型工作区的世代观察及终止释放。Display accessor 与 client Mixin 配置使用 common 共享源码和资源，各端保留自己的 block 渲染路径与事件相位。模型共享 GPU 工作区由 kit 的客户端世代观察与终止事件独占释放；关闭屏幕只释放根自己的资源。根收到 `invalidateUiResources` 时刷新其文字和业务缓存；业务场景、线程池与文案继续归宿主。
 
-有效公开面以 JavaDoc、`tools/ui-kit-interface/api.txt` 与 `package-info.java` 为准；宿主只引用 api。基础能力不反向依赖 preview，common 不导入加载器类型。
+有效公开面以 JavaDoc、`tools/ui-kit-interface/api.txt` 与 `package-info.java` 为准。宿主只引用 api。基础能力不反向依赖 preview，common 不导入加载器类型。Fabric 与 NeoForge 的平台产物支持双端宿主内嵌，客户端入口负责安装 UI 能力，专用服务端可发现内嵌库身份。
 
 ## 固定版本消费
 
-在用户级 Gradle 属性配置 `meteos_ui_kit_maven_dir`，消费者项目的 `gradle.properties` 配置 `meteos_ui_kit_version` 并由其构建脚本读取。kit 自身的发布坐标由 `version` 决定；独立 consumer-check 默认消费该值，可用 `-Pmeteos_ui_kit_version=<精确版本>` 覆盖。仓库用 exclusiveContent 限定 group `com.meteorite.meteosuikit`；缺少本机属性时给出配置错误。
+候选版与正式版使用远程 Maven。各模块配置相同仓库，并在宿主的 `gradle.properties` 统一设置精确的 `meteos_ui_kit_version`。
+
+```groovy
+repositories {
+    exclusiveContent {
+        forRepository { maven { url = uri('https://meteoritel.github.io/meteo-s-ui-kit/') } }
+        filter { includeGroup('com.meteorite.meteosuikit') }
+    }
+}
+```
 
 - common：compileOnly `meteos-ui-kit-common-1.21.1`。
 - Fabric：modImplementation + include `meteos-ui-kit-fabric-1.21.1`。
@@ -56,9 +67,9 @@
 
 group 为 `com.meteorite.meteosuikit`，编译和内嵌选择项目配置的精确版本。common 编译 JAR 只用于编译，不随平台 JAR 再次内嵌。
 
-dev 序列允许源码、二进制与行为破坏，每个新 dev 坐标附迁移说明且不可覆盖。消费者的编译、内嵌和运行元数据锁定同一 dev：Fabric 依赖使用精确版本字符串，NeoForge 依赖和 jarJar 使用 `[版本]`，jarJar 同时 prefer 该版本。升级时成套替换宿主与库，避免旧宿主的宽区间接受新 dev。
+Fabric 运行依赖使用精确版本字符串，NeoForge 依赖与 jarJar 使用 `[版本]`，jarJar 同时 prefer 该版本。编译和加载器声明都必须显式锁定版本。历史 dev 坐标留在本地专用 Maven。后续本地开发使用 `X.Y.Z-alpha.N`，每个 alpha 可调整公开面并附相应迁移说明。
 
-正式 0.x 版本在同 minor 内维持源码、二进制与行为兼容；破坏性修改提升 minor 并提供迁移说明。正式版运行范围按该兼容承诺选择。dev 迁移见 [迁移索引](migrations/README.md)，发布与消费命令见 [工具入口](../tools/README.md)。
+同系列自首个 RC 起冻结公开签名与既定行为，后续候选允许兼容的缺陷修复。正式 0.x 版本在同 minor 内维持源码、二进制与既定行为兼容。破坏性变更进入新 minor 的 alpha 开发周期。每个坐标不可覆盖。[迁移索引](migrations/README.md) · [发布和消费验证](../tools/README.md)
 
 ## 主题、状态与滚动内容
 
@@ -94,6 +105,6 @@ dev 序列允许源码、二进制与行为破坏，每个新 dev 坐标附迁�
 
 灯箱全部按钮文案由 `UiLightbox.Labels` 提供，含 `panLock/panUnlock`。surface、icons、文字和提示保持独立配置，控制栏在窄窗优先保留关闭和 fit，空间不足时隐藏读数及次要控件。
 
-灯箱内容实现 `UiFocusTarget` 或贡献子焦点目标时，`UiLightbox` 将其加入同一作用域的 Tab 序列。内容持焦时先接收普通按键与字符，配对释放和退出通知沿内容传递；Escape 仍由灯箱关闭入口处理。
+灯箱内容实现 `UiFocusTarget` 或贡献子焦点目标时，`UiLightbox` 将其加入同一作用域的 Tab 序列。内容持焦时先接收普通按键与字符，配对释放和退出通知沿内容传递。Esc 先结束当前作用域的活动交互。没有活动交互时，灯箱处理关闭，普通内容可处理自己的取消，作用域的 `setEscape` 提供最终退出动作。
 
 列表快照和表单正文接入见 [dev.12 → dev.13](migrations/dev.12-to-dev.13.md)。`UiOverlay` 从同一实际内容转发布局、命中与焦点；活动模态使用该布局参与根快照与业务 key 定位，见 [dev.13 → dev.14](migrations/dev.13-to-dev.14.md)。模态栈复用弹窗的屏内布局，窄窗及层叠偏移保持页脚可达，见 [dev.14 → dev.15](migrations/dev.14-to-dev.15.md)。

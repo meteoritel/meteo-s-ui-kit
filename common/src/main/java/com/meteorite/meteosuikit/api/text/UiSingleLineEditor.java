@@ -10,7 +10,7 @@ public interface UiSingleLineEditor extends UiWidget, UiTextValue {
     /** 设置 Enter 提交通知。 */
     UiSingleLineEditor setOnCommit(Consumer<String> listener);
 
-    /** 设置 Esc 取消通知。 */
+    /** 设置 Esc 传到编辑器时的取消通知。路由器优先用 Esc 结束活动交互。 */
     UiSingleLineEditor setOnCancel(Runnable listener);
 
     /** 设置文本交互结束通知，组合控件据此提交或恢复自己的值。 */

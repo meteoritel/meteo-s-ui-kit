@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "id": "meteos_ui_kit_consumer_check",
+  "version": "1.0.0",
+  "depends": {"fabric-api": "*"}
+}

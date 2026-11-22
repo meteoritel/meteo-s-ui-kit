@@ -7,7 +7,8 @@
  * <p>依赖方向：geometry 只持有几何，不引用 input、control、render 或 internal；input 不依赖
  * control、render 或 style；layout 不依赖 control；style 不依赖 number。基础能力不反向引用 preview。</p>
  * <p>text 的 UiSingleLineEditor 组合 control 的 UiWidget，数值字段通过该契约使用编辑器的绘制、
- * 几何和输入；layout 与 render 共用文档排版及绘制契约。这些组合由实际调用方共同维护。</p>
+ * 几何和输入。input 与 layout 共享成员的输入、命中及布局快照；style 与 render 共享皮肤、
+ * 图像及提示呈现类型；layout 与 render 共用文档排版及绘制契约。</p>
  * <p>主题发布、输入、资源准备和共享渲染状态在客户端线程使用，GPU 绘制与释放在渲染线程执行。</p>
  */
 package com.meteorite.meteosuikit.api;

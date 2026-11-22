@@ -16,6 +16,7 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 from toolslib.checks import CheckResult, Finding, run
 from toolslib.repo import collect_files
@@ -24,23 +25,68 @@ FORBIDDEN_PATHS = (".local/archive", "docs/archive")
 # 指针方向只由 AGENTS.md 单向发出：该文件自身豁免，其它文档出现其文件名即违规。
 POINTER_ORIGIN = "AGENTS.md"
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
-EXTERNAL_PREFIXES = ("http://", "https://", "mailto:", "#", "tel:")
+EXTERNAL_PREFIXES = ("http://", "https://", "mailto:", "tel:")
 FENCE = chr(96) * 3
+HEADING_RE = re.compile(r"^ {0,3}#{1,6}\s+(.*?)\s*#*\s*$")
+VERSION = r"(?:dev\.\d+|rc\d+|\d+\.\d+\.\d+(?:-alpha\.\d+|-rc\d+)?)"
+MIGRATION_RE = re.compile(rf"(?P<source>{VERSION})-to-(?P<target>{VERSION})\.md")
 
 
 def collect_docs(root: Path) -> list[Path]:
     return collect_files(root, ".md")
 
-def link_exists(base: Path, clean: str) -> bool:
-    """判断相对链接目标是否存在。
+def link_path(doc: Path, target: str) -> Path:
+    path = (doc.parent / unquote(target)).resolve() if target else doc
+    if target and not path.exists() and not target.endswith(".md"):
+        return path.with_name(path.name + ".md")
+    return path
 
-    GitHub Wiki 的页间链接写成不带扩展名的页面名，因此直接命中失败时再补 `.md` 试一次。
-    """
-    if (base / clean).resolve().exists():
-        return True
-    if clean.endswith(".md"):
-        return False
-    return (base / f"{clean}.md").resolve().exists()
+
+def markdown_anchors(path: Path) -> set[str]:
+    anchors: set[str] = set()
+    in_fence = False
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.lstrip().startswith(FENCE):
+            in_fence = not in_fence
+            continue
+        heading = HEADING_RE.match(line)
+        if in_fence or heading is None:
+            continue
+        name = re.sub(r"[^\w -]", "", heading[1].lower()).replace(" ", "-")
+        anchor = name
+        suffix = 0
+        while anchor in anchors:
+            suffix += 1
+            anchor = f"{name}-{suffix}"
+        anchors.add(anchor)
+    return anchors
+
+
+def check_migrations(root: Path) -> list[tuple[str, int, str, str]]:
+    directory = root / "docs/migrations"
+    if not directory.is_dir():
+        return []
+    index = directory / "README.md"
+    rel = index.relative_to(root).as_posix()
+    if not index.is_file():
+        return [(rel, 1, "缺少迁移索引", rel)]
+    violations = []
+    indexed = set()
+    previous = None
+    for line_no, line in enumerate(index.read_text(encoding="utf-8").splitlines(), 1):
+        for link in LINK_RE.finditer(line):
+            name = link[1]
+            migration = MIGRATION_RE.fullmatch(name)
+            if migration is None:
+                continue
+            if name in indexed or (previous is not None and migration["source"] != previous):
+                violations.append((rel, line_no, "迁移链断点或重复", name))
+            indexed.add(name)
+            previous = migration["target"]
+    for file in directory.glob("*.md"):
+        if MIGRATION_RE.fullmatch(file.name) and file.name not in indexed:
+            violations.append((rel, 1, "迁移索引缺少入口", file.name))
+    return violations
 
 
 def check(root: Path) -> CheckResult:
@@ -50,6 +96,7 @@ def check(root: Path) -> CheckResult:
 
     violations: list[tuple[str, int, str, str]] = []
     link_total = 0
+    anchors_by_file: dict[Path, set[str]] = {}
     for doc in docs:
         rel = doc.relative_to(root).as_posix()
         text = doc.read_text(encoding="utf-8", errors="replace")
@@ -69,18 +116,18 @@ def check(root: Path) -> CheckResult:
                 target = match.group(1).strip()
                 if not target or target.startswith(EXTERNAL_PREFIXES):
                     continue
-                clean = target.split("#", 1)[0]
-                if not clean:
-                    continue
+                clean, _, fragment = target.partition("#")
+                path = link_path(doc, clean)
                 link_total += 1
-                if not link_exists(doc.parent, clean):
+                if not path.exists():
                     violations.append((rel, line_no, "悬空链接", target))
+                elif fragment and path.suffix == ".md":
+                    if path not in anchors_by_file:
+                        anchors_by_file[path] = markdown_anchors(path)
+                    if unquote(fragment) not in anchors_by_file[path]:
+                        violations.append((rel, line_no, "悬空锚点", target))
 
-    migration_index = root / 'docs/migrations/README.md'
-    indexed = migration_index.read_text(encoding='utf-8') if migration_index.is_file() else ''
-    for migration in (root / 'docs/migrations').glob('dev.*.md'):
-        if migration.name not in indexed:
-            violations.append(('docs/migrations/README.md', 1, '迁移索引缺少入口', migration.name))
+    violations.extend(check_migrations(root))
 
     return CheckResult(
         [Finding(rel, kind, detail, line) for rel, line, kind, detail in violations],

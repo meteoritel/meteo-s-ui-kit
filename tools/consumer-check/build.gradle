@@ -5,6 +5,18 @@ plugins {
 def libraryProperties = new Properties()
 file('../../gradle.properties').withInputStream { libraryProperties.load(it) }
 def consumptionVersion = providers.gradleProperty('meteos_ui_kit_version').getOrElse(libraryProperties.getProperty('version'))
+def localMaven = providers.gradleProperty('meteos_ui_kit_maven_dir')
+def remoteMaven = providers.gradleProperty('meteos_ui_kit_maven_url')
+def repositoryUrl = remoteMaven.orElse(localMaven).getOrNull()
+if (!repositoryUrl?.trim()) {
+    throw new GradleException('配置 meteos_ui_kit_maven_url 或 meteos_ui_kit_maven_dir')
+}
+if (remoteMaven.isPresent() && uri(repositoryUrl).scheme != 'https') {
+    throw new GradleException('远程 UI Kit Maven 地址必须使用 HTTPS')
+}
+if (!(consumptionVersion ==~ /\d+\.\d+\.\d+(-(?:dev|alpha)\.\d+|-rc\d+)?/)) {
+    throw new GradleException('UI Kit 消费版本必须是精确版本号')
+}
 subprojects {
     apply plugin: 'java'
     version = libraryProperties.getProperty('version')
@@ -14,8 +26,8 @@ subprojects {
     repositories {
         exclusiveContent {
             forRepository { maven {
-                name = 'MeteosLocal'
-                url = uri(providers.gradleProperty('meteos_ui_kit_maven_dir').get())
+                name = 'MeteosUiKit'
+                url = rootProject.uri(repositoryUrl)
             } }
             filter { includeGroup('com.meteorite.meteosuikit') }
         }
@@ -32,5 +44,15 @@ subprojects {
             }
             logger.lifecycle("${project.path} 编译坐标 com.meteorite.meteosuikit:meteos-ui-kit-${project.name}-${minecraft_version}:${kitConsumptionVersion}")
         }
+    }
+}
+
+tasks.register('checkEmbeddedKit', Exec) {
+    dependsOn ':common:compileJava', ':fabric:remapJar', ':neoforge:jar'
+    doFirst {
+        commandLine providers.gradleProperty('repository_python').getOrElse('python'), '-B',
+                file('../check-consumer-packaging.py'), consumptionVersion, libraryProperties.getProperty('minecraft_version'),
+                project(':fabric').tasks.named('remapJar').get().archiveFile.get().asFile,
+                project(':neoforge').tasks.named('jar').get().archiveFile.get().asFile
     }
 }

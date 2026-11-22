@@ -1,0 +1,8 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+
+[[mods]]
+modId="meteos_ui_kit_consumer_check"
+version="1.0.0"
+displayName="Meteo's UI Kit Consumer Check"

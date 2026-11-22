@@ -3,4 +3,8 @@ neoForge {
     version = neoforge_version
     parchment { minecraftVersion = parchment_minecraft; mappingsVersion = parchment_version }
 }
-dependencies { implementation "com.meteorite.meteosuikit:meteos-ui-kit-neoforge-${minecraft_version}:${kitConsumptionVersion}" }
+dependencies {
+    def kit = "com.meteorite.meteosuikit:meteos-ui-kit-neoforge-${minecraft_version}:${kitConsumptionVersion}"
+    implementation kit
+    jarJar(kit) { version { strictly("[${kitConsumptionVersion}]"); prefer(kitConsumptionVersion) } }
+}
